@@ -18,24 +18,11 @@ QuoteStyle: {Single, Double}
 ## Every options you can use currently:
 ```luau
 {
-	-- Turns off by default, Luau only enables this syntax feature when it knows it is parsing a Definition File
-	allowDeclarationSyntax: boolean,
-
 	-- Turns off by default, Defines parser will save comments or not
 	captureComments: boolean,
 
 	-- Turns off by default, Defines parser will store CST (result.cstNodeMap) or not
 	storeCstData: boolean,
-
-	-- Turns off by default, Remove luau parser error limit (100) or not
-	noErrorLimit: boolean,
-
-	-- Able to start on a different point of the source
-	parseFragment: {
-		resumePosition: Position?,
-		localMap: {[string]: any},
-		localStack: {any}
-	}?
 }
 ```
 
@@ -58,6 +45,8 @@ QuoteStyle: {Single, Double}
 	errors: {ParseError},
 }
 ```
+# Change logs
+Removed some useless options and unused variables, same as internal declaration features.
 
 # Documentations
 There's no AST and CST documentation for now, but In the future, I could type-check and build a documentation for better usability for sure
