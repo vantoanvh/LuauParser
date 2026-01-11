@@ -12,6 +12,12 @@ Parser.parse(source: string, options: Options): boolean, result
 
 -- Contains Single ' or Double ", get string quotes from "ExprConstantString" nodes
 QuoteStyle: {Single, Double}
+
+-- Contains things that define node is a normal string or an interpolated string
+BraceType: {Normal, InterpolatedString}
+
+-- Contains all Ast types, you need this for detect what AstNodes are these
+Types: {number}
 ```
 
 
