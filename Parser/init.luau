@@ -1,80 +1,22 @@
 --!optimize 2
---!native
---!strict
 
-local Lexer = require'@self/Lexer'
+-- // Requires
 
-local constructLexeme = Lexer.constructLexeme
-local constructLexer = Lexer.constructLexer
+local findConfusable = require'@self/findConfusable'
 
-local fixupMultilineString = Lexer.fixupMultilineString
-local fixupQuotedString = Lexer.fixupQuotedString
-
-local ToString = Lexer.ToString
-
-local Lookahead = Lexer.Lookahead
-local ReadNext = Lexer.ReadNext
-local Next = Lexer.Next
-
-local QuoteStyle = Lexer.QuoteStyle
-local BraceType = Lexer.BraceType
-local Types = Lexer.Types
-
-local ExplicitTypeExpressionInstantiation = true
-
-local TypeLengthLimit = 1000
-local RecursionLimit = 1000
-local ErrorLimit = 100
-
-local nameError = "%error-id%"
-local nameNumber = "number"
-local nameSelf = "self"
-local nameNil = "nil"
-
-type Location = Lexer.Location
-type Position = Lexer.Position
-
-type Options = {
-	allowDeclarationSyntax: boolean,
-	captureComments: boolean,
-	storeCstData: boolean,
-	noErrorLimit: boolean,
-	parseFragment: {
-		resumePosition: Position?,
-		localMap: {[string]: any},
-		localStack: {any}
-	}?
+type Position = {
+	line: number,
+	column: number,
 }
 
-type Parser = {
-	options: Options,
-	lexer: Lexer.Lexer,
+type Location = {
+	begin: Position,
+	end_: Position,
+}
 
-	recursionCounter: number,
-
-	endMismatchSuspect: {
-		type: number,
-		location: Location
-	},
-
-	localMap: {[string]: any},
-	localStack: {any},
-
-	cstNodeMap: { [any]: any },
-
-	functionStack: {any},
-
-	matchRecoveryStopOnToken: {[number]: number},
-
-	skipComments: boolean,
-	readNames: boolean,
-
-	hotcomments: { { header: boolean, location: Location, content: string? } },
-	commentLocations: { {type: number, location: Location} },
-	parseErrors: {any},
-
-	hotcommentHeader: boolean,
-	typeFunctionDepth: number?,
+type Options = {
+	captureComments: boolean,
+	storeCstData: boolean,
 }
 
 export type TypePack = {
@@ -85,6 +27,613 @@ export type TypePack = {
 	variadicType: any,
 	genericName: string?
 }
+
+-- // String types
+
+local BraceType = {
+	InterpolatedString = 0,
+	Normal = 1
+}
+
+local QuoteStyle = {
+	Single = 0,
+	Double = 1,
+}
+
+-- // Tables from Lexer
+
+local Types = {
+	Eof = 0,
+	Char_END = 256,
+	Equal = 257,
+
+	LessEqual = 258,
+	GreaterEqual = 259,
+	NotEqual = 260,
+
+	Dot2 = 261,
+	Dot3 = 262,
+
+	SkinnyArrow = 263,
+	DoubleColon = 264,
+	FloorDiv = 265,
+
+	InterpStringBegin = 266,
+	InterpStringMid = 267,
+	InterpStringEnd = 268,
+	InterpStringSimple = 269,
+
+	AddAssign = 270,
+	SubAssign = 271,
+	MulAssign = 272,
+	DivAssign = 273,
+	FloorDivAssign = 274,
+	ModAssign = 275,
+	PowAssign = 276,
+	ConcatAssign = 277,
+
+	RawString = 278,
+	QuotedString = 279,
+	Number = 280,
+	Name = 281,
+
+	Comment = 282,
+	BlockComment = 283,
+
+	Attribute = 284,
+	AttributeOpen = 285,
+
+	BrokenString = 286,
+	BrokenComment = 287,
+	BrokenUnicode = 288,
+	BrokenInterpDoubleBrace = 289,
+
+	Error = 290,
+
+	Reserved_BEGIN = 291,
+	ReservedAnd = 291,
+	ReservedBreak = 292,
+	ReservedDo = 293,
+	ReservedElse = 294,
+	ReservedElseif = 295,
+	ReservedEnd = 296,
+	ReservedFalse = 297,
+	ReservedFor = 298,
+	ReservedFunction = 299,
+	ReservedIf = 300,
+	ReservedIn = 301,
+	ReservedLocal = 302,
+	ReservedNil = 303,
+	ReservedNot = 304,
+	ReservedOr = 305,
+	ReservedRepeat = 306,
+	ReservedReturn = 307,
+	ReservedThen = 308,
+	ReservedTrue = 309,
+	ReservedUntil = 310,
+	ReservedWhile = 311,
+	Reserved_END = 312
+}
+
+-- // Lookup for keywords
+
+local ReversedKeywords = {
+
+	[291] = "and",
+	[292] = "break",
+	[293] = "do",
+	[294] = "else",
+	[295] = "elseif",
+	[296] = "end",
+	[297] = "false",
+	[298] = "for",
+	[299] = "function",
+	[300] = "if",
+	[301] = "in",
+	[302] = "local",
+	[303] = "nil",
+	[304] = "not",
+	[305] = "or",
+	[306] = "repeat",
+	[307] = "return",
+	[308] = "then",
+	[309] = "true",
+	[310] = "until",
+	[311] = "while"
+
+}
+
+local Keywords = {
+
+	["and"] = 291,
+	["break"] = 292,
+	["do"] = 293,
+	["else"] = 294,
+	["elseif"] = 295,
+	["end"] = 296,
+	["false"] = 297,
+	["for"] = 298,
+	["function"] = 299,
+	["if"] = 300,
+	["in"] = 301,
+	["local"] = 302,
+	["nil"] = 303,
+	["not"] = 304,
+	["or"] = 305,
+	["repeat"] = 306,
+	["return"] = 307,
+	["then"] = 308,
+	["true"] = 309,
+	["until"] = 310,
+	["while"] = 311
+
+}
+
+-- // Lookup for operators
+
+local UnaryOp = {
+	Not = 0,
+	Minus = 1,
+	Len = 2
+}
+
+local BinaryOp = {
+	Add = 0, Sub = 1, Mul = 2, Div = 3,
+	FloorDiv = 4, Mod = 5, Pow = 6, Concat = 7,
+	CompareNe = 8, CompareEq = 9, CompareLt = 10,
+	CompareLe = 11, CompareGt = 12, CompareGe = 13,
+	And = 14, Or = 15
+}
+
+local BinaryPriority = {
+	[BinaryOp.Add] = {6, 6},
+	[BinaryOp.Sub] = {6, 6},
+	[BinaryOp.Mul] = {7, 7},
+	[BinaryOp.Div] = {7, 7},
+	[BinaryOp.FloorDiv] = {7, 7},
+	[BinaryOp.Mod] = {7, 7},
+	[BinaryOp.Pow] = {10, 9},
+	[BinaryOp.Concat] = {5, 4},
+	[BinaryOp.CompareNe] = {3, 3},
+	[BinaryOp.CompareEq] = {3, 3},
+	[BinaryOp.CompareLt] = {3, 3},
+	[BinaryOp.CompareLe] = {3, 3},
+	[BinaryOp.CompareGt] = {3, 3},
+	[BinaryOp.CompareGe] = {3, 3},
+	[BinaryOp.And] = {2, 2},
+	[BinaryOp.Or] = {1, 1}
+}
+
+local CompoundLookup = {
+	[Types.FloorDivAssign] = BinaryOp.FloorDiv,
+	[Types.ConcatAssign] = BinaryOp.Concat,
+	[Types.ModAssign] = BinaryOp.Mod,
+	[Types.PowAssign] = BinaryOp.Pow,
+	[Types.AddAssign] = BinaryOp.Add,
+	[Types.SubAssign] = BinaryOp.Sub,
+	[Types.MulAssign] = BinaryOp.Mul,
+	[Types.DivAssign] = BinaryOp.Div,
+}
+
+local BinaryOpLookup = {
+	[43] = BinaryOp.Add,
+	[45] = BinaryOp.Sub,
+	[42] = BinaryOp.Mul,
+	[47] = BinaryOp.Div,
+
+	[Types.FloorDiv] = BinaryOp.FloorDiv,
+
+	[37] = BinaryOp.Mod,
+	[94] = BinaryOp.Pow,
+
+	[Types.Dot2] = BinaryOp.Concat,
+	[Types.NotEqual] = BinaryOp.CompareNe,
+	[Types.Equal] = BinaryOp.CompareEq,
+
+	[60] = BinaryOp.CompareLt,
+
+	[Types.LessEqual] = BinaryOp.CompareLe,
+
+	[62] = BinaryOp.CompareGt,
+
+	[Types.GreaterEqual] = BinaryOp.CompareGe,
+	[Types.ReservedAnd] = BinaryOp.And,
+	[Types.ReservedOr] = BinaryOp.Or,
+}
+
+local UnaryOpLookup = {
+	[Types.ReservedNot] = UnaryOp.Not,
+	[45] = UnaryOp.Minus,
+	[35] = UnaryOp.Len,
+}
+
+-- // Lookups for Lexer
+
+local HexDigits = {}
+local HexVal = {}
+local Digits = {}
+local Alpha = {}
+
+local Spaces = {
+	[09] = true, -- \t
+	[10] = true, -- \n
+	[11] = true, -- \v
+	[12] = true, -- \f
+	[13] = true, -- \r
+	[32] = true, -- space
+}
+
+local Escapes = {
+	[97] = 7,
+	[98] = 8,
+	[102] = 12,
+	[110] = 10,
+	[114] = 13,
+	[116] = 9,
+	[118] = 11,
+}
+
+for i = 48, 57 do -- '0' - '9'
+	HexDigits[i] = true
+	Digits[i] = true
+end
+
+for i = 65, 90 do
+	if i <= 70 then HexDigits[i] = true end -- 'a' - 'f'
+	Alpha[i] = true
+end
+
+for i = 97, 122 do
+	if i <= 102 then HexDigits[i] = true end -- 'A' - 'F'
+	Alpha[i] = true
+end
+
+for i = 48, 57  do HexVal[i] = i - 48 end -- '0'-'9'
+for i = 65, 70  do HexVal[i] = i - 55 end -- 'A'-'F'
+for i = 97, 102 do HexVal[i] = i - 87 end -- 'a'-'f'
+
+-- // PARSER CONSTANTS // --
+
+local nameError = "%error-id%"
+local nameNumber = "number"
+local nameSelf = "self"
+local nameNil = "nil"
+
+-- // PARSER SETTINGS // --
+
+local ExplicitTypeExpressionInstantiation = true
+
+local TypeLengthLimit = 1000
+local RecursionLimit = 1000
+local ErrorLimit = 100
+
+-- // Lexer helper
+
+local function fixupQuotedString(data: string): (boolean, string?)
+	if #data == 0 or not string.find(data, "\\") then
+		return true, data
+	end
+
+	local size = #data
+	local src = buffer.fromstring(data)
+	local buf = buffer.create(size)
+	local write = 0
+	local i = 0
+
+	while i < size do
+		local ch = buffer.readu8(src, i)
+
+		if ch ~= 92 then -- not '\'
+			buffer.writeu8(buf, write, ch)
+			write += 1
+			i += 1
+			continue
+		end
+
+		if i + 1 == size then
+			return false, nil -- Trailing backslash
+		end
+
+		local escape = buffer.readu8(src, i + 1)
+		i += 2 -- skip \ and the escape char
+
+		if escape == 10 then -- \n
+			buffer.writeu8(buf, write, 10)
+			write += 1
+		elseif escape == 13 then -- \r
+			buffer.writeu8(buf, write, 10) -- normalize to \n
+			write += 1
+			if i < size and buffer.readu8(src, i) == 10 then
+				i += 1
+			end
+		elseif escape == 0 then
+			return false, nil
+		elseif escape == 120 then -- 'x'
+			-- hex escape codes are exactly 2 hex digits long
+			if i + 2 > size then
+				return false, nil
+			end
+
+			local code = 0
+			for j = 0, 1 do
+				local c = buffer.readu8(src, i + j)
+				if not HexDigits[c] then
+					return false, nil
+				end
+				-- (ch | ' ') - 'a' + 10 trick
+				local hexVal = if Digits[c] then c - 48 else bit32.bor(c, 32) - 97 + 10
+				code = 16 * code + hexVal
+			end
+
+			buffer.writeu8(buf, write, code)
+			write += 1
+			i += 2
+		elseif escape == 122 then -- 'z'
+			while i < size and Spaces[buffer.readu8(src, i)] do
+				i += 1
+			end
+		elseif escape == 117 then -- 'u'
+			-- unicode escape codes \u{...}
+			if i + 3 > size then return false, nil end
+			if buffer.readu8(src, i) ~= 123 then return false, nil end -- '{'
+			i += 1
+
+			if buffer.readu8(src, i) == 125 then return false, nil end
+
+			local code = 0
+			local ended = false
+
+			for j = 0, 15 do
+				if i == size then return false, nil end
+				local c = buffer.readu8(src, i)
+
+				if c == 125 then -- '}'
+					ended = true
+					break
+				end
+
+				if not HexDigits[c] then
+					return false, nil
+				end
+
+				local hexVal = if Digits[c] then c - 48 else bit32.bor(c, 32) - 97 + 10
+				code = 16 * code + hexVal
+				i += 1
+			end
+
+			if not ended then
+				-- Check if we finished loop but didn't find '}'
+				if i == size or buffer.readu8(src, i) ~= 125 then
+					return false, nil
+				end
+			end
+			i += 1 -- skip '}'
+
+			-- Convert code to UTF8
+			if code < 0x80 then
+				buffer.writeu8(buf, write, code)
+				write += 1
+			elseif code < 0x800 then
+				buffer.writeu8(buf, write, bit32.bor(0xC0, bit32.rshift(code, 6)))
+				buffer.writeu8(buf, write + 1, bit32.bor(0x80, bit32.band(code, 0x3F)))
+				write += 2
+			elseif code < 0x10000 then
+				-- Basic Multilingual Plane
+				buffer.writeu8(buf, write, bit32.bor(0xE0, bit32.rshift(code, 12)))
+				buffer.writeu8(buf, write + 1, bit32.bor(0x80, bit32.band(bit32.rshift(code, 6), 0x3F)))
+				buffer.writeu8(buf, write + 2, bit32.bor(0x80, bit32.band(code, 0x3F)))
+				write += 3
+			elseif code < 0x110000 then
+				-- Supplementary Planes
+				buffer.writeu8(buf, write, bit32.bor(0xF0, bit32.rshift(code, 18)))
+				buffer.writeu8(buf, write + 1, bit32.bor(0x80, bit32.band(bit32.rshift(code, 12), 0x3F)))
+				buffer.writeu8(buf, write + 2, bit32.bor(0x80, bit32.band(bit32.rshift(code, 6), 0x3F)))
+				buffer.writeu8(buf, write + 3, bit32.bor(0x80, bit32.band(code, 0x3F)))
+				write += 4
+			else
+				return false, nil -- Invalid unicode codepoint
+			end
+		else
+			if Digits[escape] then
+				local code = escape - 48
+
+				for j = 0, 1 do
+					if i == size then break end
+					local c = buffer.readu8(src, i)
+					if not Digits[c] then break end
+					code = 10 * code + (c - 48)
+					i += 1
+				end
+
+				if code > 255 then
+					return false, nil
+				end
+
+				buffer.writeu8(buf, write, code)
+				write += 1
+			else
+				buffer.writeu8(buf, write, Escapes[escape] or escape)
+				write += 1
+			end
+		end
+	end
+
+	return true, buffer.readstring(buf, 0, write)
+end
+
+local function fixupMultilineString(data: string): string
+	if #data == 0 then
+		return data
+	end
+
+	data = string.gsub(data, "^\r?\n", "")
+	data = string.gsub(data, "\r\n", "\n")
+
+	return data
+end
+
+local function ToString(t: number, data: string?, codepoint: number?): string
+	if t == Types.Eof then
+		return "<eof>"
+	elseif t == Types.Equal then
+		return "'=='"
+	elseif t == Types.LessEqual then
+		return "'<='"
+	elseif t == Types.GreaterEqual then
+		return "'>='"
+	elseif t == Types.NotEqual then
+		return "'~='"
+	elseif t == Types.Dot2 then
+		return "'..'"
+	elseif t == Types.Dot3 then
+		return "'...'"
+	elseif t == Types.SkinnyArrow then
+		return "'->'"
+	elseif t == Types.DoubleColon then
+		return "'::'"
+	elseif t == Types.FloorDiv then
+		return "'//'"
+	elseif t == Types.AddAssign then
+		return "'+='"
+	elseif t == Types.SubAssign then
+		return "'-='"
+	elseif t == Types.MulAssign then
+		return "'*='"
+	elseif t == Types.DivAssign then
+		return "'/='"
+	elseif t == Types.FloorDivAssign then
+		return "'//='"
+	elseif t == Types.ModAssign then
+		return "'%='"
+	elseif t == Types.PowAssign then
+		return "'^='"
+	elseif t == Types.ConcatAssign then
+		return "'..='"
+	elseif t == Types.RawString or t == Types.QuotedString then
+		if data then
+			return `"{data}"`
+		else
+			return "string"
+		end
+	elseif t == Types.InterpStringBegin then
+		if data then
+			return `\`{data}\{`
+		else
+			return "the beginning of an interpolated string"
+		end
+	elseif t == Types.InterpStringMid then
+		if data then
+			return `\}{data}\{`
+		else
+			return "the middle of an interpolated string"
+		end
+	elseif t == Types.InterpStringEnd then
+		if data then
+			return `\}{data}\``
+		else
+			return "the end of an interpolated string"
+		end
+	elseif t == Types.InterpStringSimple then
+		if data then
+			return `\`{data}\``
+		else
+			return "interpolated string"
+		end
+	elseif t == Types.Number then
+		if data then
+			return `'{data}'`
+		else
+			return "number"
+		end
+	elseif t == Types.Name then
+		if data then
+			return `'{data}'`
+		else
+			return "identifier"
+		end
+	elseif t == Types.Comment then
+		return "comment"
+	elseif t == Types.Attribute then
+		if data then
+			return `'{data}'`
+		else
+			return "attribute"
+		end
+	elseif t == Types.AttributeOpen then
+		return "'@['"
+	elseif t == Types.BrokenString then
+		return "malformed string"
+	elseif t == Types.BrokenComment then
+		return "unfinished comment"
+	elseif t == Types.BrokenInterpDoubleBrace then
+		return "'{{', which is invalid (did you mean '\\{'?)"
+	elseif t == Types.BrokenUnicode then
+		if codepoint then
+			local confusable = findConfusable(codepoint)
+			if confusable then
+				return string.format(`Unicode character U+%x (did you mean '{confusable}'?)` :: any, codepoint)
+			end
+			return string.format("Unicode character U+%x", codepoint)
+		else
+			return "invalid UTF-8 sequence"
+		end
+	else
+		if t < Types.Char_END then
+			return string.format("'%c'", t)
+		elseif ReversedKeywords[t] then
+			return `'{ReversedKeywords[t]}'`
+		else
+			return "<unknown>"
+		end
+	end
+end
+
+-- // Parser Helpers
+
+local function blockFollow(t: number): boolean
+	return t == Types.Eof
+		or t == Types.ReservedElse
+		or t == Types.ReservedElseif
+		or t == Types.ReservedEnd
+		or t == Types.ReservedUntil
+end
+
+local function isConstantLiteral(expr: any): boolean
+	local k = expr.kind
+
+	return k == "ExprConstantNil"
+		or k == "ExprConstantBool"
+		or k == "ExprConstantNumber"
+		or k == "ExprConstantString"
+end
+
+local function isLiteralTable(expr: any): boolean
+	if expr.kind ~= "ExprTable" then
+		return false
+	end
+
+	for _, item in expr.items do
+		if item.kind == "General" then
+			return false
+		elseif item.kind == "Record" or item.kind == "List" then
+			if not isConstantLiteral(item.value) and not isLiteralTable(item.value) then
+				return false
+			end
+		end
+	end
+	return true
+end
+
+local function isExprLValue(expr: any)
+	local k = expr.kind
+
+	return k == "ExprLocal"
+		or k == "ExprGlobal"
+		or k == "ExprIndexExpr"
+		or k == "ExprIndexName"
+end
+
+-- // Attributes
 
 local function deprecatedArgsValidator(attrLoc: any, args: {any})
 	local errors = {}
@@ -132,148 +681,947 @@ local function deprecatedArgsValidator(attrLoc: any, args: {any})
 	return errors
 end
 
-local AttributeType = {
-	Checked = "Checked",
-	Native = "Native",
-	Deprecated = "Deprecated",
-	Unknown = "Unknown"
-}
-
 local kAttributeEntries = {
 	checked = {
-		type = AttributeType.Checked
+		type = "Checked",
 	},
 	native = {
-		type = AttributeType.Native
+		type = "Native"
 	},
 	deprecated = {
-		type = AttributeType.Deprecated,
+		type = "Deprecated",
 		argsValidator = deprecatedArgsValidator
 	}
 }
 
-local function nextLexeme(self: Parser): ()
-	local lexeme = Next(self.lexer, false, true)
+-- // Main // --
 
-	while lexeme.type == Types.BrokenComment
-		or lexeme.type == Types.Comment
-		or lexeme.type == Types.BlockComment do
+local options = {} :: Options
+local source = '' :: string
 
-		if self.options.captureComments then
-			table.insert(self.commentLocations, {type = lexeme.type, location = lexeme.location})
-		end
+-- // Settings init
 
-		if lexeme.type == Types.BrokenComment then
+local captureComments = options.captureComments
+local storeCstData = options.storeCstData
+
+-- // Lexer State & Buffer
+
+local buff = buffer.fromstring(source)
+local size = #source
+
+-- Current State
+local offset = 0
+local line = 0
+local lineOffset = 0
+
+local braceStack: {number} = {}
+
+-- // Current Token State
+
+local token_type = Types.Eof
+
+-- Locations
+local token_start_line = 0
+local token_start_col = 0
+local token_end_line = 0
+local token_end_col = 0
+
+-- Previous Token Location (for errors/end mismatch)
+local prev_start_line = 0
+local prev_start_col = 0
+local prev_end_line = 0
+local prev_end_col = 0
+
+-- Payload
+local token_string: string? = nil
+local token_aux: number? = nil 
+local token_codepoint: number? = nil
+
+-- // Parser init
+
+local recursionCounter = 0
+
+local commentLocations = {}
+local hotcomments = {} :: {any}
+local parseErrors = {}
+local cstNodes = {} :: {[any]: any}
+
+local hotcommentHeader = true
+
+-- // All unlocalized Parser functions
+
+local parseIf
+local parseWhile
+local parseRepeat
+local parseDo
+local parseBreak
+local parseContinue
+local parseFor
+local parseFunctionStat
+local parseAttributeStat
+local parseLocal
+local parseReturn
+local parseTypeAlias
+local parseTypeFunction
+local parseNameOpt
+local parseName
+local parseExprList
+local parseAssignment
+local parseCompoundAssignment
+local prepareFunctionArguments
+local parseFunctionBody
+local parseGenericTypeList
+local shouldParseTypePack
+local parseOptionalType
+local extractAnnotationColonPositions
+local parseTypeList
+local parseOptionalReturnType
+local parseReturnType
+local parseTableIndexer
+local parseTableType
+local parseFunctionType
+local parseFunctionTypeTail
+local parseTypeSuffix
+local parseSimpleTypeOrPack
+local parseType
+local parseSimpleType
+local parseVariadicArgumentTypePack
+local parseTypePack
+local parseTypeParams
+local checkUnaryConfusables
+local checkBinaryConfusables
+local parseExpr
+local parseNameExpr
+local parsePrefixExpr
+local parsePrimaryExpr
+local parseAssertionExpr
+local parseSimpleExpr
+local parseFunctionArgs
+local reportFunctionArgsError
+local parseIndexName
+local parseCallList
+local parseTableConstructor
+local parseIfElseExpr
+local parseInterpString
+local parseCharArray
+local parseString
+local parseNumber
+
+-- // Suspect State
+
+local next_type = Types.Eof
+local next_start_line = 0
+local next_end_line = 0
+
+local next_start_col = 0
+local next_end_col = 0
+
+local next_string = nil :: string?
+local next_aux = nil :: number?
+local next_codepoint = nil :: number?
+
+local suspect_type = Types.Eof
+
+local suspect_line = 0
+
+local matchRecovery = table.create(Types.Reserved_END, 0)
+matchRecovery[Types.Eof] = 1
+
+-- // Stacks
+
+local functionStack = {
+	{vararg = true, loopDepth = 0}
+} :: {any}
+
+local localStack : {any} = {}
+local localMap : {any} = {}
+
+-- // OPTIMIZED LEXER (No Cache, No Goto) // --
+
+local function lex(skip_comments: boolean)
+	local ptr = offset
+	local cur_line = line
+
+	-- 1. Skip Whitespace
+	while true do
+		if ptr >= size then
+			-- EOF Logic
+			offset = ptr
+			line = cur_line
+
+			next_type = Types.Eof
+			next_end_line = cur_line
+			next_end_col = ptr - lineOffset
+
+			next_start_line = cur_line
+			next_start_col = ptr - lineOffset
 			return
 		end
 
-		if lexeme.type == Types.Comment and lexeme.data and string.sub(lexeme.data, 1, 1) == "!" then
-			table.insert(self.hotcomments, {
-				header = self.hotcommentHeader,
-				location = lexeme.location,
-				content = lexeme.data
-			})
+		local c = buffer.readu8(buff, ptr)
+
+		if c == 32 or c == 9 then -- space or tab
+			ptr += 1
+		elseif c == 10 then -- \n
+			cur_line += 1
+			ptr += 1
+			lineOffset = ptr
+		elseif c == 13 then -- \r
+			if ptr + 1 < size and buffer.readu8(buff, ptr + 1) == 10 then
+				ptr += 2
+			else
+				ptr += 1
+			end
+			cur_line += 1
+			lineOffset = ptr
+		elseif c == 11 or c == 12 then -- \v, \f
+			ptr += 1
+		else
+			break -- Not whitespace
+		end
+	end
+
+	-- 2. Record Start Position
+	next_start_line = cur_line
+	next_start_col = ptr - lineOffset
+	next_string = nil
+	next_aux = nil
+	next_codepoint = nil
+
+	local ch = buffer.readu8(buff, ptr)
+	local start_ptr = ptr
+	ptr += 1 -- Consume current char
+
+	-- 3. Switch on char
+
+	-- Identifiers / Keywords (a-z, A-Z, _)
+	if Alpha[ch] or ch == 95 then
+		while ptr < size do
+			local c = buffer.readu8(buff, ptr)
+			if Alpha[c] or Digits[c] or c == 95 then
+				ptr += 1
+			else
+				break
+			end
 		end
 
-		lexeme = Next(self.lexer, false, false)
-	end
-end
+		local text = buffer.readstring(buff, start_ptr, ptr - start_ptr)
+		local kw = Keywords[text]
 
-local function constructParser(source: string, options: Options)
+		next_type = kw or Types.Name
+		next_string = text
 
-	local startPos = if options.parseFragment then options.parseFragment.resumePosition else nil
+		-- Numbers (0-9)
+	elseif Digits[ch] then
+		while ptr < size do
+			local c = buffer.readu8(buff, ptr)
+			if Digits[c] or c == 46 or c == 95 then
+				ptr += 1
+			elseif c == 101 or c == 69 then -- e / E
+				ptr += 1
+				if ptr < size then
+					local nc = buffer.readu8(buff, ptr)
+					if nc == 43 or nc == 45 then ptr += 1 end -- + / -
+				end
+			else
+				break
+			end
+		end
 
-	local self = {
-		options = options,
+		-- Trailing identifier check
+		while ptr < size do
+			local c = buffer.readu8(buff, ptr)
+			if Alpha[c] or Digits[c] or c == 95 then ptr += 1 else break end
+		end
 
-		lexer = constructLexer(source, true, startPos),
+		next_type = Types.Number
+		next_string = buffer.readstring(buff, start_ptr, ptr - start_ptr)
 
-		recursionCounter = 0,
+		-- Strings (" or ')
+	elseif ch == 34 or ch == 39 then -- " or '
+		local delim = ch
+		local content_start = ptr
 
-		endMismatchSuspect = {
-			type = Types.Eof,
-			location = {
-				begin = { line = 0, column = 0},
-				end_ = { line = 0, column = 0}
-			}
-		},
+		while ptr < size do
+			local c = buffer.readu8(buff, ptr)
+			if c == delim then
+				break
+			elseif c == 92 then -- \
+				ptr += 1
+				if ptr < size then
+					local esc = buffer.readu8(buff, ptr)
+					if esc == 10 then -- \n
+						cur_line += 1; lineOffset = ptr + 1
+					elseif esc == 13 then -- \r
+						cur_line += 1
+						if ptr + 1 < size and buffer.readu8(buff, ptr + 1) == 10 then
+							ptr += 1
+						end
+						lineOffset = ptr + 1
+					elseif esc == 122 then -- z
+						ptr += 1
+						while ptr < size do
+							local wc = buffer.readu8(buff, ptr)
+							if wc == 32 or wc == 9 or wc == 10 or wc == 13 then
+								if wc == 10 then cur_line += 1; lineOffset = ptr + 1
+								elseif wc == 13 then
+									cur_line += 1
+									if ptr + 1 < size and buffer.readu8(buff, ptr + 1) == 10 then ptr += 1 end
+									lineOffset = ptr + 1
+								end
+								ptr += 1
+							else
+								ptr -= 1
+								break
+							end
+						end
+					end
+				end
+			elseif c == 10 then -- \n
+				cur_line += 1; lineOffset = ptr + 1
+				next_type = Types.BrokenString
+				break
+			end
+			ptr += 1
+		end
 
-		localMap = {},
-		localStack = {},
+		if next_type == Types.BrokenString then
+			-- handled
+		elseif ptr >= size then
+			next_type = Types.BrokenString
+		else
+			next_type = Types.QuotedString
+			next_string = buffer.readstring(buff, content_start, ptr - content_start)
+			next_aux = if delim == 39 then QuoteStyle.Single else QuoteStyle.Double
+			ptr += 1 -- consume closing delim
+		end
 
-		cstNodeMap = {},
+		-- Operators & Punctuation
+	elseif ch == 45 then -- '-'
+		local next_ch = if ptr < size then buffer.readu8(buff, ptr) else 0
+		if next_ch == 62 then -- ->
+			ptr += 1; next_type = Types.SkinnyArrow
+		elseif next_ch == 61 then -- -=
+			ptr += 1; next_type = Types.SubAssign
+		elseif next_ch == 45 then -- -- Comment
+			ptr += 1
+			local comment_start = ptr
 
-		functionStack = { { vararg = true, loopDepth = 0 } },
+			-- Block Comment --[
+			local is_block = false
+			if ptr < size and buffer.readu8(buff, ptr) == 91 then
+				local sep_start = ptr
+				ptr += 1
+				local count = 0
+				while ptr < size and buffer.readu8(buff, ptr) == 61 do
+					ptr += 1; count += 1
+				end
 
-		matchRecoveryStopOnToken = table.create(Types.Reserved_END, 0),
+				if ptr < size and buffer.readu8(buff, ptr) == 91 then
+					-- Found long comment
+					is_block = true
+					ptr += 1
+					local found_end = false
 
-		skipComments = true,
-		readNames = true,
+					while ptr < size do
+						local c = buffer.readu8(buff, ptr)
+						if c == 93 then -- ]
+							local c2_idx = ptr + 1
+							local close_count = 0
+							while c2_idx < size and buffer.readu8(buff, c2_idx) == 61 do
+								c2_idx += 1; close_count += 1
+							end
+							if close_count == count and c2_idx < size and buffer.readu8(buff, c2_idx) == 93 then
+								ptr = c2_idx + 1
+								found_end = true
+								break
+							end
+						elseif c == 10 then
+							cur_line += 1; lineOffset = ptr + 1
+						end
+						ptr += 1
+					end
 
-		hotcomments = {},
-		commentLocations = {},
-		parseErrors = {},
+					if not found_end then
+						next_type = Types.BrokenComment
+					else
+						next_type = Types.BlockComment
+					end
+				else
+					-- Not a block comment
+					ptr = sep_start -- Backtrack
+				end
+			end
 
-		hotcommentHeader = true,
-	} :: Parser
+			if not is_block then
+				-- Line Comment
+				while ptr < size do
+					local c = buffer.readu8(buff, ptr)
+					if c == 10 or c == 13 then break end
+					ptr += 1
+				end
+				next_type = Types.Comment
+			end
 
-	self.matchRecoveryStopOnToken[Types.Eof] = 1
+			if not skip_comments then
+				next_string = buffer.readstring(buff, comment_start, ptr - comment_start)
+			end
+		else
+			next_type = 45 -- '-'
+		end
 
-	nextLexeme(self)
+	elseif ch == 46 then -- '.'
+		local c = if ptr < size then buffer.readu8(buff, ptr) else 0
+		if c == 46 then
+			ptr += 1
+			local c2 = if ptr < size then buffer.readu8(buff, ptr) else 0
+			if c2 == 46 then
+				ptr += 1; next_type = Types.Dot3
+			elseif c2 == 61 then
+				ptr += 1; next_type = Types.ConcatAssign
+			else
+				next_type = Types.Dot2
+			end
+		else
+			if Digits[c] then
+				ptr -= 1 -- Backtrack
+				local n_start = ptr
+				while ptr < size do
+					local nc = buffer.readu8(buff, ptr)
+					if Digits[nc] or nc == 46 or nc == 95 then ptr += 1
+					elseif nc == 101 or nc == 69 then
+						ptr += 1
+						if ptr < size then
+							local ec = buffer.readu8(buff, ptr)
+							if ec == 43 or ec == 45 then ptr += 1 end
+						end
+					else break end
+				end
+				while ptr < size do
+					local tc = buffer.readu8(buff, ptr)
+					if Alpha[tc] or Digits[tc] or tc == 95 then ptr += 1 else break end
+				end
+				next_type = Types.Number
+				next_string = buffer.readstring(buff, n_start, ptr - n_start)
+			else
+				next_type = 46 -- '.'
+			end
+		end
 
-	self.hotcommentHeader = false
+	elseif ch == 61 then -- '='
+		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.Equal else next_type = 61 end
+	elseif ch == 60 then -- '<'
+		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.LessEqual else next_type = 60 end
+	elseif ch == 62 then -- '>'
+		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.GreaterEqual else next_type = 62 end
+	elseif ch == 126 then -- '~'
+		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.NotEqual else next_type = 126 end
+	elseif ch == 43 then -- '+'
+		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.AddAssign else next_type = 43 end
+	elseif ch == 42 then -- '*'
+		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.MulAssign else next_type = 42 end
+	elseif ch == 37 then -- '%'
+		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.ModAssign else next_type = 37 end
+	elseif ch == 94 then -- '^'
+		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.PowAssign else next_type = 94 end
+	elseif ch == 47 then -- '/'
+		local c = if ptr < size then buffer.readu8(buff, ptr) else 0
+		if c == 61 then ptr += 1; next_type = Types.DivAssign
+		elseif c == 47 then
+			ptr += 1
+			if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.FloorDivAssign else next_type = Types.FloorDiv end
+		else next_type = 47 end
+	elseif ch == 58 then -- ':'
+		if ptr < size and buffer.readu8(buff, ptr) == 58 then ptr += 1; next_type = Types.DoubleColon else next_type = 58 end
 
-	if options.parseFragment then
-		self.localMap = table.clone(options.parseFragment.localMap)
-		self.localStack = table.clone(options.parseFragment.localStack)
-	end
+		-- Single Char / Interp
+	elseif ch == 40 or ch == 41 or ch == 93 or ch == 59 or ch == 44 or ch == 35 or ch == 63 or ch == 38 or ch == 124 or ch == 123 or ch == 125 then
+		local handled = false
 
-	return self
-end
+		if ch == 123 then
+			if #braceStack > 0 then table.insert(braceStack, BraceType.Normal) end
+		elseif ch == 125 then
+			if #braceStack > 0 then
+				local top = table.remove(braceStack)
+				if top == BraceType.InterpolatedString then
+					handled = true
+					-- Interp Mid
+					local istart = ptr
+					while ptr < size do
+						local c = buffer.readu8(buff, ptr)
+						if c == 96 then -- `
+							next_type = Types.InterpStringEnd
+							next_string = buffer.readstring(buff, istart, ptr - istart)
+							ptr += 1
+							break
+						elseif c == 123 then -- {
+							if ptr + 1 < size and buffer.readu8(buff, ptr + 1) == 123 then
+								ptr += 2
+							else
+								next_type = Types.InterpStringMid
+								next_string = buffer.readstring(buff, istart, ptr - istart)
+								table.insert(braceStack, BraceType.InterpolatedString)
+								ptr += 1
+								break
+							end
+						elseif c == 92 then -- \
+							ptr += 1
+							if ptr < size then
+								local ec = buffer.readu8(buff, ptr)
+								if ec == 122 then -- z
+									ptr += 1
+									while ptr < size do
+										local wc = buffer.readu8(buff, ptr)
+										if wc == 32 or wc == 9 or wc == 10 or wc == 13 then
+											if wc == 10 then cur_line += 1; lineOffset = ptr+1 
+											elseif wc == 13 then cur_line += 1; lineOffset = ptr+1 end -- simplified CR
+											ptr += 1
+										else break end
+									end
+								elseif ec == 10 then cur_line += 1; lineOffset = ptr+1 end
+							end
+						elseif c == 10 then cur_line += 1; lineOffset = ptr+1 end
+						ptr += 1
+					end
+				end
+			end
+		end
 
-local function tableSeparator(self: Parser): number?
-	if self.lexer.lexeme.type == 44 then 
-		return 0
-	elseif self.lexer.lexeme.type == 59 then 
-		return 1
+		if not handled then
+			next_type = ch
+		end
+
+	elseif ch == 96 then -- `
+		local istart = ptr
+		while ptr < size do
+			local c = buffer.readu8(buff, ptr)
+			if c == 96 then -- `
+				next_type = Types.InterpStringSimple
+				next_string = buffer.readstring(buff, istart, ptr - istart)
+				ptr += 1
+				break
+			elseif c == 123 then -- {
+				if ptr + 1 < size and buffer.readu8(buff, ptr + 1) == 123 then
+					ptr += 2
+				else
+					next_type = Types.InterpStringBegin
+					next_string = buffer.readstring(buff, istart, ptr - istart)
+					table.insert(braceStack, BraceType.InterpolatedString)
+					ptr += 1
+					break
+				end
+			elseif c == 92 then -- \
+				ptr += 1
+				if ptr < size then
+					local ec = buffer.readu8(buff, ptr)
+					if ec == 10 then cur_line += 1; lineOffset = ptr+1 end
+				end
+			elseif c == 10 then cur_line += 1; lineOffset = ptr+1 end
+			ptr += 1
+		end
+
+	elseif ch == 91 then -- [
+		local sep_start = ptr
+		local count = 0
+		while ptr < size and buffer.readu8(buff, ptr) == 61 do
+			ptr += 1; count += 1
+		end
+		if ptr < size and buffer.readu8(buff, ptr) == 91 then
+			ptr += 1
+			-- Long String
+			local ls_start = ptr
+			local found = false
+			while ptr < size do
+				if buffer.readu8(buff, ptr) == 93 then
+					local c2 = ptr + 1
+					local cc = 0
+					while c2 < size and buffer.readu8(buff, c2) == 61 do c2 += 1; cc += 1 end
+					if cc == count and c2 < size and buffer.readu8(buff, c2) == 93 then
+						next_type = Types.RawString
+						next_string = buffer.readstring(buff, ls_start, ptr - ls_start)
+						ptr = c2 + 1
+						next_aux = count
+						found = true
+						break
+					end
+				elseif buffer.readu8(buff, ptr) == 10 then
+					cur_line += 1; lineOffset = ptr + 1
+				end
+				ptr += 1
+			end
+			if not found then next_type = Types.BrokenString end
+		else
+			ptr = sep_start -- Backtrack
+			next_type = 91 -- [
+		end
+
+	elseif ch == 64 then -- @
+		if ptr < size and buffer.readu8(buff, ptr) == 91 then
+			ptr += 1
+			next_type = Types.AttributeOpen
+		else
+			local name_start = ptr
+			while ptr < size do
+				local c = buffer.readu8(buff, ptr)
+				if Alpha[c] or Digits[c] or c == 95 then ptr += 1 else break end
+			end
+			next_type = Types.Attribute
+			next_string = buffer.readstring(buff, name_start, ptr - name_start)
+		end
+
 	else
-		return nil
+		if bit32.band(ch, 0x80) ~= 0 then
+			local cp = 0
+			local seq_len = 0
+			if bit32.band(ch, 0xE0) == 0xC0 then seq_len = 1; cp = bit32.band(ch, 0x1F)
+			elseif bit32.band(ch, 0xF0) == 0xE0 then seq_len = 2; cp = bit32.band(ch, 0x0F)
+			elseif bit32.band(ch, 0xF8) == 0xF0 then seq_len = 3; cp = bit32.band(ch, 0x07)
+			else 
+				next_type = Types.BrokenUnicode
+				seq_len = -1 -- signal fail
+			end
+
+			if seq_len ~= -1 then
+				local ok = true
+				for i = 1, seq_len do
+					if ptr >= size then ok = false; break end
+					local c = buffer.readu8(buff, ptr)
+					if bit32.band(c, 0xC0) ~= 0x80 then ok = false; break end
+					cp = bit32.lshift(cp, 6) + bit32.band(c, 0x3F)
+					ptr += 1
+				end
+
+				if ok then
+					next_type = Types.BrokenUnicode
+					next_codepoint = cp
+				else
+					next_type = Types.BrokenUnicode
+				end
+			end
+		else
+			next_type = ch
+		end
+	end
+
+	-- Sync State
+	offset = ptr
+	line = cur_line
+	next_end_line = cur_line
+	next_end_col = ptr - lineOffset
+end
+
+-- // Parser Interface (Optimized Ring Buffer)
+
+local function fillNext()
+	while true do
+		lex(false) -- writes to next_*
+
+		if next_type == Types.Comment or next_type == Types.BlockComment or next_type == Types.BrokenComment then
+			if captureComments then
+				table.insert(commentLocations, {
+					type = next_type,
+					location = {
+						begin = {line = next_start_line, column = next_start_col},
+						end_ = {line = next_end_line, column = next_end_col}
+					}
+				})
+			end
+
+			if next_type == Types.Comment and next_string and string.byte((next_string :: string), 1) == 33 then -- '!'
+				table.insert(hotcomments, {
+					header = hotcommentHeader,
+					location = {
+						begin = {line = next_start_line, column = next_start_col},
+						end_ = {line = next_end_line, column = next_end_col}
+					},
+					content = next_string
+				})
+			end
+
+			if next_type == Types.BrokenComment then
+				return
+			end
+
+			continue
+		end
+
+		break
 	end
 end
 
-local function blockFollow(l: any): boolean
-	local t = l.type
+-- Advances the pipeline: moves NEXT -> CURRENT, and scans a new NEXT
+local function nextLexeme()
+	-- Save previous current to prev
+	prev_start_line = token_start_line
+	prev_start_col = token_start_col
+	prev_end_line = token_end_line
+	prev_end_col = token_end_col
 
-	return t == Types.Eof
-		or t == Types.ReservedElse
-		or t == Types.ReservedElseif
-		or t == Types.ReservedEnd
-		or t == Types.ReservedUntil
+	-- Move NEXT to CURRENT
+	token_type = next_type
+	token_start_line = next_start_line
+	token_start_col = next_start_col
+	token_end_line = next_end_line
+	token_end_col = next_end_col
+	token_string = next_string
+	token_aux = next_aux
+	token_codepoint = next_codepoint
+
+	-- Refill NEXT
+	fillNext()
 end
 
-local function saveLocals(self: Parser)
-	return #self.localStack
+-- // INIT
+
+local function get_begin(): Position
+	return {line = token_start_line, column = token_start_col}
 end
 
-local function restoreLocals(self: Parser, offset: number)
-	local localstack = self.localStack
-	local localMap = self.localMap
+local function get_end(): Position
+	return {line = token_end_line, column = token_end_col}
+end
 
-	for i = #localstack, offset + 1, -1 do
-		local l = localstack[i]
+local function snapshot(): Location
+	return {
+		begin = {line = token_start_line, column = token_start_col},
+		end_ = {line = token_end_line, column = token_end_col}
+	}
+end
+
+local function get_lexeme(): {type: number, location: Location}
+	return {
+		type = token_type,
+		location = {
+			begin = {line = token_start_line, column = token_start_col},
+			end_ = {line = token_end_line, column = token_end_col}
+		}
+	}
+end
+
+local function getprev(): Location
+	return {
+		begin = {line = prev_start_line, column = prev_start_col},
+		end_ = {line = prev_end_line, column = prev_end_col}
+	}
+end
+
+local function report(loc: Location, fmt: string, ...: any)
+	if #parseErrors > 0 and parseErrors[#parseErrors].location == loc then
+		return
+	end
+
+	local msg = string.format(fmt :: any, ...)
+	table.insert(parseErrors, {location = loc, message = msg})
+
+	if ErrorLimit == 1 then
+		error(msg, 0)
+	end
+
+	if #parseErrors >= ErrorLimit then
+		error(`Reached error limit ({ErrorLimit})`, 0)
+	end
+end
+
+
+local function expectAndConsumeFail(type_: number, context: string?)
+	local typeString = ToString(type_)
+	local lexString = ToString(token_type, token_string, token_codepoint)
+
+	if context then
+		report(snapshot(), "Expected %s when parsing %s, got %s", typeString, context, lexString)
+	else
+		report(snapshot(), "Expected %s, got %s", typeString, lexString)
+	end
+end
+
+local function expectMatchAndConsumeFail(type_: number, begin_type: number, line: number, column: number, extra: string?)
+	local typeString = ToString(type_)
+	local matchString = ToString(begin_type)
+	local currString = ToString(token_type, token_string, token_codepoint)
+
+	if token_start_line == line then
+		report(
+			snapshot(),
+			"Expected %s (to close %s at column %d), got %s%s",
+			typeString, matchString, column + 1, currString, extra or ""
+		)
+	else
+		report(
+			snapshot(),
+			"Expected %s (to close %s at line %d), got %s%s",
+			typeString, matchString, line + 1, currString, extra or ""
+		)
+	end
+end
+
+local function expectAndConsume(type_: number, context: string?): boolean
+
+	if token_type ~= type_ then
+		expectAndConsumeFail(type_, context)
+
+		if next_type == type_ then
+			nextLexeme()
+			nextLexeme()
+		end
+
+		return false
+	end
+
+	nextLexeme()
+	return true
+end
+
+local function expectMatchAndConsume(
+	value: number,
+	begin_type: number, line: number, column: number,
+	searchForMissing: boolean?
+): boolean
+
+	if token_type ~= value then
+		expectMatchAndConsumeFail(value, begin_type, line, column)
+
+		if searchForMissing then
+			local currentLine = prev_end_line
+			local type_ = token_type
+
+			while currentLine == token_start_line and type_ ~= value and matchRecovery[type_] == 0 do
+				nextLexeme()
+				type_ = token_type
+			end
+
+			if type_ == value then
+				nextLexeme()
+				return true
+			end
+		else
+			if next_type == value then
+				nextLexeme()
+				nextLexeme()
+				return true
+			end
+		end
+
+		return false
+	end
+
+	nextLexeme()
+	return true
+end
+
+local function expectMatchEndAndConsume(type_: number, begin_type: number, line: number, column: number): boolean
+	if token_type ~= type_ then
+
+		if suspect_type ~= Types.Eof and suspect_line > line then
+			local suggestion = string.format(
+				"; did you forget to close %s at line %d?",
+				ToString(suspect_type, token_string, token_codepoint),
+				suspect_line + 1
+			)
+
+			expectMatchAndConsumeFail(type_, begin_type, line, column, suggestion)
+		else
+			expectMatchAndConsumeFail(type_, begin_type, line, column)
+		end
+
+		if next_type == type_ then
+			nextLexeme()
+			nextLexeme()
+			return true
+		end
+
+		return false
+	end
+
+	if token_start_line ~= line and token_start_col ~= column and suspect_line < line then
+		suspect_line = line
+		suspect_type = begin_type
+	end
+
+	nextLexeme()
+	return true
+end
+
+local function reportStatError(
+	location: Location,
+	exprs: {any},
+	stats: {any},
+	fmt: string,
+	...: any
+): any
+	report(location, fmt, ...)
+
+	return {
+		kind = "StatError",
+		location = location,
+		expressions = exprs,
+		statements = stats,
+		messageIndex = #parseErrors
+	}
+end
+
+local function reportExprError(
+	location: Location,
+	exprs: {any},
+	fmt: string,
+	...: any
+)
+	report(location, fmt, ...)
+
+	return {
+		kind = "ExprError",
+		location = location,
+		expressions = exprs,
+		messageIndex = #parseErrors
+	}
+end
+
+local function reportTypeError(
+	location: Location,
+	types: {any},
+	fmt: string,
+	...: any
+)
+	report(location, fmt, ...)
+
+	return {
+		kind = "TypeError",
+		location = location,
+		types = types,
+		isMissing = false,
+		messageIndex = #parseErrors
+	}
+end
+
+local function reportNameError(context: string?)
+	local currString = ToString(token_type, token_string, token_codepoint)
+	if context then
+		report(
+			snapshot(),
+			"Expected identifier when parsing %s, got %s",
+			context,
+			currString
+		)
+	else
+		report(
+			snapshot(),
+			"Expected identifier, got %s",
+			currString
+		)
+	end
+end
+
+local function restoreLocals(offset: number)
+	for i = #localStack, offset + 1, -1 do
+		local l = localStack[i]
 		localMap[l.name] = l.shadow
 	end
 
-	for i = #localstack, offset + 1, -1 do
-		localstack[i] = nil
+	for i = #localStack, offset + 1, -1 do
+		localStack[i] = nil
 	end
 end
 
-local function pushLocal(self: Parser, binding: any)
-
-	local localMap = self.localMap
-	local funcStack = self.functionStack
-
+local function pushLocal(binding: any)
 	local name = binding.name.value
 	local shadow = localMap[name]
 
@@ -281,315 +1629,108 @@ local function pushLocal(self: Parser, binding: any)
 		name = name,
 		location = binding.name.location,
 		shadow = shadow,
-		functionDepth = #funcStack - 1,
-		loopDepth = funcStack[#funcStack].loopDepth,
+		functionDepth = #functionStack - 1,
+		loopDepth = functionStack[#functionStack].loopDepth,
 		annotation = binding.annotation
 	}
 
 	localMap[name] = local_
-	table.insert(self.localStack, local_)
+	table.insert(localStack, local_)
 
 	return local_
 end
 
-local function getTokenString(type_: number): string
+local function incrementRecursionCounter(context: string)
+	recursionCounter += 1
 
-	return ToString(constructLexeme({
-
-		begin = { line = 0, column = 0},
-		end_ = { line = 0, column = 0}
-
-	}, type_))
-
-end
-
-local function isStatLast(stat: any): boolean
-	return stat.kind == "StatBreak" or stat.kind == "StatContinue" or stat.kind == "StatReturn"
-end
-
-local function isLiteralTable(expr: any): boolean
-	if expr.kind ~= "ExprTable" then return false end
-	return true
-end
-
-local function isConstantLiteral(expr: any): boolean
-	local k = expr.kind
-	return k == "ExprConstantNil" or k == "ExprConstantBool" or 
-		k == "ExprConstantNumber" or k == "ExprConstantString"
-end
-
-local function Report(
-	self: Parser,
-	location: Location,
-	fmt: string,
-	...: any
-)
-
-	local errors = self.parseErrors
-
-	if #errors > 0 and errors[#errors].location == location then
-		return
-	end
-
-	local msg = string.format(fmt :: any, ...)
-	table.insert(errors,
-		{ location = location, message = msg }
-	)
-
-	if ErrorLimit == 1 then
+	if recursionCounter > RecursionLimit then
+		local msg = `Exceeded allowed recursion depth; simplify your {context} to make the code compile`
+		report(snapshot(), "%s", msg)
 		error(msg, 0)
 	end
-
-	if not self.options.noErrorLimit and #self.parseErrors >= ErrorLimit then
-		error(`Reached error limit ({ErrorLimit})`, 0)
-	end
 end
 
-local function expectAndConsumeFail(
+local function parseBinding()
+	local nameOpt = parseNameOpt("variable name")
+	local name = nameOpt
 
-	self: Parser,
-	type: number,
-	context: string?
-
-)
-
-	local lexeme = self.lexer.lexeme
-
-	local typeString = getTokenString(type)
-	local lexString = ToString(lexeme)
-
-	if context then
-		Report(self, lexeme.location, "Expected %s when parsing %s, got %s", typeString, context, lexString)
-	else
-		Report(self, lexeme.location, "Expected %s, got %s", typeString, lexString)
-	end
-end
-
-local function expectMatchAndConsumeFail(
-
-	self: Parser,
-	type_: number,
-	begin: any,
-	extra: string?
-
-)
-
-	local lexeme = self.lexer.lexeme
-
-	local typeString = getTokenString(type_)
-	local matchString = getTokenString(begin.type)
-	local currString = ToString(lexeme)
-
-	local extraMsg = extra or ""
-
-	if lexeme.location.begin.line == begin.location.begin.line then
-		Report(self,
-			lexeme.location,
-			"Expected %s (to close %s at column %d), got %s%s",
-			typeString,
-			matchString,
-			begin.location.begin.column + 1,
-			currString,
-			extraMsg
-		)
-	else
-		Report(self,
-			lexeme.location,
-			"Expected %s (to close %s at line %d), got %s%s",
-			typeString,
-			matchString,
-			begin.location.begin.line + 1,
-			currString,
-			extraMsg
-		)
-	end
-end
-
-local function expectAndConsume(
-
-	self: Parser,
-	type_: number,
-	context: string?
-
-): boolean
-
-	if self.lexer.lexeme.type ~= type_ then
-		expectAndConsumeFail(self, type_, context)
-
-		if Lookahead(self.lexer).type == type_ then
-			nextLexeme(self)
-			nextLexeme(self)
-		end
-
-		return false
+	if not name then
+		name = {
+			name = {value = nameError },
+			location = snapshot()
+		}
 	end
 
-	nextLexeme(self)
-	return true
-end
-
-local function expectMatchAndConsume(
-
-	self: Parser,
-	value: number,
-	begin: any,
-	searchForMissing: boolean?
-
-): boolean
-
-	if self.lexer.lexeme.type ~= value then
-		expectMatchAndConsumeFail(self, value, begin)
-
-		if searchForMissing then
-			local currentLine = self.lexer.prevLocation.end_.line
-			local type_ = self.lexer.lexeme.type
-
-			while currentLine == self.lexer.lexeme.location.begin.line and type_ ~= value and (self.matchRecoveryStopOnToken[type_] or 0) == 0 do
-				nextLexeme(self)
-				type_ = self.lexer.lexeme.type
-			end
-
-			if type_ == value then
-				nextLexeme(self)
-				return true
-			end
-		else
-			if Lookahead(self.lexer).type == value then
-				nextLexeme(self)
-				nextLexeme(self)
-				return true
-			end
-		end
-
-		return false
-	end
-
-	nextLexeme(self)
-	return true
-end
-
-local function expectMatchEndAndConsume(
-
-	self: Parser,
-	type_: number,
-	begin: any
-
-): boolean
-
-	local lexeme = self.lexer.lexeme
-	local suspect = self.endMismatchSuspect
-
-	if lexeme.type ~= type_ then
-
-		if suspect.type ~= Types.Eof and suspect.location.begin.line > begin.location.begin.line then
-			local suggestion = string.format(
-				"; did you forget to close %s at line %d?",
-				getTokenString(suspect.type),
-				suspect.location.begin.line + 1
-			)
-
-			expectMatchAndConsumeFail(self, type_, begin, suggestion)
-		else
-			expectMatchAndConsumeFail(self, type_, begin)
-		end
-
-		if Lookahead(self.lexer).type == type_ then
-			nextLexeme(self)
-			nextLexeme(self)
-			return true
-		end
-
-		return false
-	end
-
-	if lexeme.location.begin.line ~= begin.location.begin.line and 
-		lexeme.location.begin.column ~= begin.location.begin.column and
-		suspect.location.begin.line < begin.location.begin.line then
-
-		self.endMismatchSuspect = begin
-	end
-
-	nextLexeme(self)
-	return true
-end
-
-local function reportStatError(
-
-	self: Parser,
-	location: Location,
-	exprs: {any},
-	stats: {any},
-	fmt: string,
-	...: any
-
-)
-
-	Report(self, location, fmt, ...)
+	local colonPos = get_begin()
+	local annotation = parseOptionalType()
 
 	return {
-		kind = "StatError",
-		location = location,
-		expressions = exprs,
-		statements = stats,
-		messageIndex = #self.parseErrors
+		name = name.name,
+		location = name.location,
+		annotation = annotation,
+		colonPosition = colonPos
 	}
 end
 
-local function reportExprError(
+-- bindinglist ::= (binding | `...') [`,' bindinglist]
+local function parseBindingList(
+	result: {any},
+	allowDot3: boolean,
+	commaPositions: {any}?,
+	initialComma: any?,
+	varargAnnotColonPos: any?
+): any
 
-	self: Parser,
-	location: Location,
-	exprs: {any},
-	fmt: string,
-	...: any
+	local localCommaPositions = {}
 
-)
-	Report(self, location, fmt, ...)
-
-	return {
-		kind = "ExprError",
-		location = location,
-		expressions = exprs,
-		messageIndex = #self.parseErrors
-	}
-end
-
-local function reportTypeError(
-
-	self: Parser,
-	location: Location,
-	types: {any},
-	fmt: string,
-	...: any
-
-)
-	Report(self, location, fmt, ...)
-
-	return {
-		kind = "TypeError",
-		location = location,
-		types = types,
-		isMissing = false,
-		messageIndex = #self.parseErrors
-	}
-end
-
-local function reportNameError(self: Parser, context: string?)
-	local currString = ToString(self.lexer.lexeme)
-	if context then
-		Report(self,
-			self.lexer.lexeme.location,
-			"Expected identifier when parsing %s, got %s",
-			context,
-			currString
-		)
-	else
-		Report(self,
-			self.lexer.lexeme.location,
-			"Expected identifier, got %s",
-			currString
-		)
+	if commaPositions and initialComma then
+		table.insert(localCommaPositions, initialComma)
 	end
+
+	while true do
+		if token_type == Types.Dot3 and allowDot3 then
+			local varargLocation = snapshot()
+			nextLexeme()
+
+			local tailAnnotation = nil
+			if token_type == 58 then 
+				if varargAnnotColonPos then
+					varargAnnotColonPos[1] = get_begin()
+				end
+
+				nextLexeme()
+				tailAnnotation = parseVariadicArgumentTypePack()
+			end
+
+			if commaPositions then
+				for _, v in localCommaPositions do
+					table.insert(commaPositions, v)
+				end
+			end
+
+			return true, varargLocation, tailAnnotation
+		end
+
+		table.insert(result, parseBinding())
+
+		if token_type ~= 44 then 
+			break
+		end
+
+		if commaPositions then
+			table.insert(localCommaPositions, get_begin())
+		end
+
+		nextLexeme()
+	end
+
+	if commaPositions then
+		for _, v in localCommaPositions do
+			table.insert(commaPositions, v)
+		end
+	end
+
+	return false, nil, nil
 end
 
 -- stat ::=
@@ -607,33 +1748,33 @@ end
 -- local attributes function Name funcbody |
 -- local namelist [`=' explist]
 -- laststat ::= return [explist] | break
-function parseStat(self: Parser): any
-	local type_ = self.lexer.lexeme.type
+local function parseStat(): any
+	local type_ = token_type
 
 	if type_ == Types.ReservedIf then
-		return parseIf(self)
+		return parseIf()
 	elseif type_ == Types.ReservedWhile then
-		return parseWhile(self)
+		return parseWhile()
 	elseif type_ == Types.ReservedDo then
-		return parseDo(self)
+		return parseDo()
 	elseif type_ == Types.ReservedFor then
-		return parseFor(self)
+		return parseFor()
 	elseif type_ == Types.ReservedRepeat then
-		return parseRepeat(self)
+		return parseRepeat()
 	elseif type_ == Types.ReservedFunction then
-		return parseFunctionStat(self, {})
+		return parseFunctionStat{}
 	elseif type_ == Types.ReservedLocal then
-		return parseLocal(self, {})
+		return parseLocal{}
 	elseif type_ == Types.ReservedReturn then
-		return parseReturn(self)
+		return parseReturn()
 	elseif type_ == Types.ReservedBreak then
-		return parseBreak(self)
+		return parseBreak()
 	elseif type_ == Types.Attribute or type_ == Types.AttributeOpen then
-		return parseAttributeStat(self)
+		return parseAttributeStat()
 	end
 
-	local start = self.lexer.lexeme.location
-	local expr = parsePrimaryExpr(self, true)
+	local start_line, start_column = token_start_line, token_start_col
+	local expr = parsePrimaryExpr(true)
 
 	if expr.kind == "ExprCall" then
 		return {
@@ -643,13 +1784,13 @@ function parseStat(self: Parser): any
 		}
 	end
 
-	if self.lexer.lexeme.type == 44 or self.lexer.lexeme.type == 61 then 
-		return parseAssignment(self, expr)
+	if token_type == 44 or token_type == 61 then 
+		return parseAssignment(expr)
 	end
 
-	local operator = parseCompoundOp(self.lexer.lexeme)
+	local operator = CompoundLookup[token_type]
 	if operator then
-		return parseCompoundAssignment(self, expr, operator)
+		return parseCompoundAssignment(expr, operator)
 	end
 
 	local ident = nil :: string?
@@ -658,52 +1799,51 @@ function parseStat(self: Parser): any
 	end
 
 	if ident == "type" then
-		return parseTypeAlias(self, expr.location, false, expr.location.begin)
+		return parseTypeAlias(expr.location, false, expr.location.begin)
 	end
 
-	if ident == "export" and self.lexer.lexeme.type == Types.Name and self.lexer.lexeme.data == "type" then
-		local typeKeywordPos = self.lexer.lexeme.location.begin
-		nextLexeme(self)
-		return parseTypeAlias(self, expr.location, true, typeKeywordPos)
+	if ident == "export" and token_type == Types.Name and token_string == "type" then
+		local typeKeywordPos = get_begin()
+		nextLexeme()
+		return parseTypeAlias(expr.location, true, typeKeywordPos)
 	end
 
 	if ident == "continue" then
-		return parseContinue(self, expr.location)
+		return parseContinue(expr.location)
 	end
 
-	if self.options.allowDeclarationSyntax then
-		if ident == "declare" then
-			return parseDeclaration(self, expr.location, {})
-		end
-	end
-
-	if start.begin.line == self.lexer.lexeme.location.begin.line and start.begin.column == self.lexer.lexeme.location.begin.column then
-		nextLexeme(self)
+	if start_line == token_start_line and start_column == token_start_col then
+		nextLexeme()
 	end
 
 	return reportStatError(
-		self,
 		expr.location, {expr}, {},
 		"Incomplete statement: expected assignment or a function call"
 	)
 end
 
-local function parseBlockNoScope(self: Parser)
+local function parseBlockNoScope()
 	local body = {}
-	local prevPos = self.lexer.prevLocation.end_
 
-	while not blockFollow(self.lexer.lexeme) do
-		local oldRecursion = self.recursionCounter
-		self.recursionCounter += 1
+	local prevPos = {
+		line = prev_end_line,
+		column = prev_end_col,
+	}
 
-		local stat = parseStat(self)
+	while not blockFollow(token_type) do
+		local oldRecursion = recursionCounter
+		recursionCounter += 1
 
-		self.recursionCounter = oldRecursion
+		local stat = parseStat()
 
-		if self.lexer.lexeme.type == 59 then 
-			nextLexeme(self)
+		recursionCounter = oldRecursion
+
+		if token_type == 59 then 
+			nextLexeme()
 			stat.hasSemicolon = true
-			stat.location.end_ = self.lexer.prevLocation.end_
+
+			stat.location.end_.line = prev_end_line
+			stat.location.end_.column = prev_end_col
 		end
 
 		table.insert(body, stat)
@@ -712,10 +1852,16 @@ local function parseBlockNoScope(self: Parser)
 			break
 		end
 	end
-	
+
 	return {
 		kind = "StatBlock",
-		location = { begin = prevPos, end_ = self.lexer.lexeme.location.begin },
+		location = {
+			begin = prevPos,
+			end_ = {
+				line = token_start_line,
+				column = token_start_col
+			}
+		},
 		body = body,
 		hasEnd = false
 	}
@@ -723,69 +1869,72 @@ end
 
 -- chunk ::= {stat [`;']} [laststat [`;']]
 -- block ::= chunk
-local function parseBlock(self: Parser)
-	local localsBegin = saveLocals(self)
-	local result = parseBlockNoScope(self)
-	restoreLocals(self, localsBegin)
-	return result
-end
-
-local function parseChunk(self: Parser)
-	local result = parseBlock(self)
-
-	if self.lexer.lexeme.type ~= Types.Eof then
-		expectAndConsumeFail(self, Types.Eof)
-	end
-
+local function parseBlock()
+	local localsBegin = #localStack
+	local result = parseBlockNoScope()
+	restoreLocals(localsBegin)
 	return result
 end
 
 -- if exp then block {elseif exp then block} [else block] end
-function parseIf(self: Parser)
-	local start = self.lexer.lexeme.location
+function parseIf()
+	local start = snapshot()
 
-	nextLexeme(self)
+	nextLexeme()
 
-	local cond = parseExpr(self)
+	local cond = parseExpr()
 
-	local matchThen = self.lexer.lexeme
+	local Then_start_line, Then_start_col = token_start_line, token_start_col
+	local Then_end_line, Then_end_col = token_end_line, token_end_col
+
 	local thenLocation = nil
-	if expectAndConsume(self, Types.ReservedThen, "if statement") then
-		thenLocation = matchThen.location
+	if expectAndConsume(Types.ReservedThen, "if statement") then
+		thenLocation = {
+			begin = {line = Then_start_line, column = Then_start_col},
+			end_ = {line = Then_end_line, column = Then_end_col}
+		}
 	end
 
-	local thenbody = parseBlock(self)
+	local thenbody = parseBlock()
 
 	local elsebody = nil
 	local end_ = start
 	local elseLocation = nil
 
-	if self.lexer.lexeme.type == Types.ReservedElseif then
+	if token_type == Types.ReservedElseif then
 		thenbody.hasEnd = true
-		local oldRecursionCount = self.recursionCounter
-		self.recursionCounter += 1
+		local oldRecursionCount = recursionCounter
+		recursionCounter += 1
 
-		elseLocation = self.lexer.lexeme.location
-		elsebody = parseIf(self)
+		elseLocation = snapshot()
+		elsebody = parseIf()
 		end_ = elsebody.location
 
-		self.recursionCounter = oldRecursionCount
+		recursionCounter = oldRecursionCount
 	else
-		local matchThenElse = matchThen
+		local ThenElse_type = token_type
 
-		if self.lexer.lexeme.type == Types.ReservedElse then
+		local ThenElse_start_line, ThenElse_start_col = token_start_line, token_start_col
+		local ThenElse_end_line, ThenElse_end_col = token_end_line, token_end_col
+
+		if token_type == Types.ReservedElse then
 			thenbody.hasEnd = true
-			elseLocation = self.lexer.lexeme.location
-			matchThenElse = self.lexer.lexeme
-			nextLexeme(self)
+			elseLocation = snapshot()
 
-			elsebody = parseBlock(self)
-			elsebody.location.begin = matchThenElse.location.end_
+			ThenElse_type = token_type
+
+			ThenElse_start_line, ThenElse_start_col = token_start_line, token_start_col
+			ThenElse_end_line, ThenElse_end_col = token_end_line, token_end_col
+
+			nextLexeme()
+
+			elsebody = parseBlock()
+			elsebody.location.begin = {line = ThenElse_end_line, column = ThenElse_end_col}
 		end
 
-		end_ = self.lexer.lexeme.location
+		end_ = snapshot()
 
-		local hasEnd = expectMatchEndAndConsume(self, Types.ReservedEnd, matchThenElse)
+		local hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, ThenElse_type, ThenElse_start_line, ThenElse_start_col)
 
 		if elsebody then
 			if elsebody.kind == "StatBlock" then
@@ -811,23 +1960,28 @@ function parseIf(self: Parser)
 end
 
 -- while exp do block end
-function parseWhile(self: Parser)
-	local start = self.lexer.lexeme.location
-	nextLexeme(self) 
+function parseWhile()
+	local start = snapshot()
+	nextLexeme() 
 
-	local cond = parseExpr(self)
+	local cond = parseExpr()
 
-	local matchDo = self.lexer.lexeme
-	local hasDo = expectAndConsume(self, Types.ReservedDo, "while loop")
+	local Do_type = token_type
 
-	self.functionStack[#self.functionStack].loopDepth += 1
+	local Do_start_line, Do_start_col = token_start_line, token_start_col
+	local Do_end_line, Do_end_col = token_end_line, token_end_col
 
-	local body = parseBlock(self)
+	local hasDo = expectAndConsume(Types.ReservedDo, "while loop")
 
-	self.functionStack[#self.functionStack].loopDepth -= 1
+	functionStack[#functionStack].loopDepth += 1
 
-	local end_ = self.lexer.lexeme.location
-	local hasEnd = expectMatchEndAndConsume(self, Types.ReservedEnd, matchDo)
+	local body = parseBlock()
+
+	functionStack[#functionStack].loopDepth -= 1
+
+	local end_ = snapshot()
+	local hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, Do_type, Do_start_line, Do_start_col)
+
 	body.hasEnd = hasEnd
 
 	return {
@@ -839,41 +1993,47 @@ function parseWhile(self: Parser)
 		condition = cond,
 		body = body,
 		hasDo = hasDo,
-		doLocation = matchDo.location
+		doLocation = {
+			begin = {line = Do_start_line, column = Do_start_col},
+			end_ = {line = Do_end_line, column = Do_end_col}
+		}
 	}
 end
 
 -- repeat block until exp
-function parseRepeat(self: Parser)
-	local start = self.lexer.lexeme.location
-	local matchRepeat = self.lexer.lexeme
-	nextLexeme(self) -- repeat
+function parseRepeat()
+	local start = snapshot()
 
-	local localsBegin = saveLocals(self)
+	local Repeat_type = token_type
+	local Repeat_start_line, Repeat_start_col = token_start_line, token_start_col
 
-	self.functionStack[#self.functionStack].loopDepth += 1
+	nextLexeme() -- repeat
 
-	local body = parseBlockNoScope(self)
+	local localsBegin = #localStack
 
-	self.functionStack[#self.functionStack].loopDepth -= 1
+	functionStack[#functionStack].loopDepth += 1
 
-	local untilPosition = self.lexer.lexeme.location.begin
-	local hasUntil = expectMatchEndAndConsume(self, Types.ReservedUntil, matchRepeat)
+	local body = parseBlockNoScope()
 
-	local cond = parseExpr(self)
+	functionStack[#functionStack].loopDepth -= 1
 
-	restoreLocals(self, localsBegin)
+	local untilPosition = get_begin()
+	local hasUntil = expectMatchEndAndConsume(Types.ReservedUntil, Repeat_type, Repeat_start_line, Repeat_start_col)
+
+	local cond = parseExpr()
+
+	restoreLocals(localsBegin)
 
 	local node = {
 		kind = "StatRepeat",
-		location = {begin=start.begin, end_=cond.location.end_},
+		location = {begin = start.begin, end_ = cond.location.end_},
 		condition = cond,
 		body = body,
 		hasUntil = hasUntil
 	}
 
-	if self.options.storeCstData then
-		self.cstNodeMap[node] = {
+	if storeCstData then
+		cstNodes[node] = {
 			kind = "CstStatRepeat",
 			untilPosition = untilPosition
 		}
@@ -883,22 +2043,26 @@ function parseRepeat(self: Parser)
 end
 
 -- do block end
-function parseDo(self: Parser)
-	local start = self.lexer.lexeme.location
-	local matchDo = self.lexer.lexeme
-	nextLexeme(self) -- do
+function parseDo()
+	local start = snapshot()
 
-	local body = parseBlock(self)
+	local Do_type = token_type
+	local Do_start_line, Do_start_col = token_start_line, token_start_col
+
+	nextLexeme() -- do
+
+	local body = parseBlock()
 	body.location.begin = start.begin
 
-	local endLocation = self.lexer.lexeme.location
-	body.hasEnd = expectMatchEndAndConsume(self, Types.ReservedEnd, matchDo)
+	local endLocation = snapshot()
+	body.hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, Do_type, Do_start_line, Do_start_col)
+
 	if body.hasEnd then
 		body.location.end_ = endLocation.end_
 	end
 
-	if self.options.storeCstData then
-		self.cstNodeMap[body] = {
+	if storeCstData then
+		cstNodes[body] = {
 			kind = "CstStatDo",
 			endPosition = endLocation.begin
 		}
@@ -908,13 +2072,12 @@ function parseDo(self: Parser)
 end
 
 -- break
-function parseBreak(self: Parser): any
-	local start = self.lexer.lexeme.location
-	nextLexeme(self) -- break
+function parseBreak(): any
+	local start = snapshot()
+	nextLexeme() -- break
 
-	if self.functionStack[#self.functionStack].loopDepth == 0 then
+	if functionStack[#functionStack].loopDepth == 0 then
 		return reportStatError(
-			self,
 			start,
 			{}, {{ kind = "StatBreak", location = start }},
 			"break statement must be inside a loop"
@@ -928,16 +2091,15 @@ function parseBreak(self: Parser): any
 end
 
 -- continue
-function parseContinue(self: Parser, start: any): any
-	if self.functionStack[#self.functionStack].loopDepth == 0 then
+function parseContinue(start: any): any
+	if functionStack[#functionStack].loopDepth == 0 then
 		return reportStatError(
-			self,
 			start,
 			{}, {{ kind = "StatContinue", location = start } },
 			"continue statement must be inside a loop"
 		)
 	end
-	
+
 	-- note: the token is already parsed for us!
 
 	return {
@@ -948,63 +2110,70 @@ end
 
 -- for binding `=' exp `,' exp [`,' exp] do block end |
 -- for bindinglist in explist do block end |
-function parseFor(self: Parser): any
-	local start = self.lexer.lexeme.location
-	nextLexeme(self) -- for
+function parseFor(): any
+	local start = snapshot()
+	nextLexeme() -- for
 
-	local varname = parseBinding(self)
+	local varname = parseBinding()
 
-	if self.lexer.lexeme.type == 61 then 
-		local equalsPosition = self.lexer.lexeme.location.begin
-		nextLexeme(self)
+	if token_type == 61 then 
+		local equalsPosition = get_begin()
+		nextLexeme()
 
-		local from = parseExpr(self)
+		local from = parseExpr()
 
-		local endCommaPosition = self.lexer.lexeme.location.begin
-		expectAndConsume(self, 44, "index range") 
+		local endCommaPosition = get_begin()
+		expectAndConsume(44, "index range") 
 
-		local to = parseExpr(self)
+		local to = parseExpr()
 
 		local stepCommaPosition = nil
 		local step = nil
 
-		if self.lexer.lexeme.type == 44 then 
-			stepCommaPosition = self.lexer.lexeme.location.begin
-			nextLexeme(self)
-			step = parseExpr(self)
+		if token_type == 44 then 
+			stepCommaPosition = get_begin()
+			nextLexeme()
+			step = parseExpr()
 		end
 
-		local matchDo = self.lexer.lexeme
-		local hasDo = expectAndConsume(self, Types.ReservedDo, "for loop")
+		local Do_type = token_type
 
-		local localsBegin = saveLocals(self)
-		self.functionStack[#self.functionStack].loopDepth += 1
+		local Do_start_line, Do_start_col = token_start_line, token_start_col
+		local Do_end_line, Do_end_col = token_end_line, token_end_col
 
-		local var = pushLocal(self, varname)
+		local hasDo = expectAndConsume(Types.ReservedDo, "for loop")
 
-		local body = parseBlock(self)
+		local localsBegin = #localStack
+		functionStack[#functionStack].loopDepth += 1
 
-		self.functionStack[#self.functionStack].loopDepth -= 1
-		restoreLocals(self, localsBegin)
+		local var = pushLocal(varname)
 
-		local end_ = self.lexer.lexeme.location
-		local hasEnd = expectMatchEndAndConsume(self, Types.ReservedEnd, matchDo)
+		local body = parseBlock()
+
+		functionStack[#functionStack].loopDepth -= 1
+		restoreLocals(localsBegin)
+
+		local end_ = get_end()
+		local hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, Do_type, Do_start_line, Do_start_col)
 		body.hasEnd = hasEnd
 
 		local node = {
 			kind = "StatFor",
-			location = {begin=start.begin, end_=end_.end_},
+			location = {begin = start.begin, end_ = end_},
 			var = var,
 			from = from,
 			to = to,
 			step = step,
 			body = body,
 			hasDo = hasDo,
-			doLocation = matchDo.location
+			doLocation = {
+				begin = {line = Do_start_line, column = Do_start_col},
+				end_ = {line = Do_end_line, column = Do_end_col}
+			}
 		}
 
-		if self.options.storeCstData then
-			self.cstNodeMap[node] = {
+		if storeCstData then
+			cstNodes[node] = {
 				kind = "CstStatFor",
 				annotationColonPosition = varname.colonPosition,
 				equalsPosition = equalsPosition,
@@ -1019,55 +2188,63 @@ function parseFor(self: Parser): any
 		local names = { varname }
 		local varsCommaPosition = {} 
 
-		if self.lexer.lexeme.type == 44 then 
-			local initialCommaPos = self.lexer.lexeme.location.begin
-			nextLexeme(self)
-			parseBindingList(self, names, false, varsCommaPosition, initialCommaPos)
+		if token_type == 44 then 
+			local initialCommaPos = get_begin()
+			nextLexeme()
+			parseBindingList(names, false, varsCommaPosition, initialCommaPos)
 		end
 
-		local inLocation = self.lexer.lexeme.location
-		local hasIn = expectAndConsume(self, Types.ReservedIn, "for loop")
+		local inLocation = snapshot()
+		local hasIn = expectAndConsume(Types.ReservedIn, "for loop")
 
 		local values = {}
 		local valuesCommaPositions = {}
-		parseExprList(self, values, self.options.storeCstData and valuesCommaPositions or nil)
+		parseExprList(values, storeCstData and valuesCommaPositions or nil)
 
-		local matchDo = self.lexer.lexeme
-		local hasDo = expectAndConsume(self, Types.ReservedDo, "for loop")
+		local Do_type = token_type
 
-		local localsBegin = saveLocals(self)
-		self.functionStack[#self.functionStack].loopDepth += 1
+		local Do_start_line, Do_start_col = token_start_line, token_start_col
+		local Do_end_line, Do_end_col = token_end_line, token_end_col
+
+		local hasDo = expectAndConsume(Types.ReservedDo, "for loop")
+
+		local localsBegin = #localStack
+		functionStack[#functionStack].loopDepth += 1
 
 		local vars = {}
 		for _, binding in names do
-			table.insert(vars, pushLocal(self, binding))
+			table.insert(vars, pushLocal(binding))
 		end
 
-		local body = parseBlock(self)
+		local body = parseBlock()
 
-		self.functionStack[#self.functionStack].loopDepth -= 1
-		restoreLocals(self, localsBegin)
+		functionStack[#functionStack].loopDepth -= 1
+		restoreLocals(localsBegin)
 
-		local end_ = self.lexer.lexeme.location
-		local hasEnd = expectMatchEndAndConsume(self, Types.ReservedEnd, matchDo)
+		local end_ = get_end()
+
+		local hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, Do_type, Do_start_line, Do_start_col)
 		body.hasEnd = hasEnd
 
 		local node = {
 			kind = "StatForIn",
-			location = {begin=start.begin, end_=end_.end_},
+			location = {begin=start.begin, end_= end_},
 			vars = vars,
 			values = values,
 			body = body,
 			hasIn = hasIn,
 			inLocation = inLocation,
 			hasDo = hasDo,
-			doLocation = matchDo.location
+			doLocation = {
+				begin = {line = Do_start_line, column = Do_start_col},
+				end_ = {line = Do_end_line, column = Do_end_col}
+			}
 		}
 
-		if self.options.storeCstData then
-			self.cstNodeMap[node] = {
+		if storeCstData then
+			cstNodes[node] = {
 				kind = "CstStatForIn",
-				varsAnnotationColonPositions = extractAnnotationColonPositions(self, names),
+				varsAnnotationColonPositions = extractAnnotationColonPositions(names),
 				varsCommaPositions = varsCommaPosition,
 				valuesCommaPositions = valuesCommaPositions
 			}
@@ -1078,22 +2255,22 @@ function parseFor(self: Parser): any
 end
 
 -- funcname ::= Name {`.' Name} [`:' Name]
-function parseFunctionName(self: Parser, hasselfRef: {boolean}, debugnameRef: {string?}): any
-	if self.lexer.lexeme.type == Types.Name then
-		debugnameRef[1] = self.lexer.lexeme.data
+local function parseFunctionName(hasRef: {boolean}, debugnameRef: {string?}): any
+	if token_type == Types.Name then
+		debugnameRef[1] = token_string
 	end
 
 	-- parse funcname into a chain of indexing operators
-	local expr = parseNameExpr(self, "function name")
+	local expr = parseNameExpr("function name")
 
-	local oldRecursionCount = self.recursionCounter
+	local oldRecursionCount = recursionCounter
 
-	while self.lexer.lexeme.type == 46 do 
-		local opPosition = self.lexer.lexeme.location.begin
-		nextLexeme(self)
+	while token_type == 46 do 
+		local opPosition = get_begin()
+		nextLexeme()
 
-		local name = parseName(self, "field name")
-		
+		local name = parseName("field name")
+
 		-- while we could concatenate the name chain, for now let's just write the short name
 		debugnameRef[1] = name.name.value
 
@@ -1111,21 +2288,21 @@ function parseFunctionName(self: Parser, hasselfRef: {boolean}, debugnameRef: {s
 		}
 
 		-- note: while the parser isn't recursive here, we're generating recursive structures of unbounded depth
-		incrementRecursionCounter(self, "function name")
+		incrementRecursionCounter("function name")
 	end
 
-	self.recursionCounter = oldRecursionCount
+	recursionCounter = oldRecursionCount
 
 	-- finish with :
-	if self.lexer.lexeme.type == 58 then 
-		local opPosition = self.lexer.lexeme.location.begin
-		nextLexeme(self)
+	if token_type == 58 then 
+		local opPosition = get_begin()
+		nextLexeme()
 
-		local name = parseName(self, "method name")
-		
+		local name = parseName("method name")
+
 		-- while we could concatenate the name chain, for now let's just write the short name
 		debugnameRef[1] = name.name.value
-		
+
 		expr = {
 			kind = "ExprIndexName",
 			location = {
@@ -1139,32 +2316,33 @@ function parseFunctionName(self: Parser, hasselfRef: {boolean}, debugnameRef: {s
 			op = 58
 		}
 
-		hasselfRef[1] = true
+		hasRef[1] = true
 	end
 
 	return expr
 end
 
+-- fix
 -- function funcname funcbody
-function parseFunctionStat(self: Parser, attributes: {any})
-	local start = self.lexer.lexeme.location
+function parseFunctionStat(attributes: {any})
+	local start = snapshot()
 	if #attributes > 0 then
 		start = attributes[1].location
 	end
 
-	local matchFunction = self.lexer.lexeme
-	nextLexeme(self)
+	local matchFunction = get_lexeme()
+	nextLexeme()
 
-	local hasselfRef = { false }
+	local hasRef = { false }
 	local debugnameRef = {}
-	local expr = parseFunctionName(self, hasselfRef, debugnameRef)
+	local expr = parseFunctionName(hasRef, debugnameRef)
 
-	self.matchRecoveryStopOnToken[Types.ReservedEnd] = (self.matchRecoveryStopOnToken[Types.ReservedEnd] or 0) + 1
+	matchRecovery[Types.ReservedEnd] += 1
 
-	local bodyData = parseFunctionBody(self, hasselfRef[1], matchFunction, debugnameRef[1], nil, attributes)
+	local bodyData = parseFunctionBody(hasRef[1], matchFunction, debugnameRef[1], nil, attributes)
 	local body = bodyData[1] :: any
 
-	self.matchRecoveryStopOnToken[Types.ReservedEnd] = (self.matchRecoveryStopOnToken[Types.ReservedEnd] or 0) - 1
+	matchRecovery[Types.ReservedEnd] -= 1
 
 	local node = {
 		kind = "StatFunction",
@@ -1176,8 +2354,8 @@ function parseFunctionStat(self: Parser, attributes: {any})
 		func = body
 	}
 
-	if self.options.storeCstData then
-		self.cstNodeMap[node] = {
+	if storeCstData then
+		cstNodes[node] = {
 			kind = "CstStatFunction",
 			functionKeywordPosition = matchFunction.location.begin
 		}
@@ -1186,14 +2364,11 @@ function parseFunctionStat(self: Parser, attributes: {any})
 	return node
 end
 
-function validateAttribute(
-
-	self: Parser,
+local function validateAttribute(
 	loc: any,
 	attributeName: string,
 	attributes: {any},
 	args: {any}
-
 )
 	-- check if the attribute name is valid
 	local entry = kAttributeEntries[attributeName]
@@ -1205,9 +2380,9 @@ function validateAttribute(
 		argsValidator = entry.argsValidator
 	else
 		if #attributeName == 0 then
-			Report(self, loc, "Attribute name is missing")
+			report(loc, "Attribute name is missing")
 		else
-			Report(self, loc, "Invalid attribute '@%s'", attributeName)
+			report(loc, "Invalid attribute '@%s'", attributeName)
 		end
 	end
 
@@ -1215,14 +2390,14 @@ function validateAttribute(
 		-- check that attribute is not duplicated
 		for _, attr in attributes do
 			if attr.type == type_ then
-				Report(self, loc, "Cannot duplicate attribute '@%s'", attributeName)
+				report(loc, "Cannot duplicate attribute '@%s'", attributeName)
 			end
 		end
 
 		if argsValidator then
 			local errors = argsValidator(loc, args)
 			for _, err in errors do
-				Report(self, err.location, "%s", err.message)
+				report(err.location, "%s", err.message)
 			end
 		end
 	end
@@ -1231,14 +2406,12 @@ function validateAttribute(
 end
 
 -- attribute ::= '@' NAME
-function parseAttribute(self: Parser, attributes: {any})
-	local current = self.lexer.lexeme
-
-	if current.type == Types.Attribute then
-		local loc = current.location
-		local name = current.data or ""
-		local type_ = validateAttribute(self, loc, name, attributes, {})
-		nextLexeme(self)
+local function parseAttribute(attributes: {any})
+	if token_type == Types.Attribute then
+		local loc = snapshot()
+		local name = token_string or ""
+		local type_ = validateAttribute(loc, name, attributes, {})
+		nextLexeme()
 		table.insert(attributes, {
 			kind = "Attr",
 			location = loc,
@@ -1247,30 +2420,33 @@ function parseAttribute(self: Parser, attributes: {any})
 			name = name
 		})
 	else
-		local open = current
-		nextLexeme(self)
-		if self.lexer.lexeme.type ~= 93 then 
+		local open_type = token_type
+
+		local open_start_line, open_start_col = token_start_line, token_start_col
+
+		nextLexeme()
+		if token_type ~= 93 then 
 			while true do
-				local name = parseName(self, "attribute name")
+				local name = parseName("attribute name")
 				local nameLoc = name.location
 				local attrName = name.name.value
 				local args = {}
-				local argsLocation = self.lexer.lexeme.location 
+				local argsLocation = snapshot()
 
-				if self.lexer.lexeme.type == Types.RawString
-					or self.lexer.lexeme.type == Types.QuotedString or 
-					self.lexer.lexeme.type == 123 or self.lexer.lexeme.type == 40 then 
-					local callData = parseCallList(self)
+				if token_type == Types.RawString
+					or token_type == Types.QuotedString or 
+					token_type == 123 or token_type == 40 then 
+					local callData = parseCallList()
 					args = callData[1]
 					argsLocation = callData[2] 
 					for _, arg in args do
 						if not isConstantLiteral(arg) and not isLiteralTable(arg) then
-							Report(self, argsLocation, "Only literals can be passed as arguments for attributes")
+							report(argsLocation, "Only literals can be passed as arguments for attributes")
 						end
 					end
 				end
 
-				validateAttribute(self, nameLoc, attrName, attributes, args)
+				validateAttribute(nameLoc, attrName, attributes, args)
 
 				table.insert(attributes, {
 					kind = "Attr",
@@ -1280,29 +2456,29 @@ function parseAttribute(self: Parser, attributes: {any})
 					name = attrName
 				})
 
-				if self.lexer.lexeme.type == 44 then 
-					nextLexeme(self)
+				if token_type == 44 then 
+					nextLexeme()
 				else
 					break
 				end
 			end
 		else
-			Report(self, {
-				begin = open.location.begin,
-				end_ = self.lexer.lexeme.location.end_
+			report({
+				begin = {line = open_start_line, column = open_start_col},
+				end_ = get_end()
 			}, "Attribute list cannot be empty")
 		end
-		expectMatchAndConsume(self, 93, open) 
+		expectMatchAndConsume(93, open_type, open_start_line, open_start_col) 
 	end
 end
 
 -- attributes ::= {attribute}
-function parseAttributes(self: Parser)
+local function parseAttributes()
 	local attributes = {}
 
-	while self.lexer.lexeme.type == Types.Attribute
-		or self.lexer.lexeme.type == Types.AttributeOpen do
-		parseAttribute(self, attributes)
+	while token_type == Types.Attribute
+		or token_type == Types.AttributeOpen do
+		parseAttribute(attributes)
 	end
 
 	return attributes
@@ -1312,43 +2488,37 @@ end
 -- attributes function funcname funcbody
 -- attributes `declare function' Name`(' [parlist] `)' [`:` Type]
 -- declare Name '{' Name ':' attributes `(' [parlist] `)' [`:` Type] '}'
-function parseAttributeStat(self): any
-	local attributes = parseAttributes(self)
-	local type_ = self.lexer.lexeme.type
+function parseAttributeStat(): any
+	local attributes = parseAttributes()
+	local type_ = token_type
 
 	if type_ == Types.ReservedFunction then
-		return parseFunctionStat(self, attributes)
+		return parseFunctionStat(attributes)
 	elseif type_ == Types.ReservedLocal then
-		return parseLocal(self, attributes)
-	elseif type_ == Types.Name then
-		if self.options.allowDeclarationSyntax and self.lexer.lexeme.data == "declare" then
-			local expr = parsePrimaryExpr(self, true)
-			return parseDeclaration(self, expr.location, attributes)
-		end
+		return parseLocal(attributes)
 	end
 
 	return reportStatError(
-		self,
-		self.lexer.lexeme.location, {}, {},
+		snapshot(), {}, {},
 		"Expected 'function', 'local function', 'declare function' or a function type declaration after attribute, but got %s instead",
-		ToString(self.lexer.lexeme)
+		ToString(token_type, token_string, token_codepoint)
 	)
 end
 
 -- local function Name funcbody |
 -- local bindinglist [`=' explist]
-function parseLocal(self: Parser, attributes: {any}): any
-	local start = self.lexer.lexeme.location
+function parseLocal(attributes: {any}): any
+	local start = snapshot()
 	if #attributes > 0 then
 		start = attributes[1].location
 	end
 
-	local localKeywordPosition = self.lexer.lexeme.location.begin
-	nextLexeme(self) -- local
+	local localKeywordPosition = get_begin()
+	nextLexeme() -- local
 
-	if self.lexer.lexeme.type == Types.ReservedFunction then
-		local matchFunction = self.lexer.lexeme
-		nextLexeme(self)
+	if token_type == Types.ReservedFunction then
+		local matchFunction = get_lexeme()
+		nextLexeme()
 
 		local functionKeywordPosition = matchFunction.location.begin
 		-- matchFunction is only used for diagnostics; to make it suitable for detecting missed indentation between
@@ -1357,15 +2527,15 @@ function parseLocal(self: Parser, attributes: {any}): any
 			matchFunction.location.begin.column = start.begin.column
 		end
 
-		local name = parseName(self, "variable name")
+		local name = parseName("variable name")
 
-		self.matchRecoveryStopOnToken[Types.ReservedEnd] = (self.matchRecoveryStopOnToken[Types.ReservedEnd] or 0) + 1
+		matchRecovery[Types.ReservedEnd] += 1
 
-		local bodyData = parseFunctionBody(self, false, matchFunction, name.name.value, name, attributes)
+		local bodyData = parseFunctionBody(false, matchFunction, name.name.value, name, attributes)
 		local body = bodyData[1] :: any
 		local var = bodyData[2]
 
-		self.matchRecoveryStopOnToken[Types.ReservedEnd] = (self.matchRecoveryStopOnToken[Types.ReservedEnd] or 0) - 1
+		matchRecovery[Types.ReservedEnd] -= 1
 
 		local node = {
 			kind = "StatLocalFunction",
@@ -1374,8 +2544,8 @@ function parseLocal(self: Parser, attributes: {any}): any
 			func = body
 		}
 
-		if self.options.storeCstData then
-			self.cstNodeMap[node] = {
+		if storeCstData then
+			cstNodes[node] = {
 				kind = "CstStatLocalFunction",
 				localKeywordPosition = localKeywordPosition,
 				functionKeywordPosition = functionKeywordPosition
@@ -1385,60 +2555,59 @@ function parseLocal(self: Parser, attributes: {any}): any
 		return node
 	else
 		if #attributes ~= 0 then
-			return reportStatError(self,
-				self.lexer.lexeme.location,
-				{}, {},
+			return reportStatError(
+				snapshot(), {}, {},
 				"Expected 'function' after local declaration with attribute, but got %s instead",
-				ToString(self.lexer.lexeme)
+				ToString(token_type, token_string, token_codepoint)
 			)
 		end
 
-		self.matchRecoveryStopOnToken[61] = (self.matchRecoveryStopOnToken[61] or 0) + 1
+		matchRecovery[61] += 1
 
 		local names = {}
 		local varsCommaPositions = {}
-		if self.options.storeCstData then
-			parseBindingList(self, names, false, varsCommaPositions)
+		if storeCstData then
+			parseBindingList(names, false, varsCommaPositions)
 		else
-			parseBindingList(self, names, false)
+			parseBindingList(names, false)
 		end
 
-		self.matchRecoveryStopOnToken[61] = (self.matchRecoveryStopOnToken[61] or 0) - 1
+		matchRecovery[61] -= 1
 
 		local vars = {}
 		local values = {}
 		local valuesCommaPositions = {}
 		local equalsSignLocation = nil
 
-		if self.lexer.lexeme.type == 61 then 
-			equalsSignLocation = self.lexer.lexeme.location
-			nextLexeme(self)
-			parseExprList(self, values, self.options.storeCstData and valuesCommaPositions or nil)
+		if token_type == 61 then 
+			equalsSignLocation = snapshot()
+			nextLexeme()
+			parseExprList(values, storeCstData and valuesCommaPositions or nil)
 		end
 
 		for _, binding in names do
-			table.insert(vars, pushLocal(self, binding))
+			table.insert(vars, pushLocal(binding))
 		end
 
 		local end_ = start
 		if #values > 0 then
-			end_ = values[#values].location
+			end_ = values[#values].location.end_
 		else
-			end_ = self.lexer.prevLocation
+			end_ = {line = prev_end_line, column = prev_end_col}
 		end
 
 		local node = {
 			kind = "StatLocal",
-			location = {begin=start.begin, end_=end_.end_},
+			location = {begin = start.begin, end_ = end_},
 			vars = vars,
 			values = values,
 			equalsSignLocation = equalsSignLocation
 		}
 
-		if self.options.storeCstData then
-			self.cstNodeMap[node] = {
+		if storeCstData then
+			cstNodes[node] = {
 				kind = "CstStatLocal",
-				varsAnnotationColonPositions = extractAnnotationColonPositions(self, names),
+				varsAnnotationColonPositions = extractAnnotationColonPositions(names),
 				varsCommaPositions = varsCommaPositions,
 				valuesCommaPositions = valuesCommaPositions
 			}
@@ -1449,33 +2618,33 @@ function parseLocal(self: Parser, attributes: {any}): any
 end
 
 -- return [explist]
-function parseReturn(self: Parser)
-	local start = self.lexer.lexeme.location
-	nextLexeme(self)
+function parseReturn()
+	local start = snapshot()
+	nextLexeme()
 
 	local list = {}
 	local commaPositions = {}
 
-	if not blockFollow(self.lexer.lexeme) and self.lexer.lexeme.type ~= 59 then
-		parseExprList(self, list, self.options.storeCstData and commaPositions or nil)
+	if not blockFollow(token_type) and token_type ~= 59 then
+		parseExprList(list, storeCstData and commaPositions or nil)
 	end
 
-	local end_ = start
+	local end_ = start.end_
 	if #list > 0 then
-		end_ = list[#list].location
+		end_ = list[#list].location.end_
 	end
 
 	local node = {
 		kind = "StatReturn",
 		location = {
 			begin = start.begin,
-			end_ = end_.end_
+			end_ = end_
 		},
 		list = list
 	}
 
-	if self.options.storeCstData then
-		self.cstNodeMap[node] = {
+	if storeCstData then
+		cstNodes[node] = {
 			kind = "CstStatReturn",
 			commaPositions = commaPositions
 		}
@@ -1484,33 +2653,31 @@ function parseReturn(self: Parser)
 	return node
 end
 
+
 -- type Name [`<' varlist `>'] `=' Type
 function parseTypeAlias(
-
-	self: Parser,
 	start: any,
 	exported: boolean,
 	typeKeywordPosition: any
-
 ): any
 
 	-- parsing a type function
-	if self.lexer.lexeme.type == Types.ReservedFunction then
-		return parseTypeFunction(self, start, exported, typeKeywordPosition)
+	if token_type == Types.ReservedFunction then
+		return parseTypeFunction(start, exported, typeKeywordPosition)
 	end
 
 	-- parsing a type alias
 
 	-- note: `type` token is already parsed for us, so we just need to parse the rest
 
-	local nameOpt = parseNameOpt(self, "type name")
+	local nameOpt = parseNameOpt("type name")
 	local name = nameOpt
 
 	-- Use error name if the name is missing
 	if not name then
 		name = {
 			name = { value = nameError },
-			location = self.lexer.lexeme.location
+			location = snapshot()
 		}
 	end
 
@@ -1526,18 +2693,18 @@ function parseTypeAlias(
 
 	local genericsData = nil
 
-	if self.options.storeCstData then
-		genericsData = parseGenericTypeList(self, true, genericsOpenPos, genericsCommaPos, genericsClosePos)
+	if storeCstData then
+		genericsData = parseGenericTypeList(true, genericsOpenPos, genericsCommaPos, genericsClosePos)
 	else
-		genericsData = parseGenericTypeList(self, true)
+		genericsData = parseGenericTypeList(true)
 	end
 
 	local generics, genericPacks = genericsData[1], genericsData[2]
 
-	local equalsPosition = self.lexer.lexeme.location.begin
-	expectAndConsume(self, 61, "type alias") 
+	local equalsPosition = get_begin()
+	expectAndConsume(61, "type alias") 
 
-	local type_ = parseType(self)
+	local type_ = parseType()
 
 	local node = {
 		kind = "StatTypeAlias",
@@ -1550,8 +2717,8 @@ function parseTypeAlias(
 		exported = exported
 	}
 
-	if self.options.storeCstData then
-		self.cstNodeMap[node] = {
+	if storeCstData then
+		cstNodes[node] = {
 			kind = "CstStatTypeAlias",
 			typeKeywordPosition = typeKeywordPosition,
 			genericsOpenPosition = genericsOpenPos[1],
@@ -1564,44 +2731,43 @@ function parseTypeAlias(
 	return node
 end
 
+local typeFunctionDepth = 0
+
 -- type function Name `(' arglist `)' `=' funcbody `end'
 function parseTypeFunction(
-
-	self: Parser,
 	start: any,
 	exported: boolean,
 	typeKeywordPosition: any
-
 )
 
-	local matchFn = self.lexer.lexeme
-	nextLexeme(self)
+	local matchFn = get_lexeme()
+	nextLexeme()
 
-	local errorsAtStart = #self.parseErrors
+	local errorsAtStart = #parseErrors
 
 	-- parse the name of the type function
 
-	local fnNameOpt = parseNameOpt(self, "type function name")
+	local fnNameOpt = parseNameOpt("type function name")
 	local fnName = fnNameOpt
 	if not fnName then
 		fnName = {
 			name = { value = nameError },
-			location = self.lexer.lexeme.location
+			location = snapshot()
 		}
 	end
 
-	self.matchRecoveryStopOnToken[Types.ReservedEnd] = (self.matchRecoveryStopOnToken[Types.ReservedEnd] or 0) + 1
+	matchRecovery[Types.ReservedEnd] += 1
 
-	local oldTypeFunctionDepth = self.typeFunctionDepth or 0
-	self.typeFunctionDepth = #self.functionStack
+	local oldTypeFunctionDepth = typeFunctionDepth
+	typeFunctionDepth = #functionStack
 
-	local bodyData = parseFunctionBody(self, false, matchFn, fnName.name.value, nil, {})
+	local bodyData = parseFunctionBody(false, matchFn, fnName.name.value, nil, {})
 	local body = bodyData[1] :: any
 
-	self.typeFunctionDepth = oldTypeFunctionDepth
-	self.matchRecoveryStopOnToken[Types.ReservedEnd] = (self.matchRecoveryStopOnToken[Types.ReservedEnd] or 0) - 1
+	typeFunctionDepth = oldTypeFunctionDepth
+	matchRecovery[Types.ReservedEnd] -= 1
 
-	local hasErrors = #self.parseErrors > errorsAtStart
+	local hasErrors = #parseErrors > errorsAtStart
 
 	local node = {
 		kind = "StatTypeFunction",
@@ -1616,8 +2782,8 @@ function parseTypeFunction(
 		hasErrors = hasErrors
 	}
 
-	if self.options.storeCstData then
-		self.cstNodeMap[node] = {
+	if storeCstData then
+		cstNodes[node] = {
 			kind = "CstStatTypeFunction",
 			typeKeywordPosition = typeKeywordPosition,
 			functionKeywordPosition = matchFn.location.begin
@@ -1627,159 +2793,68 @@ function parseTypeFunction(
 	return node
 end
 
--- Use placeholder if the name is missing
-function parseBinding(self: Parser)
-	local nameOpt = parseNameOpt(self, "variable name")
-	local name = nameOpt
-
-	if not name then
-		name = {
-			name = {value = nameError },
-			location = self.lexer.lexeme.location
-		}
-	end
-
-	local colonPos = self.lexer.lexeme.location.begin
-	local annotation = parseOptionalType(self)
-
-	return {
-		name = name.name,
-		location = name.location,
-		annotation = annotation,
-		colonPosition = colonPos
-	}
-end
-
--- bindinglist ::= (binding | `...') [`,' bindinglist]
-function parseBindingList(
-
-	self: Parser,
-	result: {any},
-	allowDot3: boolean,
-	commaPositions: {any}?,
-	initialComma: any?,
-	varargAnnotColonPos: any?
-
-): any
-
-	local localCommaPositions = {}
-
-	if commaPositions and initialComma then
-		table.insert(localCommaPositions, initialComma)
-	end
-
-	while true do
-		if self.lexer.lexeme.type == Types.Dot3 and allowDot3 then
-			local varargLocation = self.lexer.lexeme.location
-			nextLexeme(self)
-
-			local tailAnnotation = nil
-			if self.lexer.lexeme.type == 58 then 
-				if varargAnnotColonPos then
-					varargAnnotColonPos[1] = self.lexer.lexeme.location.begin
-				end
-
-				nextLexeme(self)
-				tailAnnotation = parseVariadicArgumentTypePack(self)
-			end
-
-			if commaPositions then
-				for _, v in localCommaPositions do
-					table.insert(commaPositions, v)
-				end
-			end
-
-			return true, varargLocation, tailAnnotation
-		end
-
-		table.insert(result, parseBinding(self))
-
-		if self.lexer.lexeme.type ~= 44 then 
-			break
-		end
-
-		if commaPositions then
-			table.insert(localCommaPositions, self.lexer.lexeme.location.begin)
-		end
-		nextLexeme(self)
-	end
-
-	if commaPositions then
-		for _, v in localCommaPositions do
-			table.insert(commaPositions, v)
-		end
-	end
-
-	return false, nil, nil
-end
-
-function parseNameOpt(self: Parser, context: string?): any
-	if self.lexer.lexeme.type ~= Types.Name then
-		reportNameError(self, context)
+function parseNameOpt(context: string?): any
+	if token_type ~= Types.Name then
+		reportNameError(context)
 		return nil
 	end
 
 	local result = {
-		name = { value = self.lexer.lexeme.data },
-		location = self.lexer.lexeme.location
+		name = { value = token_string },
+		location = snapshot()
 	}
 
-	nextLexeme(self)
+	nextLexeme()
 	return result
 end
 
-function parseName(self: Parser, context: string?): any
-	local name = parseNameOpt(self, context)
+function parseName(context: string?): any
+	local name = parseNameOpt(context)
 	if name then
 		return name
 	end
 
-	local loc = self.lexer.lexeme.location
 	return {
 		name = { value = nameError },
-		location = loc
+		location = snapshot()
 	}
 end
 
--- explist ::= {exp `,'} exp
-function parseExprList(self: Parser, result: {any}, commaPositions: any)
-	table.insert(result, parseExpr(self))
+local function tableSeparator(): number?
+	if token_type == 44 then 
+		return 0
+	elseif token_type == 59 then 
+		return 1
+	else
+		return nil
+	end
+end
 
-	while self.lexer.lexeme.type == 44 do
-		nextLexeme(self)
-		if self.lexer.lexeme.type == 41 then
-			Report(
-				self,
-				self.lexer.lexeme.location,
+-- explist ::= {exp `,'} exp
+function parseExprList(result: {any}, commaPositions: any)
+	table.insert(result, parseExpr())
+
+	while token_type == 44 do
+		nextLexeme()
+		if token_type == 41 then
+			report(
+				snapshot(),
 				"Expected expression after ',' but got ')' instead"
 			)
 
 			break
 		end
 
-		table.insert(result, parseExpr(self))
+		table.insert(result, parseExpr())
 	end
 end
 
-function incrementRecursionCounter(self: Parser, context: string)
-	self.recursionCounter += 1
-
-	if self.recursionCounter > RecursionLimit then
-		local msg = `Exceeded allowed recursion depth; simplify your {context} to make the code compile`
-		Report(self, self.lexer.lexeme.location, "%s", msg)
-		error(msg, 0)
-	end
-end
-
-function isExprLValue(expr: any)
-	return expr.kind == "ExprLocal" or expr.kind == "ExprGlobal" or expr.kind == "ExprIndexExpr" or expr.kind == "ExprIndexName"
-end
 
 -- varlist `=' explist
-function parseAssignment(self: Parser, initial: any): any
+function parseAssignment(initial: any): any
 	if not isExprLValue(initial) then
 		initial = reportExprError(
-			self,
+
 			initial.location,
 			{initial},
 			"Assigned expression must be a variable or a field"
@@ -1789,25 +2864,25 @@ function parseAssignment(self: Parser, initial: any): any
 	local vars = { initial }
 	local varsCommaPositions = {}
 
-	while self.lexer.lexeme.type == 44 do 
-		if self.options.storeCstData then
-			table.insert(varsCommaPositions, self.lexer.lexeme.location.begin)
+	while token_type == 44 do 
+		if storeCstData then
+			table.insert(varsCommaPositions, get_begin())
 		end
-		nextLexeme(self)
+		nextLexeme()
 
-		local expr = parsePrimaryExpr(self, true)
+		local expr = parsePrimaryExpr(true)
 		if not isExprLValue(expr) then
-			expr = reportExprError(self, expr.location, {expr}, "Assigned expression must be a variable or a field")
+			expr = reportExprError(expr.location, {expr}, "Assigned expression must be a variable or a field")
 		end
 		table.insert(vars, expr)
 	end
 
-	local equalsPosition = self.lexer.lexeme.location.begin
-	expectAndConsume(self, 61, "assignment") 
+	local equalsPosition = get_begin()
+	expectAndConsume(61, "assignment") 
 
 	local values = {}
 	local valuesCommaPositions = {}
-	parseExprList(self, values, self.options.storeCstData and valuesCommaPositions or nil)
+	parseExprList(values, storeCstData and valuesCommaPositions or nil)
 
 	local end_ = values[#values].location
 
@@ -1818,8 +2893,8 @@ function parseAssignment(self: Parser, initial: any): any
 		values = values
 	}
 
-	if self.options.storeCstData then
-		self.cstNodeMap[node] = {
+	if storeCstData then
+		cstNodes[node] = {
 			kind = "CstStatAssign",
 			varsCommaPositions = varsCommaPositions,
 			equalsPosition = equalsPosition,
@@ -1833,7 +2908,7 @@ end
 -- var [`+=' | `-=' | `*=' | `/=' | `%=' | `^=' | `..='] exp
 function parseCompoundAssignment(
 
-	self: Parser,
+
 	initial: any,
 	op: number
 
@@ -1841,17 +2916,17 @@ function parseCompoundAssignment(
 
 	if not isExprLValue(initial) then
 		initial = reportExprError(
-			self,
+
 			initial.location,
 			{initial},
 			"Assigned expression must be a variable or a field"
 		)
 	end
 
-	local opPosition = self.lexer.lexeme.location.begin
-	nextLexeme(self)
+	local opPosition = get_begin()
+	nextLexeme()
 
-	local value = parseExpr(self)
+	local value = parseExpr()
 
 	local node = {
 		kind = "StatCompoundAssign",
@@ -1861,8 +2936,8 @@ function parseCompoundAssignment(
 		value = value
 	}
 
-	if self.options.storeCstData then
-		self.cstNodeMap[node] = {
+	if storeCstData then
+		cstNodes[node] = {
 			kind = "CstStatCompoundAssign",
 			opPosition = opPosition
 		}
@@ -1873,7 +2948,7 @@ end
 
 function prepareFunctionArguments(
 
-	self: Parser,
+
 	start: any,
 	hasself: boolean,
 	args: {any}
@@ -1881,14 +2956,14 @@ function prepareFunctionArguments(
 )
 	local selfLocal = nil
 	if hasself then
-		selfLocal = pushLocal(self, { 
+		selfLocal = pushLocal({ 
 			name = { value = nameSelf, location = start },
 		})
 	end
 
 	local vars = {}
 	for _, arg in args do
-		table.insert(vars, pushLocal(self, arg))
+		table.insert(vars, pushLocal(arg))
 	end
 
 	return selfLocal, vars
@@ -1898,7 +2973,7 @@ end
 -- parlist ::= bindinglist [`,' `...'] | `...'
 function parseFunctionBody(
 
-	self: Parser,
+
 	hasself: boolean,
 	matchFunction: any,
 	debugname: any,
@@ -1912,7 +2987,7 @@ function parseFunctionBody(
 	end
 
 	local cstNode = nil
-	if self.options.storeCstData then
+	if storeCstData then
 		cstNode = {
 			kind = "CstExprFunction",
 			functionKeywordPosition = matchFunction.location.begin,
@@ -1930,37 +3005,40 @@ function parseFunctionBody(
 	local genCommaPosRef = cstNode and cstNode.genericsCommaPositions or nil
 	local closeGenPosRef = cstNode and {cstNode.closeGenericsPosition} or nil
 
-	local genericsData = parseGenericTypeList(self, false, openGenPosRef, genCommaPosRef, closeGenPosRef)
+	local genericsData = parseGenericTypeList(false, openGenPosRef, genCommaPosRef, closeGenPosRef)
 	local generics, genericPacks = genericsData[1], genericsData[2]
 
 	if cstNode and openGenPosRef then cstNode.openGenericsPosition = openGenPosRef[1] end
 	if cstNode and closeGenPosRef then cstNode.closeGenericsPosition = closeGenPosRef[1] end
 
-	local matchParen = self.lexer.lexeme
-	expectAndConsume(self, 40, "function") 
+	local Paren_type = token_type
+	local Paren_line = token_start_line
+	local Paren_col = token_start_col
+
+	expectAndConsume(40, "function") 
 
 	-- NOTE: This was added in conjunction with passing `searchForMissing` to
 	-- `expectMatchAndConsume` inside `parseTableType` so that the behavior of
 	-- parsing code like below (note the missing `}`):
-	
+
 	-- function (t: { a: number  ) end
-	
+
 	-- ... will still parse as (roughly):
-	
-	--  function (t: { a: number }) end
-	
-	self.matchRecoveryStopOnToken[41] = (self.matchRecoveryStopOnToken[41] or 0) + 1 
+
+	-- function (t: { a: number }) end
+
+	matchRecovery[41] += 1
 
 	local args = {}
 	local vararg = false
 	local varargLocation = nil
 	local varargAnnotation = nil
 
-	if self.lexer.lexeme.type ~= 41 then 
+	if token_type ~= 41 then 
 		local vaAnnotPosRef = cstNode and {cstNode.varargAnnotationColonPosition} or nil
 
 		vararg, varargLocation, varargAnnotation = parseBindingList(
-			self,
+
 			args, 
 			true, 
 			if cstNode then cstNode.argsCommaPositions else nil, 
@@ -1974,40 +3052,45 @@ function parseFunctionBody(
 	end
 
 	local argLocation = nil
-	if matchParen.type == 40 and self.lexer.lexeme.type == 41 then
+	if token_type == 40 and token_type == 41 then
 		argLocation = {
-			begin = matchParen.location.begin,
-			end_ = self.lexer.lexeme.location.end_
+			begin = {line = Paren_line, column = Paren_col},
+			end_ = get_end()
 		}
 	end
 
-	expectMatchAndConsume(self, 41, matchParen, true) 
-	self.matchRecoveryStopOnToken[41] = (self.matchRecoveryStopOnToken[41] or 0) - 1
+	expectMatchAndConsume(41, Paren_type, Paren_line, Paren_col, true) 
+	matchRecovery[41] -= 1
 
 	local retSpecPosRef = cstNode and {cstNode.returnSpecifierPosition} or nil
-	local typelist = parseOptionalReturnType(self, retSpecPosRef)
+	local typelist = parseOptionalReturnType(retSpecPosRef)
 	if cstNode and retSpecPosRef then cstNode.returnSpecifierPosition = retSpecPosRef[1] end
 
 	local funLocal = nil
 	if localName then
-		funLocal = pushLocal(self, localName)
+		funLocal = pushLocal(localName)
 	end
 
-	local localsBegin = saveLocals(self)
+	local localsBegin = #localStack
 
 	local fun = { vararg = vararg, loopDepth = 0 }
-	table.insert(self.functionStack, fun)
+	table.insert(functionStack, fun)
 
-	local selfLocal, vars = prepareFunctionArguments(self, start, hasself, args)
+	local selfLocal, vars = prepareFunctionArguments(start, hasself, args)
 
-	local body = parseBlock(self)
+	local body = parseBlock()
 
-	table.remove(self.functionStack)
+	table.remove(functionStack)
 
-	restoreLocals(self, localsBegin)
+	restoreLocals(localsBegin)
 
-	local end_ = self.lexer.lexeme.location
-	local hasEnd = expectMatchEndAndConsume(self, Types.ReservedEnd, matchFunction)
+	local end_ = snapshot()
+	local hasEnd = expectMatchEndAndConsume(
+		Types.ReservedEnd, 
+		matchFunction.type, 
+		matchFunction.location.begin.line, 
+		matchFunction.location.begin.column
+	)
 	body.hasEnd = hasEnd
 
 	local node = {
@@ -2021,23 +3104,23 @@ function parseFunctionBody(
 		vararg = vararg,
 		varargLocation = varargLocation,
 		body = body,
-		functionDepth = #self.functionStack,
+		functionDepth = #functionStack,
 		debugname = debugname,
 		returnAnnotation = typelist,
 		varargAnnotation = varargAnnotation,
 		argLocation = argLocation
 	}
 
-	if self.options.storeCstData and cstNode then
-		cstNode.argsAnnotationColonPositions = extractAnnotationColonPositions(self, args)
-		self.cstNodeMap[node] = cstNode
+	if storeCstData and cstNode then
+		cstNode.argsAnnotationColonPositions = extractAnnotationColonPositions(args)
+		cstNodes[node] = cstNode
 	end
 
 	return { node, funLocal }
 end
 
 function parseGenericTypeList(
-	self: Parser,
+
 	withDefaultValues: boolean,
 	openPosRef: any, commaPosRef: any,
 	closePosRef: any
@@ -2046,43 +3129,45 @@ function parseGenericTypeList(
 	local namePacks = {}
 	local localCommaPositions = {}
 
-	if self.lexer.lexeme.type == 60 then 
-		local begin = self.lexer.lexeme
+	if token_type == 60 then 
+		local begin_type = token_type
+		local begin_start_line, begin_start_col = token_start_line, token_start_col
+
 		if openPosRef then
-			openPosRef[1] = begin.location.begin
+			openPosRef[1] = {line = begin_start_line, column = begin_start_col}
 		end
 
-		nextLexeme(self)
+		nextLexeme()
 
 		local seenPack = false
 		local seenDefault = false
 
 		while true do
-			local nameLoc = self.lexer.lexeme.location
-			local name = parseName(self).name
+			local nameLoc = snapshot()
+			local name = parseName().name
 
-			if self.lexer.lexeme.type == Types.Dot3 or seenPack then
+			if token_type == Types.Dot3 or seenPack then
 				seenPack = true
-				local ellipsisPosition = self.lexer.lexeme.location.begin
+				local ellipsisPosition = get_begin()
 
-				if self.lexer.lexeme.type ~= Types.Dot3 then
-					Report(self, self.lexer.lexeme.location, "Generic types come before generic type packs")
+				if token_type ~= Types.Dot3 then
+					report(snapshot(), "Generic types come before generic type packs")
 				else
-					nextLexeme(self)
+					nextLexeme()
 				end
 
-				if withDefaultValues and self.lexer.lexeme.type == 61 then 
+				if withDefaultValues and token_type == 61 then 
 					seenDefault = true
-					local equalsPosition = self.lexer.lexeme.location.begin
-					nextLexeme(self)
+					local equalsPosition = get_begin()
+					nextLexeme()
 
 					local typePack = nil
-					if shouldParseTypePack(self) then
-						typePack = parseTypePack(self)
+					if shouldParseTypePack() then
+						typePack = parseTypePack()
 					else
-						local type_, pack_ = parseSimpleTypeOrPack(self)
+						local type_, pack_ = parseSimpleTypeOrPack()
 						if type_ then
-							Report(self, type_.location, "Expected type pack after '=', got type")
+							report(type_.location, "Expected type pack after '=', got type")
 						end
 						typePack = pack_
 					end
@@ -2094,8 +3179,8 @@ function parseGenericTypeList(
 						defaultValue = typePack
 					}
 
-					if self.options.storeCstData then
-						self.cstNodeMap[node] = {
+					if storeCstData then
+						cstNodes[node] = {
 							kind = "CstGenericTypePack",
 							ellipsisPosition = ellipsisPosition,
 							defaultEqualsPosition = equalsPosition
@@ -2105,7 +3190,7 @@ function parseGenericTypeList(
 					table.insert(namePacks, node)
 				else
 					if seenDefault then
-						Report(self, self.lexer.lexeme.location, "Expected default type pack after type pack name")
+						report(snapshot(), "Expected default type pack after type pack name")
 					end
 
 					local node = {
@@ -2114,8 +3199,8 @@ function parseGenericTypeList(
 						name = name,
 					}
 
-					if self.options.storeCstData then
-						self.cstNodeMap[node] = {
+					if storeCstData then
+						cstNodes[node] = {
 							kind = "CstGenericTypePack",
 							ellipsisPosition = ellipsisPosition,
 						}
@@ -2124,12 +3209,12 @@ function parseGenericTypeList(
 					table.insert(namePacks, node)
 				end
 			else
-				if withDefaultValues and self.lexer.lexeme.type == 61 then 
+				if withDefaultValues and token_type == 61 then 
 					seenDefault = true
-					local equalsPosition = self.lexer.lexeme.location.begin
-					nextLexeme(self)
+					local equalsPosition = get_begin()
+					nextLexeme()
 
-					local defaultType = parseType(self)
+					local defaultType = parseType()
 
 					local node = {
 						kind = "GenericType",
@@ -2138,15 +3223,15 @@ function parseGenericTypeList(
 						defaultValue = defaultType
 					}
 
-					if self.options.storeCstData then
-						self.cstNodeMap[node] = {
+					if storeCstData then
+						cstNodes[node] = {
 							kind = "CstGenericType",
 							defaultEqualsPosition = equalsPosition
 						}
 					end
 					table.insert(names, node)
 				else
-					if seenDefault then Report(self, self.lexer.lexeme.location, "Expected default type after type name") end
+					if seenDefault then report(snapshot(), "Expected default type after type name") end
 
 					local node = {
 						kind = "GenericType",
@@ -2154,8 +3239,8 @@ function parseGenericTypeList(
 						name = name,
 					}
 
-					if self.options.storeCstData then
-						self.cstNodeMap[node] = {
+					if storeCstData then
+						cstNodes[node] = {
 							kind = "CstGenericType"
 						}
 					end
@@ -2163,12 +3248,12 @@ function parseGenericTypeList(
 				end
 			end
 
-			if self.lexer.lexeme.type == 44 then 
-				if commaPosRef then table.insert(localCommaPositions, self.lexer.lexeme.location.begin) end
-				nextLexeme(self)
+			if token_type == 44 then 
+				if commaPosRef then table.insert(localCommaPositions, get_begin()) end
+				nextLexeme()
 
-				if self.lexer.lexeme.type == 62 then 
-					Report(self, self.lexer.lexeme.location, "Expected type after ',' but got '>' instead")
+				if token_type == 62 then 
+					report(snapshot(), "Expected type after ',' but got '>' instead")
 					break
 				end
 			else
@@ -2177,10 +3262,10 @@ function parseGenericTypeList(
 		end
 
 		if closePosRef then
-			closePosRef[1] = self.lexer.lexeme.location.begin
+			closePosRef[1] = get_begin()
 		end
 
-		expectMatchAndConsume(self, 62, begin) 
+		expectMatchAndConsume(62, begin_type, begin_start_line, begin_start_col) 
 	end
 
 	if commaPosRef then
@@ -2192,35 +3277,31 @@ function parseGenericTypeList(
 	return { names, namePacks }
 end
 
-function shouldParseTypePack(self: Parser)
-	local t = self.lexer.lexeme.type
+
+function shouldParseTypePack()
+	local t = token_type
 
 	if t == Types.Dot3 then
 		return true
 	end
 
-	if t == Types.Name and Lookahead(self.lexer).type == Types.Dot3 then
+	if t == Types.Name and next_type == Types.Dot3 then
 		return true
 	end
 
 	return false
 end
 
-function parseOptionalType(self)
-	if self.lexer.lexeme.type == 58 then 
-		nextLexeme(self)
-		return parseType(self, false)
+function parseOptionalType()
+	if token_type == 58 then 
+		nextLexeme()
+		return parseType(false)
 	else
 		return nil
 	end
 end
 
-function extractAnnotationColonPositions(
-
-	self: Parser,
-	bindings: {any}
-
-)
+function extractAnnotationColonPositions(bindings: {any})
 	local positions = {}
 	for _, binding in bindings do
 		if binding.colonPosition then
@@ -2232,21 +3313,18 @@ end
 
 -- TypeList ::= Type [`,' TypeList] | ...Type
 function parseTypeList(
-
-	self: Parser,
 	result: {any},
 	resultNames: {any},
 	commaPositions: {any}?,
 	nameColonPositions: {any}?
-
 )
 
 	while true do
-		if shouldParseTypePack(self) then
-			return parseTypePack(self)
+		if shouldParseTypePack() then
+			return parseTypePack()
 		end
 
-		if self.lexer.lexeme.type == Types.Name and Lookahead(self.lexer).type == 58 then
+		if token_type == Types.Name and next_type == 58 then
 			-- Fill in previous argument names with empty slots
 			while #resultNames < #result do
 				table.insert(resultNames, nil)
@@ -2256,18 +3334,18 @@ function parseTypeList(
 			end
 
 			local name = {
-				name = { value = self.lexer.lexeme.data },
-				location = self.lexer.lexeme.location
+				name = { value = token_string },
+				location = snapshot()
 			}
 
 			table.insert(resultNames, name)
-			nextLexeme(self)
+			nextLexeme()
 
 			if nameColonPositions then
-				table.insert(nameColonPositions, self.lexer.lexeme.location.begin)
+				table.insert(nameColonPositions, get_begin())
 			end
 
-			expectAndConsume(self, 58)
+			expectAndConsume(58)
 		elseif #resultNames > 0 then
 			-- If we have a type with named arguments, provide elements for all types
 			table.insert(resultNames, nil)
@@ -2276,21 +3354,20 @@ function parseTypeList(
 			end
 		end
 
-		table.insert(result, parseType(self, false))
+		table.insert(result, parseType(false))
 
-		if self.lexer.lexeme.type ~= 44 then
+		if token_type ~= 44 then
 			break
 		end
 
 		if commaPositions then
-			table.insert(commaPositions, self.lexer.lexeme.location.begin)
+			table.insert(commaPositions, get_begin())
 		end
-		nextLexeme(self)
+		nextLexeme()
 
-		if self.lexer.lexeme.type == 41 then
-			Report(
-				self,
-				self.lexer.lexeme.location,
+		if token_type == 41 then
+			report(
+				snapshot(),
 				"Expected type after ',' but got ')' instead"
 			)
 
@@ -2302,40 +3379,38 @@ end
 
 function parseOptionalReturnType(
 
-	self: Parser,
+
 	returnSpecifierPosRef: any
 
 ): any
 
-	if self.lexer.lexeme.type == 58
-		or self.lexer.lexeme.type == Types.SkinnyArrow then 
-		if self.lexer.lexeme.type == Types.SkinnyArrow then
-			Report(
-				self,
-				self.lexer.lexeme.location,
+	if token_type == 58
+		or token_type == Types.SkinnyArrow then 
+		if token_type == Types.SkinnyArrow then
+			report(
+				snapshot(),
 				"Function return type annotations are written after ':' instead of '->'"
 			)
 		end
 
 		if returnSpecifierPosRef then
-			returnSpecifierPosRef[1] = self.lexer.lexeme.location.begin
+			returnSpecifierPosRef[1] = get_begin()
 		end
 
-		nextLexeme(self)
+		nextLexeme()
 
-		local oldRecursion = self.recursionCounter
-		local res = parseReturnType(self)
-		self.recursionCounter = oldRecursion
+		local oldRecursion = recursionCounter
+		local res = parseReturnType()
+		recursionCounter = oldRecursion
 
 		-- At this point, if we find a , character, it indicates that there are multiple return types
 		-- in this type annotation, but the list wasn't wrapped in parentheses.
-		if self.lexer.lexeme.type == 44 then 
-			Report(
-				self,
-				self.lexer.lexeme.location,
+		if token_type == 44 then 
+			report(
+				snapshot(),
 				"Expected a statement, got ','; did you forget to wrap the list of return types in parentheses?"
 			)
-			nextLexeme(self)
+			nextLexeme()
 		end
 
 		return res
@@ -2345,16 +3420,18 @@ function parseOptionalReturnType(
 end
 
 -- ReturnType ::= Type | `(' TypeList `)'
-function parseReturnType(self: Parser)
-	incrementRecursionCounter(self, "type annotation")
+function parseReturnType()
+	incrementRecursionCounter("type annotation")
 
-	local begin = self.lexer.lexeme
+	local begin = get_lexeme()
 
-	if self.lexer.lexeme.type ~= 40 then 
-		if shouldParseTypePack(self) then
-			return parseTypePack(self)
+	local begin_type, begin_line, begin_col = token_type, token_start_line, token_start_col
+
+	if token_type ~= 40 then 
+		if shouldParseTypePack() then
+			return parseTypePack()
 		else
-			local type_ = parseType(self, false)
+			local type_ = parseType(false)
 
 			local node = {
 				kind = "TypePackExplicit",
@@ -2362,8 +3439,8 @@ function parseReturnType(self: Parser)
 				types = { type_ },
 			}
 
-			if self.options.storeCstData then
-				self.cstNodeMap[node] = {
+			if storeCstData then
+				cstNodes[node] = {
 					kind = "CstTypePackExplicit"
 				}
 			end
@@ -2371,9 +3448,9 @@ function parseReturnType(self: Parser)
 		end
 	end
 
-	nextLexeme(self)
+	nextLexeme()
 
-	self.matchRecoveryStopOnToken[Types.SkinnyArrow] = (self.matchRecoveryStopOnToken[Types.SkinnyArrow] or 0) + 1
+	matchRecovery[Types.SkinnyArrow] += 1
 
 	local result = {}
 	local resultNames = {}
@@ -2383,22 +3460,22 @@ function parseReturnType(self: Parser)
 	local varargAnnotation = nil
 
 	-- possibly () -> ReturnType
-	if self.lexer.lexeme.type ~= 41 then 
-		if self.options.storeCstData then
-			varargAnnotation = parseTypeList(self, result, resultNames, commaPositions, nameColonPositions)
+	if token_type ~= 41 then 
+		if storeCstData then
+			varargAnnotation = parseTypeList(result, resultNames, commaPositions, nameColonPositions)
 		else
-			varargAnnotation = parseTypeList(self, result, resultNames)
+			varargAnnotation = parseTypeList(result, resultNames)
 		end
 	end
 
-	local endLoc = self.lexer.lexeme.location
-	local closeParenPos = self.lexer.lexeme.location.begin
+	local endLoc = snapshot()
+	local closeParenPos = get_begin()
 
-	expectMatchAndConsume(self, 41, begin, true) 
+	expectMatchAndConsume(41, begin_type, begin_line, begin_col, true) 
 
-	self.matchRecoveryStopOnToken[Types.SkinnyArrow] = (self.matchRecoveryStopOnToken[Types.SkinnyArrow] or 0) - 1
+	matchRecovery[Types.SkinnyArrow] -= 1
 
-	if self.lexer.lexeme.type ~= Types.SkinnyArrow and #resultNames == 0 then
+	if token_type ~= Types.SkinnyArrow and #resultNames == 0 then
 		-- If it turns out that it's just '(A)', it's possible that there are unions/intersections to follow, so fold over it.
 		if #result == 1 then
 			-- TODO(CLI-140667): stop parsing type suffix when varargAnnotation != nullptr - this should be a parse error
@@ -2406,8 +3483,8 @@ function parseReturnType(self: Parser)
 				and { kind = "TypeGroup", location = {begin=begin.location.begin, end_=endLoc.end_}, type = result[1] } 
 				or result[1]
 
-			local returnType = parseTypeSuffix(self, inner, begin.location)
-			
+			local returnType = parseTypeSuffix(inner, begin.location)
+
 			-- If parseType parses nothing, then returnType->location.end only points at the last non-type-pack
 			-- type to successfully parse.  We need the span of the whole annotation.
 			local endPos = (#result == 1) and endLoc.end_ or returnType.location.end_
@@ -2422,8 +3499,8 @@ function parseReturnType(self: Parser)
 				tailType = varargAnnotation
 			}
 
-			if self.options.storeCstData then
-				self.cstNodeMap[node] = {
+			if storeCstData then
+				cstNodes[node] = {
 					kind = "CstTypePackExplicit"
 				}
 			end
@@ -2440,8 +3517,8 @@ function parseReturnType(self: Parser)
 			tailType = varargAnnotation
 		}
 
-		if self.options.storeCstData then
-			self.cstNodeMap[node] = {
+		if storeCstData then
+			cstNodes[node] = {
 				kind = "CstTypePackExplicit",
 				openParenthesesPosition = begin.location.begin,
 				closeParenthesesPosition = closeParenPos,
@@ -2451,11 +3528,11 @@ function parseReturnType(self: Parser)
 		return node
 	end
 
-	local returnArrowPosition = self.lexer.lexeme.location.begin
-	local tail = parseFunctionTypeTail(self, begin, {}, {}, {}, result, resultNames, varargAnnotation)
+	local returnArrowPosition = get_begin()
+	local tail = parseFunctionTypeTail(begin, {}, {}, {}, result, resultNames, varargAnnotation)
 
-	if self.options.storeCstData and tail.kind == "TypeFunction" then
-		self.cstNodeMap[tail] = {
+	if storeCstData and tail.kind == "TypeFunction" then
+		cstNodes[tail] = {
 			kind = "CstTypeFunction",
 			openGenericsPosition = {line=0, column=0},
 			genericsCommaPositions = {},
@@ -2477,8 +3554,8 @@ function parseReturnType(self: Parser)
 		types = { tail }
 	}
 
-	if self.options.storeCstData then
-		self.cstNodeMap[node] = {
+	if storeCstData then
+		cstNodes[node] = {
 			kind = "CstTypePackExplicit"
 		}
 	end
@@ -2486,21 +3563,17 @@ function parseReturnType(self: Parser)
 	return node
 end
 
-local function extractStringDetails(self: Parser)
+local function extractStringDetails()
 	local style = 0
 	local depth = 0
 
-	local lexeme = self.lexer.lexeme
-
-	local t = lexeme.type
-
-	if t == Types.QuotedString then
-		style = lexeme.aux == 1 and 1 or 0
-	elseif t == Types.InterpStringSimple then
+	if token_type == Types.QuotedString then
+		style = token_aux == 1 and 1 or 0
+	elseif token_type == Types.InterpStringSimple then
 		style = 3 
-	elseif t == Types.RawString then
+	elseif token_type == Types.RawString then
 		style = 2 
-		depth = lexeme.aux or 0
+		depth = token_aux or 0
 	end
 
 	return style, depth
@@ -2509,22 +3582,22 @@ end
 -- TableIndexer ::= `[' Type `]' `:' Type
 function parseTableIndexer(
 
-	self: Parser,
+
 	access: string,
 	accessLoc: any,
 	begin: any
 
 )
 
-	local index = parseType(self, false)
+	local index = parseType(false)
 
-	local indexerClosePos = self.lexer.lexeme.location.begin
-	expectMatchAndConsume(self, 93, begin) 
+	local indexerClosePos = get_begin()
+	expectMatchAndConsume(93, begin.type, begin.location.begin.line, begin.location.begin.column)
 
-	local colonPos = self.lexer.lexeme.location.begin
-	expectAndConsume(self, 58, "table field") 
+	local colonPos = get_begin()
+	expectAndConsume(58, "table field") 
 
-	local result = parseType(self, false)
+	local result = parseType(false)
 
 	local node = {
 		kind = "TableIndexer",
@@ -2550,63 +3623,63 @@ end
 -- TablePropOrIndexer ::= TableProp | TableIndexer
 -- PropList ::= TablePropOrIndexer {fieldsep TablePropOrIndexer} [fieldsep]
 -- TableType ::= `{' PropList `}'
-function parseTableType(self: Parser, inDeclarationContext: boolean)
-	incrementRecursionCounter(self, "type annotation")
+function parseTableType(inDeclarationContext: boolean)
+	incrementRecursionCounter("type annotation")
 
 	local props = {}
-	local cstItems = {} 
+	local cstItems: {any} = {} 
 	local indexer = nil
 
-	local start = self.lexer.lexeme.location
-	local matchBrace = self.lexer.lexeme
-	expectAndConsume(self, 123, "table type") 
+	local start = snapshot()
+	local matchBrace = get_lexeme()
+	expectAndConsume(123, "table type") 
 
 	local isArray = false
 
-	while self.lexer.lexeme.type ~= 125 do 
+	while token_type ~= 125 do 
 		local access = "ReadWrite"
 		local accessLoc = nil
 
 
-		if self.lexer.lexeme.type == Types.Name and Lookahead(self.lexer).type ~= 58 then 
-			if self.lexer.lexeme.data == "read" then
-				accessLoc = self.lexer.lexeme.location
+		if token_type == Types.Name and next_type ~= 58 then 
+			if token_string == "read" then
+				accessLoc = snapshot()
 				access = "Read"
-				nextLexeme(self)
-			elseif self.lexer.lexeme.data == "write" then
-				accessLoc = self.lexer.lexeme.location
+				nextLexeme()
+			elseif token_string == "write" then
+				accessLoc = snapshot()
 				access = "Write"
-				nextLexeme(self)
+				nextLexeme()
 			end
 		end
 
-		if self.lexer.lexeme.type == 91 then 
-			local begin = self.lexer.lexeme
-			nextLexeme(self)
+		if token_type == 91 then 
+			local begin = get_lexeme()
+			nextLexeme()
 
 
-			if (self.lexer.lexeme.type == Types.RawString or self.lexer.lexeme.type == Types.QuotedString) and Lookahead(self.lexer).type == 93 then
+			if (token_type == Types.RawString or token_type == Types.QuotedString) and next_type == 93 then
 				local style = 0 
 				local depth = 0
-				if self.options.storeCstData then
-					style, depth = extractStringDetails(self)
+				if storeCstData then
+					style, depth = extractStringDetails()
 				end
 
-				local stringPos = self.lexer.lexeme.location.begin
+				local stringPos = get_begin()
 				local sourceString = nil
-				if self.options.storeCstData then
-					sourceString = self.lexer.lexeme.data
+				if storeCstData then
+					sourceString = token_string
 				end
 
-				local chars = parseCharArray(self)
+				local chars = parseCharArray()
 
-				local indexerClosePos = self.lexer.lexeme.location.begin
-				expectMatchAndConsume(self, 93, begin) 
+				local indexerClosePos = get_begin()
+				expectMatchAndConsume(93, begin.type, begin.location.begin.line, begin.location.begin.column) 
 
-				local colonPos = self.lexer.lexeme.location.begin
-				expectAndConsume(self, 58, "table field") 
+				local colonPos = get_begin()
+				expectAndConsume(58, "table field") 
 
-				local type_ = parseType(self)
+				local type_ = parseType()
 
 				if chars then
 					table.insert(props, {
@@ -2617,7 +3690,7 @@ function parseTableType(self: Parser, inDeclarationContext: boolean)
 						accessLocation = accessLoc
 					})
 
-					if self.options.storeCstData then
+					if storeCstData then
 						local cstString = {
 							kind = "CstExprConstantString",
 							sourceString = sourceString,
@@ -2630,41 +3703,41 @@ function parseTableType(self: Parser, inDeclarationContext: boolean)
 							indexerOpenPosition = begin.location.begin,
 							indexerClosePosition = indexerClosePos,
 							colonPosition = colonPos,
-							separator = tableSeparator(self),
-							separatorPosition = self.lexer.lexeme.location.begin,
+							separator = tableSeparator(),
+							separatorPosition = get_begin(),
 							stringInfo = cstString,
 							stringPosition = stringPos
 						})
 					end
 				else
-					Report(self, begin.location, "String literal contains malformed escape sequence or \\0")
+					report(begin.location, "String literal contains malformed escape sequence or \\0")
 				end
 			else
 
 				if indexer then
 
-					local badIndexerRes = parseTableIndexer(self, access, accessLoc, begin)
-					Report(self, badIndexerRes.node.location, "Cannot have more than one table indexer")
+					local badIndexerRes = parseTableIndexer(access, accessLoc, begin)
+					report(badIndexerRes.node.location, "Cannot have more than one table indexer")
 				else
-					local idxRes = parseTableIndexer(self, access, accessLoc, begin)
+					local idxRes = parseTableIndexer(access, accessLoc, begin)
 					indexer = idxRes.node
 
-					if self.options.storeCstData then
+					if storeCstData then
 						table.insert(cstItems, {
 							kind = "Indexer",
 
 							indexerOpenPosition = idxRes.indexerOpenPosition,
 							indexerClosePosition = idxRes.indexerClosePosition,
 							colonPosition = idxRes.colonPosition, 
-							separator = tableSeparator(self),
-							separatorPosition = self.lexer.lexeme.location.begin
+							separator = tableSeparator(),
+							separatorPosition = get_begin()
 						})
 					end
 				end
 			end
-		elseif #props == 0 and not indexer and not (self.lexer.lexeme.type == Types.Name and Lookahead(self.lexer).type == 58) then
+		elseif #props == 0 and not indexer and not (token_type == Types.Name and next_type == 58) then
 			isArray = true
-			local type_ = parseType(self)
+			local type_ = parseType()
 
 			local index = {
 				kind = "TypeReference",
@@ -2685,13 +3758,13 @@ function parseTableType(self: Parser, inDeclarationContext: boolean)
 			}
 			break
 		else
-			local nameOpt = parseNameOpt(self, "table field")
+			local nameOpt = parseNameOpt("table field")
 			if not nameOpt then break end
 
-			local colonPos = self.lexer.lexeme.location.begin
-			expectAndConsume(self, 58, "table field")
+			local colonPos = get_begin()
+			expectAndConsume(58, "table field")
 
-			local type_ = parseType(self, inDeclarationContext)
+			local type_ = parseType(inDeclarationContext)
 
 			table.insert(props, {
 				name = nameOpt.name,
@@ -2701,26 +3774,26 @@ function parseTableType(self: Parser, inDeclarationContext: boolean)
 				accessLocation = accessLoc
 			})
 
-			if self.options.storeCstData then
+			if storeCstData then
 				table.insert(cstItems, {
 					kind = "Property",
 					colonPosition = colonPos,
-					separator = tableSeparator(self),
-					separatorPosition = self.lexer.lexeme.location.begin
+					separator = tableSeparator(),
+					separatorPosition = get_begin()
 				})
 			end
 		end
 
-		if self.lexer.lexeme.type == 44 or self.lexer.lexeme.type == 59 then 
-			nextLexeme(self)
-		elseif self.lexer.lexeme.type ~= 125 then 
+		if token_type == 44 or token_type == 59 then 
+			nextLexeme()
+		elseif token_type ~= 125 then 
 			break
 		end
 	end
 
-	local endLoc = self.lexer.lexeme.location
-	if not expectMatchAndConsume(self, 125, matchBrace, true) then 
-		endLoc = self.lexer.prevLocation
+	local endLoc = snapshot()
+	if not expectMatchAndConsume(125, matchBrace.type, matchBrace.location.begin.line, matchBrace.location.begin.column, true) then 
+		endLoc = getprev()
 	end
 
 	local node = {
@@ -2730,8 +3803,8 @@ function parseTableType(self: Parser, inDeclarationContext: boolean)
 		indexer = indexer
 	}
 
-	if self.options.storeCstData then
-		self.cstNodeMap[node] = {
+	if storeCstData then
+		cstNodes[node] = {
 			kind = "CstTypeTable",
 			items = cstItems,
 			isArray = isArray
@@ -2741,38 +3814,40 @@ function parseTableType(self: Parser, inDeclarationContext: boolean)
 	return node
 end
 
+-- aaa
+
 -- ReturnType ::= Type | `(' TypeList `)'
 -- FunctionType ::= [`<' varlist `>'] `(' [TypeList] `)' `->` ReturnType
 function parseFunctionType(
 
-	self: Parser,
+
 	allowPack: boolean,
 	attributes: {any}
 
 ): (any, any) 
 
-	incrementRecursionCounter(self, "type annotation")
+	incrementRecursionCounter("type annotation")
 
-	local forceFunctionType = (self.lexer.lexeme.type == 60) 
-	local begin = self.lexer.lexeme
+	local forceFunctionType = (token_type == 60) 
+	local begin = get_lexeme()
 
 	local openGenPos = { { line = 0, column = 0 } }
 	local genCommaPos = {}
 	local closeGenPos = { { line = 0, column = 0 } }
 
 	local genericsData = nil
-	if self.options.storeCstData then
-		genericsData = parseGenericTypeList(self, false, openGenPos, genCommaPos, closeGenPos)
+	if storeCstData then
+		genericsData = parseGenericTypeList(false, openGenPos, genCommaPos, closeGenPos)
 	else
-		genericsData = parseGenericTypeList(self, false)
+		genericsData = parseGenericTypeList(false)
 	end
 
 	local generics, genericPacks = genericsData[1], genericsData[2]
 
-	local paramStart = self.lexer.lexeme
-	expectAndConsume(self, 40, "function parameters") 
+	local paramStart = get_lexeme()
+	expectAndConsume(40, "function parameters") 
 
-	self.matchRecoveryStopOnToken[Types.SkinnyArrow] = (self.matchRecoveryStopOnToken[Types.SkinnyArrow] or 0) + 1
+	matchRecovery[Types.SkinnyArrow] += 1
 
 	local params = {}
 	local names = {}
@@ -2781,25 +3856,25 @@ function parseFunctionType(
 
 	local varargAnnotation = nil
 
-	if self.lexer.lexeme.type ~= 41 then 
-		if self.options.storeCstData then
-			varargAnnotation = parseTypeList(self, params, names, argCommaPos, nameColonPos)
+	if token_type ~= 41 then 
+		if storeCstData then
+			varargAnnotation = parseTypeList(params, names, argCommaPos, nameColonPos)
 		else
-			varargAnnotation = parseTypeList(self, params, names)
+			varargAnnotation = parseTypeList(params, names)
 		end
 	end
 
-	local closeArgsLoc = self.lexer.lexeme.location
-	expectMatchAndConsume(self, 41, paramStart, true) 
+	local closeArgsLoc = snapshot()
+	expectMatchAndConsume(41, paramStart.type, paramStart.location.begin.line, paramStart.location.begin.column, true) 
 
-	self.matchRecoveryStopOnToken[Types.SkinnyArrow] = (self.matchRecoveryStopOnToken[Types.SkinnyArrow] or 0) - 1
+	matchRecovery[Types.SkinnyArrow] -= 1
 
 	local paramTypes = params 
 	if #names > 0 then
 		forceFunctionType = true
 	end
 
-	local returnTypeIntroducer = (self.lexer.lexeme.type == Types.SkinnyArrow or self.lexer.lexeme.type == 58)
+	local returnTypeIntroducer = (token_type == Types.SkinnyArrow or token_type == 58)
 
 	-- ot a function at all. Just a parenthesized type. Or maybe a type pack with a single element
 	if #params == 1 and not varargAnnotation and not forceFunctionType and not returnTypeIntroducer then
@@ -2810,8 +3885,8 @@ function parseFunctionType(
 				types = paramTypes
 			}
 
-			if self.options.storeCstData then
-				self.cstNodeMap[node] = {
+			if storeCstData then
+				cstNodes[node] = {
 					kind = "CstTypePackExplicit",
 					openParenthesesPosition = paramStart.location.begin,
 					closeParenthesesPosition = closeArgsLoc.begin,
@@ -2840,8 +3915,8 @@ function parseFunctionType(
 			tailType = varargAnnotation
 		}
 
-		if self.options.storeCstData then
-			self.cstNodeMap[node] = {
+		if storeCstData then
+			cstNodes[node] = {
 				kind = "CstTypePackExplicit",
 				openParenthesesPosition = paramStart.location.begin,
 				closeParenthesesPosition = closeArgsLoc.begin,
@@ -2852,11 +3927,11 @@ function parseFunctionType(
 		return nil, node
 	end
 
-	local returnArrowPosition = self.lexer.lexeme.location.begin
-	local node = parseFunctionTypeTail(self, begin, attributes, generics, genericPacks, paramTypes, names, varargAnnotation)
+	local returnArrowPosition = get_begin()
+	local node = parseFunctionTypeTail(begin, attributes, generics, genericPacks, paramTypes, names, varargAnnotation)
 
-	if self.options.storeCstData and node.kind == "TypeFunction" then
-		self.cstNodeMap[node] = {
+	if storeCstData and node.kind == "TypeFunction" then
+		cstNodes[node] = {
 			kind = "CstTypeFunction",
 			openGenericsPosition = openGenPos[1],
 			genericsCommaPositions = genCommaPos,
@@ -2874,7 +3949,7 @@ end
 
 function parseFunctionTypeTail(
 
-	self: Parser,
+
 	begin: any,
 	attributes: {any},
 	generics: {any},
@@ -2885,24 +3960,24 @@ function parseFunctionTypeTail(
 
 ): any
 
-	incrementRecursionCounter(self, "type annotation")
+	incrementRecursionCounter("type annotation")
 
-	if self.lexer.lexeme.type == 58 then
-		Report(
-			self,
-			self.lexer.lexeme.location,
+	if token_type == 58 then
+		report(
+
+			snapshot(),
 			"Return types in function type annotations are written after '->' instead of ':'"
 		)
 
-		nextLexeme(self)
-		
-	-- Users occasionally write '()' as the 'unit' type when they actually want to use 'nil', here we'll try to give a more specific error
-	elseif self.lexer.lexeme.type ~= Types.SkinnyArrow and #generics == 0 and #genericPacks == 0 and #params == 0 then
-		Report(
-			self,
+		nextLexeme()
+
+		-- Users occasionally write '()' as the 'unit' type when they actually want to use 'nil', here we'll try to give a more specific error
+	elseif token_type ~= Types.SkinnyArrow and #generics == 0 and #genericPacks == 0 and #params == 0 then
+		report(
+
 			{
 				begin = begin.location.begin,
-				end_ = self.lexer.prevLocation.end_
+				end_ = getprev().end_
 			},
 			"Expected '->' after '()' when parsing function type; did you mean 'nil'?"
 		)
@@ -2915,10 +3990,10 @@ function parseFunctionTypeTail(
 			parameters = {}
 		}
 	else
-		expectAndConsume(self, Types.SkinnyArrow, "function type")
+		expectAndConsume(Types.SkinnyArrow, "function type")
 	end
 
-	local returnType = parseReturnType(self)
+	local returnType = parseReturnType()
 
 	return {
 		kind = "TypeFunction",
@@ -2944,13 +4019,13 @@ end
 --      `{' [PropList] `}' |
 --      `(' [TypeList] `)' `->` ReturnType
 --      `typeof` Type
-function parseTypeSuffix(self: Parser, type_: any, begin: any)
+function parseTypeSuffix( type_: any, begin: any)
 	local parts = {} :: {any}
 	if type_ then 
 		table.insert(parts, type_) 
 	end
 
-	incrementRecursionCounter(self, "type annotation")
+	incrementRecursionCounter("type annotation")
 
 	local isUnion = false
 	local isIntersection = false
@@ -2960,22 +4035,22 @@ function parseTypeSuffix(self: Parser, type_: any, begin: any)
 	local leadingPosition = nil
 
 	while true do
-		local t = self.lexer.lexeme.type
-		local separatorPosition = self.lexer.lexeme.location.begin
+		local t = token_type
+		local separatorPosition = get_begin()
 
 		if t == 124 then 
-			nextLexeme(self)
+			nextLexeme()
 
-			local oldRecursion = self.recursionCounter
+			local oldRecursion = recursionCounter
 
-			local typePart, _ = parseSimpleType(self, false, false) 
+			local typePart, _ = parseSimpleType(false, false) 
 			table.insert(parts, typePart)
 
-			self.recursionCounter = oldRecursion
+			recursionCounter = oldRecursion
 
 			isUnion = true
 
-			if self.options.storeCstData then
+			if storeCstData then
 				if type_ == nil and not leadingPosition then
 					leadingPosition = separatorPosition
 				else
@@ -2984,27 +4059,27 @@ function parseTypeSuffix(self: Parser, type_: any, begin: any)
 			end
 
 		elseif t == 63 then
-			local loc = self.lexer.lexeme.location
-			nextLexeme(self)
+			local loc = snapshot()
+			nextLexeme()
 
 			table.insert(parts, { kind = "TypeOptional", location = loc })
 
 			optionalCount += 1
 			isUnion = true
 		elseif t == 38 then
-			nextLexeme(self)
+			nextLexeme()
 
-			local oldRecursion = self.recursionCounter
+			local oldRecursion = recursionCounter
 
-			local typePart, _ = parseSimpleType(self, false, false)
+			local typePart, _ = parseSimpleType(false, false)
 
 			table.insert(parts, typePart)
 
-			self.recursionCounter = oldRecursion
+			recursionCounter = oldRecursion
 
 			isIntersection = true
 
-			if self.options.storeCstData then
+			if storeCstData then
 				if type_ == nil and not leadingPosition then
 					leadingPosition = separatorPosition
 				else
@@ -3013,14 +4088,14 @@ function parseTypeSuffix(self: Parser, type_: any, begin: any)
 			end
 
 		elseif t == Types.Dot3 then
-			Report(self, self.lexer.lexeme.location, "Unexpected '...' after type annotation")
-			nextLexeme(self)
+			report(snapshot(), "Unexpected '...' after type annotation")
+			nextLexeme()
 		else
 			break
 		end
 
 		if #parts > TypeLengthLimit + optionalCount then
-			Report(self, parts[#parts].location, "Exceeded allowed type length; simplify your type annotation to make the code compile")
+			report(parts[#parts].location, "Exceeded allowed type length; simplify your type annotation to make the code compile")
 		end
 	end
 
@@ -3029,15 +4104,15 @@ function parseTypeSuffix(self: Parser, type_: any, begin: any)
 	end
 
 	if isUnion and isIntersection then
-		reportTypeError(self, { begin = begin.begin, end_ = parts[#parts].location.end_ }, parts, "Mixing union and intersection types is not allowed; consider wrapping in parentheses.")
+		reportTypeError({ begin = begin.begin, end_ = parts[#parts].location.end_ }, parts, "Mixing union and intersection types is not allowed; consider wrapping in parentheses.")
 	end
 
 	local loc = { begin = begin.begin, end_ = parts[#parts].location.end_ }
 
 	if isUnion then
 		local node = { kind = "TypeUnion", location = loc, types = parts }
-		if self.options.storeCstData then
-			self.cstNodeMap[node] = {
+		if storeCstData then
+			cstNodes[node] = {
 				kind = "CstTypeUnion",
 				leadingPosition = leadingPosition,
 				separatorPositions = separatorPositions
@@ -3048,8 +4123,8 @@ function parseTypeSuffix(self: Parser, type_: any, begin: any)
 
 	if isIntersection then
 		local node = { kind = "TypeIntersection", location = loc, types = parts }
-		if self.options.storeCstData then
-			self.cstNodeMap[node] = {
+		if storeCstData then
+			cstNodes[node] = {
 				kind = "CstTypeIntersection",
 				leadingPosition = leadingPosition,
 				separatorPositions = separatorPositions
@@ -3061,38 +4136,38 @@ function parseTypeSuffix(self: Parser, type_: any, begin: any)
 	return parts[1]
 end
 
-function parseSimpleTypeOrPack(self: Parser): (any, any)
-	local oldRec = self.recursionCounter
+function parseSimpleTypeOrPack(): (any, any)
+	local oldRec = recursionCounter
 	-- recursion counter is incremented in parseSimpleType
-	
-	local begin = self.lexer.lexeme.location
 
-	local type_, typePack = parseSimpleType(self, true, false)
+	local begin = snapshot()
+
+	local type_, typePack = parseSimpleType(true, false)
 
 	if typePack then
 		return nil, typePack
 	end
 
-	self.recursionCounter = oldRec
+	recursionCounter = oldRec
 
-	return parseTypeSuffix(self, type_, begin)
+	return parseTypeSuffix(type_, begin)
 end
 
-function parseType(self: Parser, inDeclarationContext: boolean?)
-	local oldRec = self.recursionCounter
+function parseType( inDeclarationContext: boolean?)
+	local oldRec = recursionCounter
 	-- recursion counter is incremented in parseSimpleType and/or parseTypeSuffix
-	
-	local begin = self.lexer.lexeme.location
+
+	local begin = snapshot()
 
 	local type_ = nil
 
-	if self.lexer.lexeme.type ~= 124 and self.lexer.lexeme.type ~= 38 then 
-		type_ = parseSimpleType(self, false, inDeclarationContext or false)
-		self.recursionCounter = oldRec
+	if token_type ~= 124 and token_type ~= 38 then 
+		type_ = parseSimpleType(false, inDeclarationContext or false)
+		recursionCounter = oldRec
 	end
 
-	local typeWithSuffix = parseTypeSuffix(self, type_, begin)
-	self.recursionCounter = oldRec
+	local typeWithSuffix = parseTypeSuffix(type_, begin)
+	recursionCounter = oldRec
 
 	return typeWithSuffix
 end
@@ -3101,35 +4176,35 @@ end
 --   | [`<' varlist `>'] `(' [TypeList] `)' `->` ReturnType
 function parseSimpleType(
 
-	self: Parser,
+
 	allowPack: boolean,
 	inDeclarationContext: boolean
 
-): (any, TypePack)
+): (any?, TypePack?)
 
-	incrementRecursionCounter(self, "type annotation")
+	incrementRecursionCounter("type annotation")
 
-	local start = self.lexer.lexeme.location
+	local start = snapshot()
 
-	if self.lexer.lexeme.type == Types.Attribute or self.lexer.lexeme.type == Types.AttributeOpen then
+	if token_type == Types.Attribute or token_type == Types.AttributeOpen then
 		if not inDeclarationContext then
 			return reportTypeError(
-				self,
+
 				start,
 				{},
 				"attributes are not allowed in declaration context"
 			)
 		else
-			local attributes = parseAttributes(self)
+			local attributes = parseAttributes()
 
 			return parseFunctionType(
-				self,
+
 				allowPack,
 				attributes
 			)
 		end
-	elseif self.lexer.lexeme.type == Types.ReservedNil then
-		nextLexeme(self)
+	elseif token_type == Types.ReservedNil then
+		nextLexeme()
 
 		return {
 			kind = "TypeReference",
@@ -3138,24 +4213,24 @@ function parseSimpleType(
 			hasParameterList = false,
 			parameters = {}
 		}
-	elseif self.lexer.lexeme.type == Types.ReservedTrue then
-		nextLexeme(self)
+	elseif token_type == Types.ReservedTrue then
+		nextLexeme()
 
 		return {
 			kind = "TypeSingletonBool",
 			location = start,
 			value = true
 		}
-	elseif self.lexer.lexeme.type == Types.ReservedFalse then
-		nextLexeme(self)
+	elseif token_type == Types.ReservedFalse then
+		nextLexeme()
 
 		return {
 			kind = "TypeSingletonBool",
 			location = start,
 			value = false
 		}
-	elseif self.lexer.lexeme.type == Types.RawString or self.lexer.lexeme.type == Types.QuotedString then
-		local chars = parseCharArray(self)
+	elseif token_type == Types.RawString or token_type == Types.QuotedString then
+		local chars = parseCharArray()
 		if chars then
 			return {
 				kind = "TypeSingletonString",
@@ -3164,55 +4239,55 @@ function parseSimpleType(
 			}
 		else
 			return reportTypeError(
-				self,
+
 				start, 
 				{},
 				"String literal contains malformed escape sequence"
 			)
 		end
-	elseif self.lexer.lexeme.type == Types.InterpStringBegin or self.lexer.lexeme.type == Types.InterpStringSimple then
-		parseInterpString(self)
+	elseif token_type == Types.InterpStringBegin or token_type == Types.InterpStringSimple then
+		parseInterpString()
 
 		return reportTypeError(
-			self,
+
 			start,
 			{},
 			"Interpolated string literals cannot be used as types"
 		)
-	elseif self.lexer.lexeme.type == Types.BrokenString then
-		nextLexeme(self)
+	elseif token_type == Types.BrokenString then
+		nextLexeme()
 		return reportTypeError(
-			self,
+
 			start,
 			{},
 			"Malformed string; did you forget to finish it?"
 		)
-	elseif self.lexer.lexeme.type == Types.Name then
-		local name = parseName(self, "type name")
+	elseif token_type == Types.Name then
+		local name = parseName("type name")
 		local prefix = nil
 		local prefixLoc = nil
 		local prefixPointPos = nil
 
-		if self.lexer.lexeme.type == 46 then 
-			prefixPointPos = self.lexer.lexeme.location.begin
-			nextLexeme(self)
+		if token_type == 46 then 
+			prefixPointPos = get_begin()
+			nextLexeme()
 			prefix = name.name.value
 			prefixLoc = name.location
-			name = parseIndexName(self, "field name", name.location.end_)
-		elseif self.lexer.lexeme.type == Types.Dot3 then
-			Report(
-				self,
-				self.lexer.lexeme.location,
+			name = parseIndexName("field name", name.location.end_)
+		elseif token_type == Types.Dot3 then
+			report(
+
+				snapshot(),
 				"Unexpected '...' after type name; type pack is not allowed in this context"
 			)
 
-			nextLexeme(self)
+			nextLexeme()
 		elseif name.name.value == "typeof" then
-			local typeofBegin = self.lexer.lexeme
-			expectAndConsume(self, 40, "typeof type") 
-			local expr = parseExpr(self)
-			local endLoc = self.lexer.lexeme.location
-			expectMatchAndConsume(self, 41, typeofBegin, false) 
+			local typeofBegin = get_lexeme()
+			expectAndConsume(40, "typeof type") 
+			local expr = parseExpr()
+			local endLoc = snapshot()
+			expectMatchAndConsume(41, typeofBegin.type, typeofBegin.location.begin.line, typeofBegin.location.begin.column, false) 
 
 			local node = {
 				kind = "TypeTypeof",
@@ -3223,8 +4298,8 @@ function parseSimpleType(
 				expr = expr
 			}
 
-			if self.options.storeCstData then
-				self.cstNodeMap[node] = {
+			if storeCstData then
+				cstNodes[node] = {
 					kind = "CstTypeTypeof",
 					openPosition = typeofBegin.location.begin,
 					closePosition = endLoc.begin
@@ -3236,20 +4311,20 @@ function parseSimpleType(
 		local hasParams = false
 		local params = {}
 
-		local openPosRef = if self.options.storeCstData then { { line = 0, column = 0} } else nil
-		local commaPosRef = if self.options.storeCstData then {} else nil
-		local closePosRef = if self.options.storeCstData then { { line = 0, column = 0} } else nil
+		local openPosRef = if storeCstData then { { line = 0, column = 0} } else nil
+		local commaPosRef = if storeCstData then {} else nil
+		local closePosRef = if storeCstData then { { line = 0, column = 0} } else nil
 
-		if self.lexer.lexeme.type == 60 then 
+		if token_type == 60 then 
 			hasParams = true
-			params = parseTypeParams(self, openPosRef, commaPosRef, closePosRef)
+			params = parseTypeParams(openPosRef, commaPosRef, closePosRef)
 		end
 
 		local node = { 
 			kind = "TypeReference", 
 			location = {
 				begin = start.begin,
-				end_ = self.lexer.prevLocation.end_
+				end_ = getprev().end_
 			}, 
 			prefix = prefix, 
 			name = name.name.value, 
@@ -3259,8 +4334,8 @@ function parseSimpleType(
 			parameters = params 
 		}
 
-		if self.options.storeCstData then
-			self.cstNodeMap[node] = {
+		if storeCstData then
+			cstNodes[node] = {
 				kind = "CstTypeReference",
 				prefixPointPosition = prefixPointPos,
 				openParametersPosition = openPosRef and openPosRef[1] or nil,
@@ -3270,39 +4345,39 @@ function parseSimpleType(
 		end
 
 		return node
-	elseif self.lexer.lexeme.type == 123 then 
-		return parseTableType(self, inDeclarationContext)
-	elseif self.lexer.lexeme.type == 40 or self.lexer.lexeme.type == 60 then 
-		return parseFunctionType(self, allowPack, {})
-	elseif self.lexer.lexeme.type == Types.ReservedFunction then
-		nextLexeme(self)
+	elseif token_type == 123 then 
+		return parseTableType(inDeclarationContext)
+	elseif token_type == 40 or token_type == 60 then 
+		return parseFunctionType(allowPack, {})
+	elseif token_type == Types.ReservedFunction then
+		nextLexeme()
 
 		return reportTypeError(
-			self,
+
 			start, {},
 			"Using 'function' as a type annotation is not supported..."
 		)
 	else
-		Report(self, start, "Expected type, got %s", ToString(self.lexer.lexeme))
+		report(start, "Expected type, got %s", ToString(token_type, token_string, token_codepoint))
 
 		return {
 			kind = "TypeError",
 			location = start,
 			types = {},
 			isMissing = true,
-			messageIndex = #self.parseErrors
+			messageIndex = #parseErrors
 		}
 	end
 end
 
-function parseVariadicArgumentTypePack(self: Parser)
+function parseVariadicArgumentTypePack()
 	-- Generic: a...
-	if self.lexer.lexeme.type == Types.Name and Lookahead(self.lexer).type == Types.Dot3 then
-		local name = parseName(self, "generic name")
-		local endLoc = self.lexer.lexeme.location
-		
+	if token_type == Types.Name and next_type == Types.Dot3 then
+		local name = parseName("generic name")
+		local endLoc = snapshot()
+
 		-- This will not fail because of the lookahead guard.
-		expectAndConsume(self, Types.Dot3, "generic type pack annotation")
+		expectAndConsume(Types.Dot3, "generic type pack annotation")
 
 		local node = {
 			kind = "TypePackGeneric",
@@ -3313,8 +4388,8 @@ function parseVariadicArgumentTypePack(self: Parser)
 			genericName = name.name.value
 		}
 
-		if self.options.storeCstData then
-			self.cstNodeMap[node] = {
+		if storeCstData then
+			cstNodes[node] = {
 				kind = "CstTypePackGeneric",
 				ellipsisPosition = endLoc.begin
 			}
@@ -3322,7 +4397,7 @@ function parseVariadicArgumentTypePack(self: Parser)
 
 		return node
 	else -- Variadic: T
-		local varTy = parseType(self, false)
+		local varTy = parseType(false)
 
 		return {
 			kind = "TypePackVariadic",
@@ -3332,12 +4407,12 @@ function parseVariadicArgumentTypePack(self: Parser)
 	end
 end
 
-function parseTypePack(self: Parser): any
+function parseTypePack(): any
 	-- Variadic: ...T
-	if self.lexer.lexeme.type == Types.Dot3 then
-		local start = self.lexer.lexeme.location
-		nextLexeme(self)
-		local varTy = parseType(self, false)
+	if token_type == Types.Dot3 then
+		local start = snapshot()
+		nextLexeme()
+		local varTy = parseType(false)
 		return {
 			kind = "TypePackVariadic",
 			location = {
@@ -3346,14 +4421,14 @@ function parseTypePack(self: Parser): any
 			},
 			variadicType = varTy
 		}
-		
-	-- Generic: a...
-	elseif self.lexer.lexeme.type == Types.Name and Lookahead(self.lexer).type == Types.Dot3 then
-		local name = parseName(self, "generic name")
-		local endLoc = self.lexer.lexeme.location
+
+		-- Generic: a...
+	elseif token_type == Types.Name and next_type == Types.Dot3 then
+		local name = parseName("generic name")
+		local endLoc = snapshot()
 
 		-- This will not fail because of the lookahead guard.
-		expectAndConsume(self, Types.Dot3, "generic type pack annotation")
+		expectAndConsume(Types.Dot3, "generic type pack annotation")
 
 		local node = {
 			kind = "TypePackGeneric",
@@ -3364,8 +4439,8 @@ function parseTypePack(self: Parser): any
 			genericName = name.name.value
 		}
 
-		if self.options.storeCstData then
-			self.cstNodeMap[node] = {
+		if storeCstData then
+			cstNodes[node] = {
 				kind = "CstTypePackGeneric",
 				ellipsisPosition = endLoc.begin
 			}
@@ -3373,13 +4448,13 @@ function parseTypePack(self: Parser): any
 
 		return node
 	end
-	
+
 	return nil
 end
 
 function parseTypeParams(
 
-	self: Parser,
+
 	openingPosRef: any,
 	commaPosRef: any,
 	closingPosRef: any
@@ -3387,33 +4462,33 @@ function parseTypeParams(
 )
 
 	local params = {}
-	if self.lexer.lexeme.type == 60 then
+	if token_type == 60 then
 
-		local begin = self.lexer.lexeme
+		local begin = get_lexeme()
 		if openingPosRef then
 			openingPosRef[1] = begin.location.begin
 		end
 
-		nextLexeme(self)
+		nextLexeme()
 
 		while true do
-			if shouldParseTypePack(self) then
-				local pack = parseTypePack(self)
+			if shouldParseTypePack() then
+				local pack = parseTypePack()
 				table.insert(params, { typePack = pack })
-			elseif self.lexer.lexeme.type == 40 then
-				local beginParen = self.lexer.lexeme.location
+			elseif token_type == 40 then
+				local beginParen = snapshot()
 				local type_ = nil
 				local typePack = nil
-				local t = self.lexer.lexeme.type
+				local t = token_type
 
 				if t ~= 124 and t ~= 38 then
-					type_, typePack = parseSimpleType(self, true, false)
+					type_, typePack = parseSimpleType(true, false)
 				end
-				
+
 				--/ Consider the following type:
-				
+
 				--  X<(T)>
-				
+
 				-- Is this a type pack or a parenthesized type? The
 				-- assumption will be a type pack, as that's what allows one
 				-- to express either a singular type pack or a potential
@@ -3424,11 +4499,11 @@ function parseTypeParams(
 						and #typePack.types == 1
 						and not typePack.tailType
 						and (
-							self.lexer.lexeme.type == 124
-								or self.lexer.lexeme.type == 63
-								or self.lexer.lexeme.type == 38
+							token_type == 124
+								or token_type == 63
+								or token_type == 38
 						) then
-						
+
 						-- If we parsed an explicit type pack with a single
 						-- type in it (something of the form `(T)`), and
 						-- the next lexeme is one that follows a type
@@ -3443,7 +4518,7 @@ function parseTypeParams(
 							type = parenTy
 						}
 
-						table.insert(params, {type = parseTypeSuffix(self, node, beginParen)})
+						table.insert(params, {type = parseTypeSuffix(node, beginParen)})
 					else
 						-- Otherwise, it's a type pack.
 						table.insert(params, { type = nil, typePack = typePack })
@@ -3458,152 +4533,45 @@ function parseTypeParams(
 					--   separator. We just fall right into
 					--   `parseTypeSuffix`, which allows its first
 					--   argument to be `nullptr`
-					table.insert(params, { type = parseTypeSuffix(self, type_, beginParen)})
+					table.insert(params, { type = parseTypeSuffix(type_, beginParen)})
 				end
-			elseif self.lexer.lexeme.type == 62 and #params == 0 then
+			elseif token_type == 62 and #params == 0 then
 				break
 			else
-				table.insert(params, { type = parseType(self, false)})
+				table.insert(params, { type = parseType(false)})
 			end
 
-			if self.lexer.lexeme.type == 44 then
-				if commaPosRef then table.insert(commaPosRef, self.lexer.lexeme.location.begin) end
-				nextLexeme(self)
+			if token_type == 44 then
+				if commaPosRef then table.insert(commaPosRef, get_begin()) end
+				nextLexeme()
 			else
 				break
 			end
 		end
 
-		if closingPosRef then closingPosRef[1] = self.lexer.lexeme.location.begin end
-		expectMatchAndConsume(self, 62, begin, false)
+		if closingPosRef then closingPosRef[1] = get_begin() end
+		expectMatchAndConsume(62, begin.type, begin.location.begin.line, begin.location.begin.column, false)
 	end
 	return params
 end
 
-local UnaryOp = {
-	Not = 0,
-	Minus = 1,
-	Len = 2
-}
 
-local BinaryOp = {
-	Add = 0, Sub = 1, Mul = 2, Div = 3, FloorDiv = 4, Mod = 5, Pow = 6, Concat = 7,
-	CompareNe = 8, CompareEq = 9, CompareLt = 10, CompareLe = 11, CompareGt = 12, CompareGe = 13,
-	And = 14, Or = 15
-}
-
-local BinaryPriority = {
-	[BinaryOp.Add] = {6, 6},
-	[BinaryOp.Sub] = {6, 6},
-	[BinaryOp.Mul] = {7, 7},
-	[BinaryOp.Div] = {7, 7},
-	[BinaryOp.FloorDiv] = {7, 7},
-	[BinaryOp.Mod] = {7, 7},
-	[BinaryOp.Pow] = {10, 9},
-	[BinaryOp.Concat] = {5, 4},
-	[BinaryOp.CompareNe] = {3, 3},
-	[BinaryOp.CompareEq] = {3, 3},
-	[BinaryOp.CompareLt] = {3, 3},
-	[BinaryOp.CompareLe] = {3, 3},
-	[BinaryOp.CompareGt] = {3, 3},
-	[BinaryOp.CompareGe] = {3, 3},
-	[BinaryOp.And] = {2, 2},
-	[BinaryOp.Or] = {1, 1}
-}
-
-function parseUnaryOp(lexeme: any): number?
-	local t = lexeme.type
-	if t == Types.ReservedNot then
-		return UnaryOp.Not
-	elseif t == 45 then
-		return UnaryOp.Minus 
-	elseif t == 35 then
-		return UnaryOp.Len 
-	end
-
-	return nil
-end
-
-function parseBinaryOp(lexeme: Lexer.Lexeme): number?
-	local t = lexeme.type
-	if t == 43 then
-		return BinaryOp.Add
-	elseif t == 45 then
-		return BinaryOp.Sub
-	elseif t == 42 then
-		return BinaryOp.Mul
-	elseif t == 47 then
-		return BinaryOp.Div
-	elseif t == Types.FloorDiv then
-		return BinaryOp.FloorDiv
-	elseif t == 37 then
-		return BinaryOp.Mod
-	elseif t == 94 then
-		return BinaryOp.Pow
-	elseif t == Types.Dot2 then
-		return BinaryOp.Concat
-	elseif t == Types.NotEqual then
-		return BinaryOp.CompareNe
-	elseif t == Types.Equal then
-		return BinaryOp.CompareEq
-	elseif t == 60 then
-		return BinaryOp.CompareLt
-	elseif t == Types.LessEqual then
-		return BinaryOp.CompareLe
-	elseif t == 62 then
-		return BinaryOp.CompareGt
-	elseif t == Types.GreaterEqual then
-		return BinaryOp.CompareGe
-	elseif t == Types.ReservedAnd then
-		return BinaryOp.And
-	elseif t == Types.ReservedOr then
-		return BinaryOp.Or
-	end
-
-	return nil
-end
-
-function parseCompoundOp(lexeme: any): number?
-	local t = lexeme.type
-	if t == Types.AddAssign then
-		return BinaryOp.Add
-	elseif t == Types.SubAssign then
-		return BinaryOp.Sub
-	elseif t == Types.MulAssign then
-		return BinaryOp.Mul
-	elseif t == Types.DivAssign then
-		return BinaryOp.Div
-	elseif t == Types.FloorDivAssign then
-		return BinaryOp.FloorDiv
-	elseif t == Types.ModAssign then
-		return BinaryOp.Mod
-	elseif t == Types.PowAssign then
-		return BinaryOp.Pow
-	elseif t == Types.ConcatAssign then
-		return BinaryOp.Concat
-	end
-	return nil
-end
-
-function checkUnaryConfusables(self: Parser): number?
-	local curr = self.lexer.lexeme
-	
+function checkUnaryConfusables(): number?
 	-- early-out: need to check if this is a possible confusable quickly
-	if curr.type ~= 33 then 
+	if token_type ~= 33 then 
 		return nil
 	end
-	
-	Report(
-		self,
-		curr.location,
+
+	report(
+		snapshot(),
 		"Unexpected '!'; did you mean 'not'?"
 	)
 
 	return UnaryOp.Not
 end
 
-function checkBinaryConfusables(self: Parser, limit: number): number?
-	local curr = self.lexer.lexeme
+function checkBinaryConfusables(limit: number): number?
+	local curr = get_lexeme()
 
 	-- arly-out: need to check if this is a possible confusable quickly
 	if curr.type ~= 38 and curr.type ~= 124 and curr.type ~= 33 then
@@ -3612,39 +4580,38 @@ function checkBinaryConfusables(self: Parser, limit: number): number?
 
 	-- slow path: possible confusable
 	local start = curr.location
-	local next_ = Lookahead(self.lexer)
 
-	if curr.type == 38 and next_.type == 38 and curr.location.end_.column == next_.location.begin.column and BinaryPriority[BinaryOp.And][1] > limit then
-		nextLexeme(self)
+	if curr.type == 38 and next_type == 38 and curr.location.end_.column == next_end_col and BinaryPriority[BinaryOp.And][1] > limit then
+		nextLexeme()
 
-		Report(self,
+		report(
 			{
 				begin = start.begin,
-				end_ = next_.location.end_
+				end_ = {line = next_end_line :: number, column = next_end_col :: number}
 			},
 			"Unexpected '&&'; did you mean 'and'?"
 		)
 
 		return BinaryOp.And
-	elseif curr.type == 124 and next_.type == 124 and curr.location.end_.column == next_.location.begin.column and BinaryPriority[BinaryOp.Or][1] > limit then
-		nextLexeme(self)
+	elseif curr.type == 124 and next_type == 124 and curr.location.end_.column == next_end_col and BinaryPriority[BinaryOp.Or][1] > limit then
+		nextLexeme()
 
-		Report(self,
+		report(
 			{
 				begin = start.begin,
-				end_ = next_.location.end_
+				end_ = {line = next_end_line :: number, column = next_end_col :: number}
 			},
 			"Unexpected '||'; did you mean 'or'?"
 		)
 
 		return BinaryOp.Or
-	elseif curr.type == 33 and next_.type == 61 and curr.location.end_.column == next_.location.begin.column and BinaryPriority[BinaryOp.CompareNe][1] > limit then
-		nextLexeme(self)
+	elseif curr.type == 33 and next_type == 61 and curr.location.end_.column == next_end_col and BinaryPriority[BinaryOp.CompareNe][1] > limit then
+		nextLexeme()
 
-		Report(self,
+		report(
 			{
-				begin=start.begin,
-				end_=next_.location.end_
+				begin = start.begin,
+				end_ = {line = next_end_line :: number, column = next_end_col :: number}
 			},
 			"Unexpected '!='; did you mean '~='?"
 		)
@@ -3657,24 +4624,24 @@ end
 
 -- subexpr -> (asexp | unop subexpr) { binop subexpr }
 -- where `binop' is any binary operator with a priority higher than `limit'
-function parseExpr(self: Parser, limit: number?): any
+function parseExpr(limit: number?): any
 	limit = limit or 0
-	local oldRecursion = self.recursionCounter
-	
-	-- this handles recursive calls to parseSubExpr/parseExpr
-	incrementRecursionCounter(self, "expression")
+	local oldRecursion = recursionCounter
 
-	local start = self.lexer.lexeme.location
+	-- this handles recursive calls to parseSubExpr/parseExpr
+	incrementRecursionCounter("expression")
+
+	local start = snapshot()
 	local expr = nil
 
-	local uop = parseUnaryOp(self.lexer.lexeme)
-	if not uop then uop = checkUnaryConfusables(self) end
+	local uop = UnaryOpLookup[token_type] -- Fix: Lookup based on token type
+	if not uop then uop = checkUnaryConfusables() end
 
 	if uop then
-		local opPosition = self.lexer.lexeme.location.begin
-		nextLexeme(self)
+		local opPosition = get_begin()
+		nextLexeme()
 
-		local subexpr = parseExpr(self, 8)
+		local subexpr = parseExpr(8)
 
 		expr = {
 			kind = "ExprUnary",
@@ -3686,30 +4653,30 @@ function parseExpr(self: Parser, limit: number?): any
 			expr = subexpr
 		}
 
-		if self.options.storeCstData then
-			self.cstNodeMap[expr] = {
+		if storeCstData then
+			cstNodes[expr] = {
 				kind = "CstExprOp",
 				opPosition = opPosition
 			}
 		end
 	else
-		expr = parseAssertionExpr(self)
+		expr = parseAssertionExpr()
 	end
-	
+
 	-- expand while operators have priorities higher than `limit'
-	local op = parseBinaryOp(self.lexer.lexeme)
+	local op = BinaryOpLookup[token_type]
 
 	if not op then
-		op = checkBinaryConfusables(self, limit)
+		op = checkBinaryConfusables(limit)
 	end
-	
+
 	-- expand while operators have priorities higher than `limit'
 	while op and BinaryPriority[op][1] > limit do
-		local opPosition = self.lexer.lexeme.location.begin
-		nextLexeme(self)
+		local opPosition = get_begin()
+		nextLexeme()
 
 		-- read sub-expression with higher priority
-		local nextExpr = parseExpr(self, BinaryPriority[op][2])
+		local nextExpr = parseExpr(BinaryPriority[op][2])
 
 		expr = {
 			kind = "ExprBinary",
@@ -3722,47 +4689,47 @@ function parseExpr(self: Parser, limit: number?): any
 			right = nextExpr
 		}
 
-		if self.options.storeCstData then
-			self.cstNodeMap[expr] = {
+		if storeCstData then
+			cstNodes[expr] = {
 				kind = "CstExprOp",
 				opPosition = opPosition
 			}
 		end
 
-		op = parseBinaryOp(self.lexer.lexeme)
+		op = BinaryOpLookup[token_type] -- Fix: Lookup based on token type
 		if not op then
-			op = checkBinaryConfusables(self, limit)
+			op = checkBinaryConfusables(limit)
 		end
-			
+
 		-- note: while the parser isn't recursive here, we're generating recursive structures of unbounded depth
-		incrementRecursionCounter(self, "expression")
+		incrementRecursionCounter("expression")
 	end
 
-	self.recursionCounter = oldRecursion
+	recursionCounter = oldRecursion
 	return expr
 end
 
 -- NAME
-function parseNameExpr(self: Parser, context: string): any
-	local nameOpt = parseNameOpt(self, context)
+function parseNameExpr(context: string): any
+	local nameOpt = parseNameOpt(context)
 
 	if not nameOpt then
 		return {
 			kind = "ExprError",
-			location = self.lexer.lexeme.location,
+			location = snapshot(),
 			expressions = {},
-			messageIndex = #self.parseErrors
+			messageIndex = #parseErrors
 		}
 	end
 
 	local name = nameOpt
-	local local_ = self.localMap[name.name.value]
+	local local_ = localMap[name.name.value]
 
 	if local_ then
-		if local_.functionDepth < (self.typeFunctionDepth or 0) then
+		if local_.functionDepth < (typeFunctionDepth or 0) then
 			return reportExprError(
-				self,
-				self.lexer.lexeme.location,
+
+				snapshot(),
 				{},
 				"Type function cannot reference outer local '%s'",
 				local_.name
@@ -3773,7 +4740,7 @@ function parseNameExpr(self: Parser, context: string): any
 			kind = "ExprLocal",
 			location = name.location,
 			local_ = local_,
-			upvalue = local_.functionDepth ~= (#self.functionStack - 1)
+			upvalue = local_.functionDepth ~= (#functionStack - 1)
 		}
 	end
 
@@ -3785,26 +4752,28 @@ function parseNameExpr(self: Parser, context: string): any
 end
 
 -- prefixexp -> NAME | '(' expr ')'
-function parsePrefixExpr(self: Parser)
-	if self.lexer.lexeme.type == 40 then 
-		local start = self.lexer.lexeme.location.begin
-		local matchParen = self.lexer.lexeme
-		nextLexeme(self)
+function parsePrefixExpr()
+	if token_type == 40 then 
+		local start = get_begin()
+		local Paren_type = token_type
+		local Paren_line = token_start_line
+		local Paren_col = token_start_col
+		nextLexeme()
 
-		local expr = parseExpr(self)
+		local expr = parseExpr()
 
-		local end_ = self.lexer.lexeme.location.end_
-		if self.lexer.lexeme.type ~= 41 then 
+		local end_ = get_end()
+		if token_type ~= 41 then 
 			expectMatchAndConsumeFail(
-				self,
+
 				41,
-				matchParen,
-				self.lexer.lexeme.type == 61 and "; did you mean to use '{' when defining a table?" or nil
+				Paren_type, Paren_line, Paren_col,
+				token_type == 61 and "; did you mean to use '{' when defining a table?" or nil
 			)
 
-			end_ = self.lexer.prevLocation.end_
+			end_ = getprev().end_
 		else
-			nextLexeme(self)
+			nextLexeme()
 		end
 
 		return {
@@ -3816,23 +4785,55 @@ function parsePrefixExpr(self: Parser)
 			expr = expr
 		}
 	else
-		return parseNameExpr(self, "expression")
+		return parseNameExpr("expression")
 	end
 end
 
--- primaryexp -> prefixexp { `.' NAME | `[' exp `]' | `:' NAME funcargs | funcargs }
-function parsePrimaryExpr(self: Parser, asStatement: boolean): any
-	local start = self.lexer.lexeme.location.begin
-	local expr = parsePrefixExpr(self)
+-- // Explicit Type Instantiation 
 
-	local oldRecursion = self.recursionCounter
+local function parseTypeInstantiationExpr(cstNodeOut: any)
+	local begin_type, begin_line, begin_col = token_type, token_start_line, token_start_col
+	nextLexeme()
+
+	local typesOrPacks = parseTypeParams() 
+
+	expectMatchAndConsume(62, begin_type, begin_line, begin_col)
+
+	return typesOrPacks
+end
+
+local function parseExplicitTypeInstantiationExpr(start: any, basedOnExpr: any)
+	local typesOrPacks = parseTypeInstantiationExpr() 
+	local endLocation = getprev() 
+
+	return {
+		kind = "ExprInstantiate",
+		location = {begin=start, end_=endLocation.end_},
+		expr = basedOnExpr,
+		typeArguments = typesOrPacks
+	}
+end
+
+local function reportAmbiguousCallError()
+	report(
+		snapshot(),
+		"Ambiguous syntax: this looks like an argument list for a function call, but could also be a start of new statement; use ';' to separate statements"
+	)
+end
+
+-- primaryexp -> prefixexp { `.' NAME | `[' exp `]' | `:' NAME funcargs | funcargs }
+function parsePrimaryExpr(asStatement: boolean): any
+	local start = get_begin()
+	local expr = parsePrefixExpr()
+
+	local oldRecursion = recursionCounter
 
 	while true do
-		if self.lexer.lexeme.type == 46 then 
-			local opPosition = self.lexer.lexeme.location.begin
-			nextLexeme(self)
+		if token_type == 46 then 
+			local opPosition = get_begin()
+			nextLexeme()
 
-			local index = parseIndexName(self, nil, opPosition)
+			local index = parseIndexName(nil, opPosition)
 
 			expr = {
 				kind = "ExprIndexName",
@@ -3843,14 +4844,14 @@ function parsePrimaryExpr(self: Parser, asStatement: boolean): any
 				opPosition = opPosition,
 				op = 46 
 			}
-		elseif self.lexer.lexeme.type == 91 then 
-			local matchBracket = self.lexer.lexeme
-			nextLexeme(self)
+		elseif token_type == 91 then 
+			local bracket_type, bracket_line, bracket_col = token_type, token_start_line, token_start_col
+			nextLexeme()
 
-			local index = parseExpr(self)
-			local end_ = self.lexer.lexeme.location.end_
+			local index = parseExpr()
+			local end_ = get_end()
 
-			expectMatchAndConsume(self, 93, matchBracket) 
+			expectMatchAndConsume(93, bracket_type, bracket_line, bracket_col) 
 
 			expr = {
 				kind = "ExprIndexExpr",
@@ -3858,11 +4859,11 @@ function parsePrimaryExpr(self: Parser, asStatement: boolean): any
 				expr = expr,
 				index = index
 			}
-		elseif self.lexer.lexeme.type == 58 then 
-			local opPosition = self.lexer.lexeme.location.begin
-			nextLexeme(self)
+		elseif token_type == 58 then 
+			local opPosition = get_begin()
+			nextLexeme()
 
-			local index = parseIndexName(self, "method name", opPosition)
+			local index = parseIndexName("method name", opPosition)
 
 			local func = {
 				kind = "ExprIndexName",
@@ -3877,52 +4878,52 @@ function parsePrimaryExpr(self: Parser, asStatement: boolean): any
 			if ExplicitTypeExpressionInstantiation then
 				local typeArgs = {}
 
-				if self.lexer.lexeme.type == 60 and Lookahead(self.lexer).type == 60 then
-					typeArgs = parseTypeInstantiationExpr(self)
+				if token_type == 60 and next_type == 60 then
+					typeArgs = parseTypeInstantiationExpr()
 				end
 
-				expr = parseFunctionArgs(self, func, true)
+				expr = parseFunctionArgs(func, true)
 
 				if #typeArgs > 0 then
 					expr.typeArguments = typeArgs
 				end
 			else
-				expr = parseFunctionArgs(self, func, true)
+				expr = parseFunctionArgs(func, true)
 			end
-		elseif self.lexer.lexeme.type == 40 then 
+		elseif token_type == 40 then 
 			-- This error is handled inside 'parseFunctionArgs' as well, but for better error recovery we need to break out the current loop here
-			if not asStatement and expr.location.end_.line ~= self.lexer.lexeme.location.begin.line then
-				reportAmbiguousCallError(self)
+			if not asStatement and expr.location.end_.line ~= token_start_line then
+				reportAmbiguousCallError()
 				break
 			end
-			expr = parseFunctionArgs(self, expr, false)
-		elseif self.lexer.lexeme.type == 123 or 
-			self.lexer.lexeme.type == Types.RawString or 
-			self.lexer.lexeme.type == Types.QuotedString then
-			expr = parseFunctionArgs(self, expr, false)
+			expr = parseFunctionArgs(expr, false)
+		elseif token_type == 123 or 
+			token_type == Types.RawString or 
+			token_type == Types.QuotedString then
+			expr = parseFunctionArgs(expr, false)
 		elseif ExplicitTypeExpressionInstantiation and 
-			self.lexer.lexeme.type == 60 and Lookahead(self.lexer).type == 60 then 
-			expr = parseExplicitTypeInstantiationExpr(self, start, expr)
+			token_type == 60 and next_type == 60 then 
+			expr = parseExplicitTypeInstantiationExpr(start, expr)
 		else
 			break
 		end
-		
+
 		-- note: while the parser isn't recursive here, we're generating recursive structures of unbounded depth
-		incrementRecursionCounter(self, "expression")
+		incrementRecursionCounter("expression")
 	end
 
-	self.recursionCounter = oldRecursion
+	recursionCounter = oldRecursion
 	return expr
 end
 
 -- asexp -> simpleexp [`::' Type]
-function parseAssertionExpr(self: Parser)
-	local start = self.lexer.lexeme.location
-	local expr = parseSimpleExpr(self)
+function parseAssertionExpr()
+	local start = snapshot()
+	local expr = parseSimpleExpr()
 
-	if self.lexer.lexeme.type == Types.DoubleColon then
-		nextLexeme(self)
-		local annotation = parseType(self)
+	if token_type == Types.DoubleColon then
+		nextLexeme()
+		local annotation = parseType()
 		return {
 			kind = "ExprTypeAssertion",
 			location = {
@@ -3938,118 +4939,112 @@ function parseAssertionExpr(self: Parser)
 end
 
 -- simpleexp -> NUMBER | STRING | NIL | true | false | ... | constructor | [attributes] FUNCTION body | primaryexp
-function parseSimpleExpr(self: Parser): any
-	local start = self.lexer.lexeme.location
+function parseSimpleExpr(): any
+	local start = snapshot()
 
 	local attributes = {}
 
-	if self.lexer.lexeme.type == Types.Attribute or self.lexer.lexeme.type == Types.AttributeOpen then
-		attributes = parseAttributes(self)
+	if token_type == Types.Attribute or token_type == Types.AttributeOpen then
+		attributes = parseAttributes()
 
-		if self.lexer.lexeme.type ~= Types.ReservedFunction then
+		if token_type ~= Types.ReservedFunction then
 			return reportExprError(
-				self,
+
 				start,
 				{},
 				"Expected 'function' declaration after attribute, but got %s instead",
-				ToString(self.lexer.lexeme)
+				ToString(token_type, token_string, token_codepoint)
 			)
 		end
 	end
 
-	if self.lexer.lexeme.type == Types.ReservedNil then
-		nextLexeme(self)
+	if token_type == Types.ReservedNil then
+		nextLexeme()
 		return {
 			kind = "ExprConstantNil",
 			location = start
 		}
-	elseif self.lexer.lexeme.type == Types.ReservedTrue then
-		nextLexeme(self)
+	elseif token_type == Types.ReservedTrue then
+		nextLexeme()
 		return {
 			kind = "ExprConstantBool",
 			location = start,
 			value = true
 		}
-	elseif self.lexer.lexeme.type == Types.ReservedFalse then
-		nextLexeme(self)
+	elseif token_type == Types.ReservedFalse then
+		nextLexeme()
 		return {
 			kind = "ExprConstantBool",
 			location = start,
 			value = false
 		}
-	elseif self.lexer.lexeme.type == Types.ReservedFunction then
-		local matchFunction = self.lexer.lexeme
-		nextLexeme(self)
-		return parseFunctionBody(self, false, matchFunction, nil, nil, attributes)[1]
-	elseif self.lexer.lexeme.type == Types.Number then
-		return parseNumber(self)
-	elseif self.lexer.lexeme.type == Types.RawString or self.lexer.lexeme.type == Types.QuotedString or self.lexer.lexeme.type == Types.InterpStringSimple then
-		return parseString(self)
-	elseif self.lexer.lexeme.type == Types.InterpStringBegin then
-		return parseInterpString(self)
-	elseif self.lexer.lexeme.type == Types.BrokenString then
-		nextLexeme(self)
+	elseif token_type == Types.ReservedFunction then
+		local matchFunction = get_lexeme()
+		nextLexeme()
+		return parseFunctionBody(false, matchFunction, nil, nil, attributes)[1]
+	elseif token_type == Types.Number then
+		return parseNumber()
+	elseif token_type == Types.RawString or token_type == Types.QuotedString or token_type == Types.InterpStringSimple then
+		return parseString()
+	elseif token_type == Types.InterpStringBegin then
+		return parseInterpString()
+	elseif token_type == Types.BrokenString then
+		nextLexeme()
 		return reportExprError(
-			self, start, {}, "Malformed string; did you forget to finish it?"
+			start, {}, "Malformed string; did you forget to finish it?"
 		)
-	elseif self.lexer.lexeme.type == Types.BrokenInterpDoubleBrace then
-		nextLexeme(self)
+	elseif token_type == Types.BrokenInterpDoubleBrace then
+		nextLexeme()
 		return reportExprError(
-			self,
+
 			start,
 			{},
 			"Double braces are not permitted within interpolated strings; did you mean '\\{'?"
 		)
-	elseif self.lexer.lexeme.type == Types.Dot3 then
-		if self.functionStack[#self.functionStack].vararg then
-			nextLexeme(self)
+	elseif token_type == Types.Dot3 then
+		if functionStack[#functionStack].vararg then
+			nextLexeme()
 			return {
 				kind = "ExprVarargs",
 				location = start
 			}
 		else
-			nextLexeme(self)
+			nextLexeme()
 			return reportExprError(
-				self,
+
 				start,
 				{},
 				"Cannot use '...' outside of a vararg function"
 			)
 		end
-	elseif self.lexer.lexeme.type == 123 then 
-		return parseTableConstructor(self)
-	elseif self.lexer.lexeme.type == Types.ReservedIf then
-		return parseIfElseExpr(self)
+	elseif token_type == 123 then 
+		return parseTableConstructor()
+	elseif token_type == Types.ReservedIf then
+		return parseIfElseExpr()
 	else
-		return parsePrimaryExpr(self, false)
+		return parsePrimaryExpr(false)
 	end
 end
 
 -- args ::=  `(' [explist] `)' | tableconstructor | String
-function parseFunctionArgs(
+function parseFunctionArgs(func: any, selfCall: boolean): any
 
-	self: Parser,
-	func: any,
-	selfCall: boolean
-
-): any
-
-	if self.lexer.lexeme.type == 40 then 
-		local argStart = self.lexer.lexeme.location.end_
-		if func.location.end_.line ~= self.lexer.lexeme.location.begin.line then
-			reportAmbiguousCallError(self)
+	if token_type == 40 then 
+		local argStart = get_end()
+		if func.location.end_.line ~= token_start_line then
+			reportAmbiguousCallError()
 		end
 
-		local matchParen = self.lexer.lexeme
-		nextLexeme(self)
+		local paren_type, paren_line, paren_col = token_type, token_start_line, token_start_col
+		nextLexeme()
 
 		local args = {}
-		if self.lexer.lexeme.type ~= 41 then 
-			parseExprList(self, args)
+		if token_type ~= 41 then 
+			parseExprList(args)
 		end
 
-		local end_ = self.lexer.lexeme.location
-		expectMatchAndConsume(self, 41, matchParen)
+		local end_ = snapshot()
+		expectMatchAndConsume(41, paren_type, paren_line, paren_col)
 
 		return {
 			kind = "ExprCall",
@@ -4060,10 +5055,10 @@ function parseFunctionArgs(
 			typeArguments = {},
 			argLocation = {begin=argStart, end_=end_.end_}
 		}
-	elseif self.lexer.lexeme.type == 123 then
-		local argStart = self.lexer.lexeme.location.end_
-		local expr = parseTableConstructor(self)
-		local argEnd = self.lexer.prevLocation.end_
+	elseif token_type == 123 then
+		local argStart = get_end()
+		local expr = parseTableConstructor()
+		local argEnd = getprev().end_
 
 		return {
 			kind = "ExprCall",
@@ -4080,9 +5075,9 @@ function parseFunctionArgs(
 				end_ = argEnd
 			}
 		}
-	elseif self.lexer.lexeme.type == Types.RawString or self.lexer.lexeme.type == Types.QuotedString then
-		local argLocation = self.lexer.lexeme.location
-		local expr = parseString(self)
+	elseif token_type == Types.RawString or token_type == Types.QuotedString then
+		local argLocation = snapshot()
+		local expr = parseString()
 
 		return {
 			kind = "ExprCall",
@@ -4097,86 +5092,72 @@ function parseFunctionArgs(
 			argLocation = argLocation
 		}
 	else
-		return reportFunctionArgsError(self, func, selfCall)
+		return reportFunctionArgsError(func, selfCall)
 	end
 end
 
-function reportFunctionArgsError(self: Parser, func: any, selfCall: boolean)
-	if selfCall and self.lexer.lexeme.location.begin.line ~= func.location.end_.line then
+function reportFunctionArgsError(func: any, selfCall: boolean)
+	if selfCall and token_start_line ~= func.location.end_.line then
 		return reportExprError(
-			self,
+
 			func.location :: Location,
 			{func},
 			"Expected function call arguments after '('"
 		)
 	else
 		return reportExprError(
-			self,
+
 			{
 				begin = func.location.begin,
-				end_ = self.lexer.lexeme.location.begin
+				end_ = get_begin()
 			},
 			{func},
 			"Expected '(', '{' or <string> when parsing function call, got %s",
-			ToString(self.lexer.lexeme)
+			ToString(token_type, token_string, token_codepoint)
 		)
 	end
 end
 
-function reportAmbiguousCallError(self: Parser)
-	Report(
-		self,
-		self.lexer.lexeme.location,
-		"Ambiguous syntax: this looks like an argument list for a function call, but could also be a start of new statement; use ';' to separate statements"
-	)
-end
+function parseIndexName(context: string?, prev: any)
 
-function parseIndexName(
-
-	self: Parser,
-	context: string?,
-	prev: any
-
-)
-
-	local nameOpt = parseNameOpt(self, context)
+	local nameOpt = parseNameOpt(context)
 	if nameOpt then return nameOpt end
 
-	if self.lexer.lexeme.type >= Types.Reserved_BEGIN
-		and self.lexer.lexeme.type < Types.Reserved_END and
-		prev and self.lexer.lexeme.location.begin.line == prev.line then
+	if token_type >= Types.Reserved_BEGIN
+		and token_type < Types.Reserved_END and
+		prev and token_start_line == prev.line then
 
 		local result = {
-			name = { value = self.lexer.lexeme.data },
-			location = self.lexer.lexeme.location
+			name = { value = token_string },
+			location = snapshot()
 		}
 
-		nextLexeme(self)
+		nextLexeme()
 		return result
 	end
 
 	return {
 		name = { value = nameError },
-		location = self.lexer.lexeme.location
+		location = snapshot()
 	}
 end
 
-function parseCallList(self: Parser, commaPositions: any): any
+function parseCallList(commaPositions: any): any
 
-	if self.lexer.lexeme.type == 40 then 
-		local argStart = self.lexer.lexeme.location.end_
-		local matchParen = self.lexer.lexeme
+	if token_type == 40 then 
+		local argStart = get_end()
+		local paren_type, paren_line, paren_col = token_type, token_start_line, token_start_col
 
-		nextLexeme(self)
+		nextLexeme()
 
 		local args = {}
 
-		if self.lexer.lexeme.type ~= 41 then
-			parseExprList(self, args, commaPositions)
+		if token_type ~= 41 then
+			parseExprList(args, commaPositions)
 		end
 
-		local end_ = self.lexer.lexeme.location
-		expectMatchAndConsume(self, 41, matchParen)
+		local end_ = snapshot()
+		expectMatchAndConsume(41, paren_type, paren_line, paren_col)
 
 		return {
 			args,
@@ -4185,25 +5166,25 @@ function parseCallList(self: Parser, commaPositions: any): any
 				end_ = end_.end_
 			},
 			{
-				begin = matchParen.location.begin,
-				end_ = self.lexer.prevLocation.begin
+				begin = {line = paren_line, column = paren_col},
+				end_ = getprev().begin
 			}
 		}
-	elseif self.lexer.lexeme.type == 123 then 
-		local argStart = self.lexer.lexeme.location.end_
-		local expr = parseTableConstructor(self)
+	elseif token_type == 123 then 
+		local argStart = get_end()
+		local expr = parseTableConstructor()
 
 		return {
 			{expr},
 			{
 				begin=argStart,
-				end_=self.lexer.prevLocation.end_
+				end_=getprev().end_
 			},
 			expr.location
 		}
 	else
-		local argLoc = self.lexer.lexeme.location
-		local expr = parseString(self)
+		local argLoc = snapshot()
+		local expr = parseString()
 		return { {expr}, argLoc, expr.location }
 	end
 end
@@ -4212,38 +5193,38 @@ end
 -- fieldlist ::= field {fieldsep field} [fieldsep]
 -- field ::= `[' exp `]' `=' exp | Name `=' exp | exp
 -- fieldsep ::= `,' | `;'
-function parseTableConstructor(self: Parser): any
+function parseTableConstructor(): any
 	local items = {} :: {any}
 	local cstItems = {} 
 
-	local start = self.lexer.lexeme.location
+	local start = snapshot()
 
-	local matchBrace = self.lexer.lexeme
-	expectAndConsume(self, 123, "table literal") 
+	local brace_type, brace_line, brace_col = token_type, token_start_line, token_start_col
+	expectAndConsume(123, "table literal") 
 
 	local lastElementIndent = 0
 
-	while self.lexer.lexeme.type ~= 125 do 
-		lastElementIndent = self.lexer.lexeme.location.begin.column
+	while token_type ~= 125 do 
+		lastElementIndent = get_begin().column
 
 		local indexerOpenPos = nil
 		local indexerClosePos = nil
 		local equalsPos = nil
 
-		if self.lexer.lexeme.type == 91 then 
-			indexerOpenPos = self.lexer.lexeme.location.begin
-			local matchLocationBracket = self.lexer.lexeme
-			nextLexeme(self)
+		if token_type == 91 then 
+			indexerOpenPos = get_begin()
+			local bracket_type, bracket_line, bracket_col = token_type, token_start_line, token_start_col
+			nextLexeme()
 
-			local key = parseExpr(self)
+			local key = parseExpr()
 
-			indexerClosePos = self.lexer.lexeme.location.begin
-			expectMatchAndConsume(self, 93, matchLocationBracket) 
+			indexerClosePos = get_begin()
+			expectMatchAndConsume(93, bracket_type, bracket_line, bracket_col) 
 
-			equalsPos = self.lexer.lexeme.location.begin
-			expectAndConsume(self, 61, "table field") 
+			equalsPos = get_begin()
+			expectAndConsume(61, "table field") 
 
-			local value = parseExpr(self)
+			local value = parseExpr()
 
 			table.insert(items, {
 				kind = "General",
@@ -4251,21 +5232,21 @@ function parseTableConstructor(self: Parser): any
 				value = value
 			})
 
-			if self.options.storeCstData then
+			if storeCstData then
 				table.insert(cstItems, {
 					indexerOpenPosition = indexerOpenPos,
 					indexerClosePosition = indexerClosePos,
 					equalsPosition = equalsPos,
-					separator = tableSeparator(self),
-					separatorPosition = self.lexer.lexeme.location.begin
+					separator = tableSeparator(),
+					separatorPosition = get_begin()
 				})
 			end
 
-		elseif self.lexer.lexeme.type == Types.Name and Lookahead(self.lexer).type == 61 then 
-			local name = parseName(self, "table field")
+		elseif token_type == Types.Name and next_type == 61 then 
+			local name = parseName("table field")
 
-			equalsPos = self.lexer.lexeme.location.begin
-			expectAndConsume(self, 61, "table field") 
+			equalsPos = get_begin()
+			expectAndConsume(61, "table field") 
 
 			local key = {
 				kind = "ExprConstantString",
@@ -4274,7 +5255,7 @@ function parseTableConstructor(self: Parser): any
 				quoteStyle = 3 
 			}
 
-			local value = parseExpr(self)
+			local value = parseExpr()
 
 			if value.kind == "ExprFunction" then
 				value.debugname = name.name.value
@@ -4286,45 +5267,45 @@ function parseTableConstructor(self: Parser): any
 				value = value
 			})
 
-			if self.options.storeCstData then
+			if storeCstData then
 				table.insert(cstItems, {
 					equalsPosition = equalsPos,
-					separator = tableSeparator(self),
-					separatorPosition = self.lexer.lexeme.location.begin
+					separator = tableSeparator(),
+					separatorPosition = get_begin()
 				})
 			end
 		else
-			local expr = parseExpr(self)
+			local expr = parseExpr()
 			table.insert(items, {
 				kind = "List",
 				value = expr
 			})
 
-			if self.options.storeCstData then
+			if storeCstData then
 				table.insert(cstItems, {
-					separator = tableSeparator(self),
-					separatorPosition = self.lexer.lexeme.location.begin
+					separator = tableSeparator(),
+					separatorPosition = get_begin()
 				})
 			end
 		end
 
-		if self.lexer.lexeme.type == 44 or self.lexer.lexeme.type == 59 then 
-			nextLexeme(self)
-		elseif (self.lexer.lexeme.type == 91 or self.lexer.lexeme.type == Types.Name) and 
-			self.lexer.lexeme.location.begin.column == lastElementIndent then
-			Report(
-				self,
-				self.lexer.lexeme.location,
+		if token_type == 44 or token_type == 59 then 
+			nextLexeme()
+		elseif (token_type == 91 or token_type == Types.Name) and 
+			get_begin().column == lastElementIndent then
+			report(
+
+				snapshot(),
 				"Expected ',' after table constructor element"
 			)
-		elseif self.lexer.lexeme.type ~= 125 then 
+		elseif token_type ~= 125 then 
 			break
 		end
 	end
 
-	local end_ = self.lexer.lexeme.location
-	if not expectMatchAndConsume(self, 125, matchBrace) then 
-		end_ = self.lexer.prevLocation
+	local end_ = snapshot()
+	if not expectMatchAndConsume(125, brace_type, brace_line, brace_col) then 
+		end_ = getprev()
 	end
 
 	local node = {
@@ -4333,8 +5314,8 @@ function parseTableConstructor(self: Parser): any
 		items = items
 	}
 
-	if self.options.storeCstData then
-		self.cstNodeMap[node] = {
+	if storeCstData then
+		cstNodes[node] = {
 			kind = "CstExprTable",
 			items = cstItems
 		}
@@ -4343,33 +5324,33 @@ function parseTableConstructor(self: Parser): any
 	return node
 end
 
-function parseIfElseExpr(self: Parser): any
+function parseIfElseExpr(): any
 	local hasElse = false
-	local start = self.lexer.lexeme.location
+	local start = snapshot()
 
-	nextLexeme(self) -- skip if / elseif
+	nextLexeme() -- skip if / elseif
 
-	local condition = parseExpr(self)
+	local condition = parseExpr()
 
-	local thenPosition = self.lexer.lexeme.location.begin
-	local hasThen = expectAndConsume(self, Types.ReservedThen, "if then else expression")
+	local thenPosition = get_begin()
+	local hasThen = expectAndConsume(Types.ReservedThen, "if then else expression")
 
-	local trueExpr = parseExpr(self)
+	local trueExpr = parseExpr()
 	local falseExpr = nil
 
-	local elsePosition = self.lexer.lexeme.location.begin
+	local elsePosition = get_begin()
 	local isElseIf = false
 
-	if self.lexer.lexeme.type == Types.ReservedElseif then
-		local oldRecursion = self.recursionCounter
-		incrementRecursionCounter(self, "expression")
+	if token_type == Types.ReservedElseif then
+		local oldRecursion = recursionCounter
+		incrementRecursionCounter("expression")
 		hasElse = true
-		falseExpr = parseIfElseExpr(self)
-		self.recursionCounter = oldRecursion
+		falseExpr = parseIfElseExpr()
+		recursionCounter = oldRecursion
 		isElseIf = true
 	else
-		hasElse = expectAndConsume(self, Types.ReservedElse, "if then else expression")
-		falseExpr = parseExpr(self)
+		hasElse = expectAndConsume(Types.ReservedElse, "if then else expression")
+		falseExpr = parseExpr()
 	end
 
 	local node = {
@@ -4382,8 +5363,8 @@ function parseIfElseExpr(self: Parser): any
 		falseExpr = falseExpr
 	}
 
-	if self.options.storeCstData then
-		self.cstNodeMap[node] = {
+	if storeCstData then
+		cstNodes[node] = {
 			kind = "CstExprIfElse",
 			thenPosition = thenPosition,
 			elsePosition = elsePosition,
@@ -4394,33 +5375,34 @@ function parseIfElseExpr(self: Parser): any
 	return node
 end
 
-function parseInterpString(self: Parser): any
+
+function parseInterpString(): any
 	local strings = {}
 	local sourceStrings = {} 
 	local stringPositions = {} 
 	local expressions = {}
 
-	local startLocation = self.lexer.lexeme.location
+	local startLocation = snapshot()
 	local endLocation = nil
 
 	while true do
-		local currentLexeme = self.lexer.lexeme
+		local currentLexeme = get_lexeme()
 		endLocation = currentLexeme.location
 
-		local data = currentLexeme.data or ""
+		local data = token_string or ""
 
-		if self.options.storeCstData then
+		if storeCstData then
 			table.insert(sourceStrings, data) 
 			table.insert(stringPositions, currentLexeme.location.begin)
 		end
 
 		local ok, fixedData = fixupQuotedString(data)
 		if not ok then
-			nextLexeme(self)
-			return reportExprError(self, {begin=startLocation.begin, end_=endLocation.end_}, {}, "Interpolated string literal contains malformed escape sequence")
+			nextLexeme()
+			return reportExprError({begin=startLocation.begin, end_=endLocation.end_}, {}, "Interpolated string literal contains malformed escape sequence")
 		end
 
-		nextLexeme(self)
+		nextLexeme()
 		table.insert(strings, fixedData)
 
 		if currentLexeme.type == Types.InterpStringEnd or currentLexeme.type == Types.InterpStringSimple then
@@ -4428,59 +5410,60 @@ function parseInterpString(self: Parser): any
 		end
 
 		local errorWhileChecking = false
-		local t = self.lexer.lexeme.type
+		local t = token_type
 
 		if t == Types.InterpStringMid or t == Types.InterpStringEnd then
 			errorWhileChecking = true
-			nextLexeme(self)
-			table.insert(expressions, reportExprError(self, endLocation, {}, "Malformed interpolated string, expected expression inside '{}'"))
+			nextLexeme()
+			table.insert(expressions, reportExprError(endLocation, {}, "Malformed interpolated string, expected expression inside '{}'"))
 		elseif t == Types.BrokenString then
 			errorWhileChecking = true
-			nextLexeme(self)
-			table.insert(expressions, reportExprError(self, endLocation, {}, "Malformed interpolated string; did you forget to add a '`'?"))
+			nextLexeme()
+			table.insert(expressions, reportExprError(endLocation, {}, "Malformed interpolated string; did you forget to add a '`'?"))
 		else
-			table.insert(expressions, parseExpr(self))
+			table.insert(expressions, parseExpr())
 		end
 
 		if errorWhileChecking then break end
 
-		t = self.lexer.lexeme.type
+		t = token_type 
+
 		if t == Types.InterpStringBegin or t == Types.InterpStringMid or t == Types.InterpStringEnd then
 
-		elseif t == Types.BrokenInterpDoubleBrace then
-			nextLexeme(self)
-			return reportExprError(self, endLocation, {}, "Double braces are not permitted within interpolated strings; did you mean '\\{'?")
-		elseif t == Types.BrokenString or t == Types.Eof then
+		elseif token_type == Types.BrokenInterpDoubleBrace then
+			nextLexeme()
+			return reportExprError(endLocation, {}, "Double braces are not permitted within interpolated strings; did you mean '\\{'?")
+		elseif token_type == Types.BrokenString or token_type == Types.Eof then
 
-			if t == Types.BrokenString then
-				nextLexeme(self)
+			if token_type == Types.BrokenString then
+				nextLexeme()
 			end
 
 			local node = {
 				kind = "ExprInterpString",
-				location = {begin=startLocation.begin, end_=self.lexer.prevLocation.end_},
+				location = {begin=startLocation.begin, end_=getprev().end_},
 				strings = strings,
 				expressions = expressions
 			}
 
-			if self.options.storeCstData then
-				self.cstNodeMap[node] = { kind = "CstExprInterpString", sourceStrings = sourceStrings, stringPositions = stringPositions }
+			if storeCstData then
+				cstNodes[node] = { kind = "CstExprInterpString", sourceStrings = sourceStrings, stringPositions = stringPositions }
 			end
 
-			local stack = self.lexer.braceStack
+			local stack = braceStack
 			local top = (#stack > 0) and stack[#stack] or nil
 
 			if top then
-				if top == Lexer.BraceType.InterpolatedString then
-					Report(self, self.lexer.prevLocation, "Malformed interpolated string; did you forget to add a '}'?")
+				if top == BraceType.InterpolatedString then
+					report(getprev(), "Malformed interpolated string; did you forget to add a '}'?")
 				end
 			else
-				Report(self, self.lexer.prevLocation, "Malformed interpolated string; did you forget to add a '`'?")
+				report(getprev(), "Malformed interpolated string; did you forget to add a '`'?")
 			end
 
 			return node
 		else
-			return reportExprError(self, endLocation, {}, "Malformed interpolated string, got %s", ToString(self.lexer.lexeme))
+			return reportExprError(endLocation, {}, "Malformed interpolated string, got %s", ToString(token_type, token_string, token_codepoint))
 		end
 	end
 
@@ -4494,21 +5477,21 @@ function parseInterpString(self: Parser): any
 		expressions = expressions
 	}
 
-	if self.options.storeCstData then
-		self.cstNodeMap[node] = { kind = "CstExprInterpString", sourceStrings = sourceStrings, stringPositions = stringPositions }
+	if storeCstData then
+		cstNodes[node] = { kind = "CstExprInterpString", sourceStrings = sourceStrings, stringPositions = stringPositions }
 	end
 
 	return node
 end
 
-function parseCharArray(self: Parser): string?
-	local t = self.lexer.lexeme.type
-	local data = self.lexer.lexeme.data or ""
+function parseCharArray(): string?
+	local t = token_type
+	local data = token_string or ""
 
 	if t == Types.QuotedString or t == Types.InterpStringSimple then
 		local ok, fixed = fixupQuotedString(data)
 		if not ok then
-			nextLexeme(self)
+			nextLexeme()
 			return nil
 		end
 		data = fixed
@@ -4516,39 +5499,38 @@ function parseCharArray(self: Parser): string?
 		data = fixupMultilineString(data)
 	end
 
-	nextLexeme(self)
+	nextLexeme()
 	return data
 end
 
-function parseString(self: Parser): any
-	local location = self.lexer.lexeme.location
+function parseString(): any
+	local location = snapshot()
 	local quoteStyle = 0
 
-	local t = self.lexer.lexeme.type
-	if t == Types.QuotedString then
-		if self.lexer.lexeme.aux == 0 then
+	if token_type == Types.QuotedString then
+		if token_aux == 0 then
 			quoteStyle = 1 
 		else
 			quoteStyle = 0 
 		end
-	elseif t == Types.InterpStringSimple then
+	elseif token_type == Types.InterpStringSimple then
 		quoteStyle = 0 
-	elseif t == Types.RawString then
+	elseif token_type == Types.RawString then
 		quoteStyle = 2
 	end
 
 	local fullStyle = 0
 	local blockDepth = 0
-	if self.options.storeCstData then
-		fullStyle, blockDepth = extractStringDetails(self)
+	if storeCstData then
+		fullStyle, blockDepth = extractStringDetails()
 	end
 
 	local originalString = nil
-	if self.options.storeCstData then
-		originalString = self.lexer.lexeme.data 
+	if storeCstData then
+		originalString = token_string
 	end
 
-	local value = parseCharArray(self)
+	local value = parseCharArray()
 
 	if value then
 		local node = {
@@ -4558,8 +5540,8 @@ function parseString(self: Parser): any
 			quoteStyle = quoteStyle
 		}
 
-		if self.options.storeCstData then
-			self.cstNodeMap[node] = { 
+		if storeCstData then
+			cstNodes[node] = { 
 				kind = "CstExprConstantString", 
 				sourceString = originalString, 
 				quoteStyle = fullStyle, 
@@ -4569,49 +5551,81 @@ function parseString(self: Parser): any
 
 		return node
 	else
-		return reportExprError(self, location, {}, "String literal contains malformed escape sequence")
+		return reportExprError(location, {}, "String literal contains malformed escape sequence")
 	end
 end
-
-function parseNumber(self: Parser): any
-	local start = self.lexer.lexeme.location
-	local data = self.lexer.lexeme.data or ""
+function parseNumber(): any
+	local start = snapshot()
+	local data = token_string or ""
 
 	local sourceData = nil
-	if self.options.storeCstData then
+	if storeCstData then
 		sourceData = data
 	end
 
+	-- Remove internal '_'
 	local cleanData = string.gsub(data, "_", "")
 
-	local value = tonumber(cleanData)
+	local value = 0
 	local parseResult = "Ok"
 
-	if value == nil then
-		if string.find(cleanData, "^0[bB][01]+") then
-			value = tonumber(string.sub(cleanData, 3), 2)
+	-- Hexadecimal check (0x...)
+	if string.find(cleanData, "^0[xX]") then
+		local content = string.sub(cleanData, 3)
+		local significant = string.match(content, "^0*(.+)") or "0"
+
+		-- 16 Hex digits * 4 bits = 64 bits. Anything more is overflow for uint64.
+		if #significant > 16 then
+			parseResult = "HexOverflow"
+			value = 0
+		else
+			value = tonumber(cleanData) :: number
+			if value == nil then
+				parseResult = "Malformed"
+				value = 0
+			elseif value >= 9007199254740992 then -- 2^53
+				parseResult = "Imprecise"
+			end
 		end
+	elseif string.find(cleanData, "^0[bB][01]+") then
+		local content = string.sub(cleanData, 3)
+		local significant = string.match(content, "^0*(.+)") or "0"
+
+		-- 64 bits max for uint64
+		if #significant > 64 then
+			parseResult = "BinOverflow"
+			value = 0
+		else
+			local v = tonumber(content, 2)
+			value = v
+
+			if value == nil then
+				parseResult = "Malformed"
+				value = 0
+			elseif value >= 9007199254740992 then
+				parseResult = "Imprecise"
+			end
+		end
+	else
+		value = tonumber(cleanData)
 
 		if value == nil then
 			parseResult = "Malformed"
 			value = 0
-		end
-	end
-
-	nextLexeme(self)
-
-	if value == nil then
-		return reportExprError(self, start, {}, "Malformed number")
-	end
-
-	if math.abs(value) > 2^53 then
-		if string.find(cleanData, "^%d+$") then
-			local repr = string.format("%.0f", value)
-
-			if repr ~= cleanData then
-				parseResult = "Imprecise"
+		else
+			if value >= 9007199254740992 and string.find(cleanData, "^%d+$") then
+				local repr = string.format("%.0f", value)
+				if repr ~= cleanData then
+					parseResult = "Imprecise"
+				end
 			end
 		end
+	end
+
+	nextLexeme()
+
+	if parseResult == "Malformed" then
+		return reportExprError(start, {}, "Malformed number")
 	end
 
 	local node = {
@@ -4621,396 +5635,106 @@ function parseNumber(self: Parser): any
 		parseResult = parseResult
 	}
 
-	if self.options.storeCstData then
-		self.cstNodeMap[node] = { kind = "CstExprConstantNumber", value = sourceData }
+	if storeCstData then
+		cstNodes[node] = { kind = "CstExprConstantNumber", value = sourceData }
 	end
 
 	return node
 end
 
--- // Explicit Type Instantiation 
+local function parse(source: string, options: Options)
+	captureComments = options.captureComments
+	storeCstData = options.storeCstData
 
-function parseExplicitTypeInstantiationExpr(self: Parser, start: any, basedOnExpr: any)
-	local typesOrPacks = parseTypeInstantiationExpr(self) 
-	local endLocation = self.lexer.prevLocation 
+	buff = buffer.fromstring(source)
+	size = #source
 
-	return {
-		kind = "ExprInstantiate",
-		location = {begin=start, end_=endLocation.end_},
-		expr = basedOnExpr,
-		typeArguments = typesOrPacks
-	}
-end
+	offset = 0
+	line = 0
+	lineOffset = 0
 
-function parseTypeInstantiationExpr(self: Parser, cstNodeOut: any)
-	local begin = self.lexer.lexeme
-	nextLexeme(self)
+	braceStack = {}
 
-	local typesOrPacks = parseTypeParams(self) 
+	token_type = Types.Eof
 
-	expectMatchAndConsume(self, 62, begin)
+	token_start_line = 0
+	token_start_col = 0
+	token_end_line = 0
+	token_end_col = 0
 
-	return typesOrPacks
-end
+	prev_start_line = 0
+	prev_start_col = 0
+	prev_end_line = 0
+	prev_end_col = 0
 
--- // DECLARATIONS (declare, extern, class, ...) // --
+	token_string = nil
+	token_aux = nil 
+	token_codepoint = nil
 
--- Syntax to define types for the analyzer without writing implementation code.
+	recursionCounter = 0
 
--- Luau only enables this syntax feature when it knows it is
--- parsing a Definition File (internal engine files or .d.luau files).
+	commentLocations = {}
+	hotcomments = {}
+	parseErrors = {}
+	cstNodes = {} :: {[any]: any}
 
--- Currently pretty useless for real-world use case
+	hotcommentHeader = true
 
-function parseDeclaredExternTypeMethod(self: Parser, attributes: {any}): any
-	local start = self.lexer.lexeme.location
-	nextLexeme(self) 
+	suspect_type = Types.Eof
 
-	local fnName = parseName(self, "function name")
-	
-	-- TODO: generic method declarations CLI-39909
-	local generics = {}
-	local genericPacks = {}
+	suspect_line = 0
 
-	local matchParen = self.lexer.lexeme
-	expectAndConsume(self, 40, "function parameter list start") 
+	matchRecovery = table.create(Types.Reserved_END, 0)
+	matchRecovery[Types.Eof] = 1
 
-	local args = {}
-	local vararg = false
-	local varargLocation = nil
-	local varargAnnotation = nil
+	-- // Stacks
 
-	if self.lexer.lexeme.type ~= 41 then 
-		vararg, varargLocation, varargAnnotation = parseBindingList(self, args, true)
-	end
-
-	expectMatchAndConsume(self, 41, matchParen) 
-
-	local retTypes = parseOptionalReturnType(self)
-	if not retTypes then
-		retTypes = {
-			kind = "TypePackExplicit",
-			location = self.lexer.lexeme.location,
-			types = {}
-		}
-	end
-
-	local end_ = self.lexer.prevLocation
-	local vars = {}
-	local varNames = {}
-
-	if #args == 0 or args[1].name.value ~= "self" or args[1].annotation ~= nil then
-		return {
-			name = fnName.name,
-			nameLocation = fnName.location,
-			ty = reportTypeError(
-				self,
-				{begin = start.begin, end_ = end_.end_}, {},
-				"'self' must be present as the unannotated first parameter"
-			),
-			isMethod = true,
-			location = {
-				begin = start.begin,
-				end_ = end_.end_
-			}
-		}
-	end
-
-	-- Skip the first index.
-	for i = 2, #args do
-		table.insert(varNames, { name = args[i].name, location = args[i].name.location }) 
-		if args[i].annotation then
-			table.insert(vars, args[i].annotation)
-		else
-			table.insert(vars,
-				reportTypeError(
-					self,
-					{begin=start.begin, end_=end_.end_}, {},
-					"All declaration parameters aside from 'self' must be annotated"
-				)
-			)
-		end
-	end
-
-	if vararg and not varargAnnotation then
-		Report(
-			self,
-			start,
-			"All declaration parameters aside from 'self' must be annotated"
-		)
-	end
-
-	local fnType = {
-		kind = "TypeFunction",
-		location = {begin=start.begin, end_=end_.end_},
-		attributes = attributes,
-		generics = generics,
-		genericPacks = genericPacks,
-		argTypes = { types = vars, tailType = varargAnnotation },
-		argNames = varNames,
-		returnTypes = retTypes
+	functionStack = {
+		{vararg = true, loopDepth = 0}
 	}
 
-	return {
-		name = fnName.name,
-		nameLocation = fnName.location,
-		ty = fnType,
-		isMethod = true,
-		location = {begin=start.begin, end_=end_.end_}
-	}
-end
+	localStack = {}
+	localMap = {}
 
-function parseDeclaration(self: Parser, start: any, attributes: {any}): any
-	-- `declare` token is already parsed at this point
-	
-	if #attributes > 0 and self.lexer.lexeme.type ~= Types.ReservedFunction then
-		return reportStatError(
-			self, 
-			self.lexer.lexeme.location,
-			{},
-			{},
-			"Expected a function type declaration after attribute, but got %s instead",
-			ToString(self.lexer.lexeme)
-		)
+	fillNext()
+	nextLexeme()
+	hotcommentHeader = false
+
+	local localsBegin = #localStack
+	local result = parseBlockNoScope()
+	restoreLocals(localsBegin)
+
+	if token_type ~= Types.Eof then
+		expectAndConsumeFail(Types.Eof)
 	end
 
-	if self.lexer.lexeme.type == Types.ReservedFunction then
-		nextLexeme(self)
-
-		local globalName = parseName(self, "global function name")
-		local genericsData = parseGenericTypeList(self, false)
-		local generics, genericPacks = genericsData[1], genericsData[2]
-
-		local matchParen = self.lexer.lexeme
-		expectAndConsume(self, 40, "global function declaration") 
-
-		local args = {}
-		local vararg = false
-		local varargLocation = nil
-		local varargAnnotation = nil
-
-		if self.lexer.lexeme.type ~= 41 then 
-			vararg, varargLocation, varargAnnotation = parseBindingList(self, args, true)
-		end
-
-		expectMatchAndConsume(self, 41, matchParen) 
-
-		local retTypes = parseOptionalReturnType(self)
-		if not retTypes then
-			retTypes = { kind = "TypePackExplicit", location = self.lexer.lexeme.location, types = {}}
-		end
-		local end_ = self.lexer.lexeme.location
-
-		local vars = {}
-		local varNames = {} :: {any}
-
-		for i, arg in args do
-			if not arg.annotation then
-				return reportStatError(
-					self,
-					{begin = start.begin, end_ = end_.end_},
-					{}, {},
-					"All declaration parameters must be annotated"
-				)
-			end
-
-			table.insert(vars, arg.annotation)
-			table.insert(varNames, { name = arg.name, location = arg.name.location })
-		end
-
-		if vararg and not varargAnnotation then
-			return reportStatError(self, {begin=start.begin, end_=end_.end_}, {}, {}, "All declaration parameters must be annotated")
-		end
-
-		return {
-			kind = "StatDeclareFunction",
-			location = {begin=start.begin, end_=end_.end_},
-			attributes = attributes,
-			name = globalName.name.value,
-			nameLocation = globalName.location,
-			generics = generics,
-			genericPacks = genericPacks,
-			params = { types = vars, tailType = varargAnnotation },
-			paramNames = varNames,
-			vararg = vararg,
-			varargLocation = varargLocation,
-			retTypes = retTypes
-		}
-
-	elseif self.lexer.lexeme.data == "class" or self.lexer.lexeme.data == "extern" then
-		local foundExtern = false
-		if self.lexer.lexeme.data == "extern" then
-			foundExtern = true
-			nextLexeme(self)
-			if self.lexer.lexeme.data ~= "type" then
-				return reportStatError(self, self.lexer.lexeme.location, {}, {}, "Expected `type` keyword after `extern`, but got %s instead", self.lexer.lexeme.data or "")
-			end
-		end
-
-		nextLexeme(self) 
-
-		local classStart = self.lexer.lexeme.location
-		local className = parseName(self, "type name")
-		local superName = nil
-
-		if self.lexer.lexeme.data == "extends" then
-			nextLexeme(self)
-			local sn = parseName(self, "supertype name")
-			superName = sn.name
-		end
-
-		if foundExtern then
-			if self.lexer.lexeme.data ~= "with" then
-				Report(
-					self,
-					self.lexer.lexeme.location,
-					"Expected `with` keyword before listing properties of the external type, but got %s instead",
-					self.lexer.lexeme.data or ""
-				)
-			else
-				nextLexeme(self)
-			end
-		end
-
-		local props = {}
-		local indexer = nil
-
-		while self.lexer.lexeme.type ~= Types.ReservedEnd do
-			local propAttrs = {}
-
-			if self.lexer.lexeme.type == Types.Attribute or self.lexer.lexeme.type == Types.AttributeOpen then
-				propAttrs = parseAttributes(self)
-				if self.lexer.lexeme.type ~= Types.ReservedFunction then
-					return reportStatError(
-						self,
-						self.lexer.lexeme.location,
-						{},
-						{},
-						"Expected a method type declaration after attribute, but got %s instead",
-						ToString(self.lexer.lexeme :: Lexer.Lexeme)
-					)
-				end
-			end
-			
-			-- There are two possibilities: Either it's a property or a function.
-			if self.lexer.lexeme.type == Types.ReservedFunction then
-				table.insert(props, parseDeclaredExternTypeMethod(self, propAttrs))
-			elseif self.lexer.lexeme.type == 91 then
-				local begin = self.lexer.lexeme
-				nextLexeme(self)
-
-				if (self.lexer.lexeme.type == Types.RawString or self.lexer.lexeme.type == Types.QuotedString) and Lookahead(self.lexer).type == 93 then
-					local nameBegin = self.lexer.lexeme.location
-					local chars = parseCharArray(self)
-					local nameEnd = self.lexer.prevLocation
-
-					expectMatchAndConsume(self, 93, begin)
-					expectAndConsume(self, 58, "property type annotation")
-					local type_ = parseType(self)
-
-					if chars then
-						table.insert(props, {
-							name = { value = chars },
-							nameLocation = {begin=nameBegin.begin, end_=nameEnd.end_},
-							ty = type_,
-							isMethod = false,
-							location = {begin=begin.location.begin, end_=self.lexer.prevLocation.end_}
-						})
-					else
-						Report(
-							self,
-							begin.location,
-							"String literal contains malformed escape sequence or \\0"
-						)
-					end
-				elseif indexer then
-					-- maybe we don't need to parse the entire badIndexer...
-					-- however, we either have { or [ to lint, not the entire table type or the bad indexer.
-					local badIndexerRes = parseTableIndexer(self, "ReadWrite", nil, begin)
-					-- we lose all additional indexer expressions from the AST after error recovery here
-					Report(
-						self,
-						badIndexerRes.node.location,
-						"Cannot have more than one indexer on an extern type"
-					)
-				else
-					indexer = parseTableIndexer(self, "ReadWrite", nil, begin).node
-				end
-			else
-				local propStart = self.lexer.lexeme.location
-				local propName = parseNameOpt(self, "property name")
-
-				if not propName then break end
-
-				expectAndConsume(self, 58, "property type annotation")
-				local propType = parseType(self)
-
-				table.insert(props, {
-					name = propName.name,
-					nameLocation = propName.location,
-					ty = propType,
-					isMethod = false,
-					location = {begin=propStart.begin, end_=self.lexer.prevLocation.end_}
-				})
-			end
-		end
-
-		local classEnd = self.lexer.lexeme.location
-		nextLexeme(self)
-
-		return {
-			kind = "StatDeclareExternType",
-			location = {begin=classStart.begin, end_=classEnd.end_},
-			name = className.name.value,
-			superName = superName and superName.value,
-			props = props,
-			indexer = indexer
-		}
-
-	else
-		local globalName = parseNameOpt(self, "global variable name")
-		if globalName then
-			expectAndConsume(self, 58, "global variable declaration")
-			local type_ = parseType(self, true)
-
-			return {
-				kind = "StatDeclareGlobal",
-				location = {begin=start.begin, end_=type_.location.end_},
-				name = globalName.name.value,
-				nameLocation = globalName.location,
-				type = type_
-			}
-		else
-			return reportStatError(
-				self,
-				start,
-				{},
-				{},
-				"declare must be followed by an identifier, 'function', or 'extern type'"
-			)
-		end
-	end
+	return result
 end
+
+type Result = {
+	root: {{kind: string, location: Location}},
+
+	commentLocations: {any},
+	hotcomments: {any},
+
+	errors: {any}
+}
 
 return {
-	parse = function(source: string, options: Options?): any
-		local parser = constructParser(source, options or {} :: Options)
+	parse = function(source: string, options: Options?): (boolean, Result)
+		local success, root = pcall(parse, source, options or {} :: Options)
 
-		local success, root = pcall(parseChunk, parser)
-		local errors = parser.parseErrors
-
-		return success and #errors == 0, {
+		return success and #parseErrors == 0, {
 			root = root,
 
-			commentLocations = parser.commentLocations,
-			hotcomments = parser.hotcomments,
-			cstNodeMap = parser.cstNodeMap,
-			errors = errors,
+			commentLocations = commentLocations,
+			hotcomments = hotcomments,
+			cstNodeMap = cstNodes,
+			errors = parseErrors,
 		}
 	end,
-	
-	QuoteStyle = QuoteStyle,
+
 	BraceType = BraceType,
-	
 	Types = Types,
+	QuoteStyle = QuoteStyle,
 }
