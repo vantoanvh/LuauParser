@@ -1,5 +1,5 @@
-# Luau Parser in Luau
-Entire port of [Parser.cpp](https://github.com/luau-lang/luau/blob/master/Ast/src/Parser.cpp) (Lua*u* **[0.701]** Parser) both AST & CST.
+# [0.703] Luau Parser in pure Luau
+Entire port of [Parser.cpp](https://github.com/luau-lang/luau/blob/master/Ast/src/Parser.cpp) (Lua*u* **[0.703]** Parser) both AST & CST.
 Currently not built for speed, and not type-checked properly.
 
 Lua*u* Parser only useful when building plugins or creating Lua*u* compilers.
@@ -60,4 +60,4 @@ QuoteStyle: {Single, Double}
 ```
 
 # Documentations
-There's no AST and CST documentation for now
+There's no AST and CST documentation for now, but In the future, I could type-check and build a documentation for better usability for sure
