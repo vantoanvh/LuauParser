@@ -568,7 +568,7 @@ local function blockFollow(t: number): boolean
 		or t == Types.ReservedUntil
 end
 
-local function isConstantLiteral(expr: any): boolean
+local function isConstantLiteral(expr: Syntax.AstExpr): boolean
 	local k = expr.kind
 
 	return k == "ExprConstantNil"
@@ -577,7 +577,7 @@ local function isConstantLiteral(expr: any): boolean
 		or k == "ExprConstantString"
 end
 
-local function isLiteralTable(expr: any): boolean
+local function isLiteralTable(expr: Syntax.AstExpr): boolean
 	if expr.kind ~= "ExprTable" then
 		return false
 	end
@@ -605,7 +605,7 @@ end
 
 -- // Attributes
 
-local function deprecatedArgsValidator(attrLoc: any, args: {any})
+local function deprecatedArgsValidator(attrLoc: Syntax.Location, args: {any})
 	local errors = {}
 	if #args == 0 then
 		return errors
@@ -2128,7 +2128,7 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 		functionStack[#functionStack].loopDepth -= 1
 		restoreLocals(localsBegin)
 
-		local end_ = (get_end() :: any)
+		local end_ = get_end()
 		local hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, Do_type, Do_start_line, Do_start_col)
 		body.hasEnd = hasEnd
 
@@ -2203,7 +2203,7 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 
 		local node = {
 			kind = "StatForIn",
-			location = {begin=start.begin, end_= end_ :: any},
+			location = {begin=start.begin, end_= end_},
 			vars = vars,
 			values = values,
 			body = body,
