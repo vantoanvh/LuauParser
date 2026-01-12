@@ -1,32 +1,20 @@
 --!optimize 2
+--!strict
+
+-- // PARSER SETTINGS // --
+
+local ExplicitTypeExpressionInstantiation = true
+
+local TypeLengthLimit = 1000
+local RecursionLimit = 1000
+local ErrorLimit = 100
 
 -- // Requires
 
 local findConfusable = require'@self/findConfusable'
+local Syntax = require'@self/Syntax'
 
-type Position = {
-	line: number,
-	column: number,
-}
-
-type Location = {
-	begin: Position,
-	end_: Position,
-}
-
-type Options = {
-	captureComments: boolean,
-	storeCstData: boolean,
-}
-
-export type TypePack = {
-	kind: "TypePackExplicit" | "TypePackVariadic" | "TypePackGeneric",
-	location: Location,
-	types: {any},
-	tailType: TypePack?,
-	variadicType: any,
-	genericName: string?
-}
+local hotcommentHeader = true
 
 -- // String types
 
@@ -118,7 +106,6 @@ local Types = {
 -- // Lookup for keywords
 
 local ReversedKeywords = {
-
 	[291] = "and",
 	[292] = "break",
 	[293] = "do",
@@ -140,11 +127,9 @@ local ReversedKeywords = {
 	[309] = "true",
 	[310] = "until",
 	[311] = "while"
-
 }
 
 local Keywords = {
-
 	["and"] = 291,
 	["break"] = 292,
 	["do"] = 293,
@@ -166,7 +151,6 @@ local Keywords = {
 	["true"] = 309,
 	["until"] = 310,
 	["while"] = 311
-
 }
 
 -- // Lookup for operators
@@ -215,7 +199,7 @@ local CompoundLookup = {
 	[Types.DivAssign] = BinaryOp.Div,
 }
 
-local BinaryOpLookup = {
+local BinaryOpLookup: {[number]: number} = {
 	[43] = BinaryOp.Add,
 	[45] = BinaryOp.Sub,
 	[42] = BinaryOp.Mul,
@@ -241,7 +225,7 @@ local BinaryOpLookup = {
 	[Types.ReservedOr] = BinaryOp.Or,
 }
 
-local UnaryOpLookup = {
+local UnaryOpLookup: {[number]: number} = {
 	[Types.ReservedNot] = UnaryOp.Not,
 	[45] = UnaryOp.Minus,
 	[35] = UnaryOp.Len,
@@ -299,14 +283,6 @@ local nameNumber = "number"
 local nameSelf = "self"
 local nameNil = "nil"
 
--- // PARSER SETTINGS // --
-
-local ExplicitTypeExpressionInstantiation = true
-
-local TypeLengthLimit = 1000
-local RecursionLimit = 1000
-local ErrorLimit = 100
-
 -- // Lexer helper
 
 local function fixupQuotedString(data: string): (boolean, string?)
@@ -341,7 +317,7 @@ local function fixupQuotedString(data: string): (boolean, string?)
 			buffer.writeu8(buf, write, 10)
 			write += 1
 		elseif escape == 13 then -- \r
-			buffer.writeu8(buf, write, 10) -- normalize to \n
+			buffer.writeu8(buf, write, 10)
 			write += 1
 			if i < size and buffer.readu8(src, i) == 10 then
 				i += 1
@@ -349,7 +325,6 @@ local function fixupQuotedString(data: string): (boolean, string?)
 		elseif escape == 0 then
 			return false, nil
 		elseif escape == 120 then -- 'x'
-			-- hex escape codes are exactly 2 hex digits long
 			if i + 2 > size then
 				return false, nil
 			end
@@ -360,7 +335,7 @@ local function fixupQuotedString(data: string): (boolean, string?)
 				if not HexDigits[c] then
 					return false, nil
 				end
-				-- (ch | ' ') - 'a' + 10 trick
+
 				local hexVal = if Digits[c] then c - 48 else bit32.bor(c, 32) - 97 + 10
 				code = 16 * code + hexVal
 			end
@@ -373,7 +348,6 @@ local function fixupQuotedString(data: string): (boolean, string?)
 				i += 1
 			end
 		elseif escape == 117 then -- 'u'
-			-- unicode escape codes \u{...}
 			if i + 3 > size then return false, nil end
 			if buffer.readu8(src, i) ~= 123 then return false, nil end -- '{'
 			i += 1
@@ -387,7 +361,7 @@ local function fixupQuotedString(data: string): (boolean, string?)
 				if i == size then return false, nil end
 				local c = buffer.readu8(src, i)
 
-				if c == 125 then -- '}'
+				if c == 125 then
 					ended = true
 					break
 				end
@@ -402,14 +376,12 @@ local function fixupQuotedString(data: string): (boolean, string?)
 			end
 
 			if not ended then
-				-- Check if we finished loop but didn't find '}'
 				if i == size or buffer.readu8(src, i) ~= 125 then
 					return false, nil
 				end
 			end
 			i += 1 -- skip '}'
 
-			-- Convert code to UTF8
 			if code < 0x80 then
 				buffer.writeu8(buf, write, code)
 				write += 1
@@ -418,20 +390,18 @@ local function fixupQuotedString(data: string): (boolean, string?)
 				buffer.writeu8(buf, write + 1, bit32.bor(0x80, bit32.band(code, 0x3F)))
 				write += 2
 			elseif code < 0x10000 then
-				-- Basic Multilingual Plane
 				buffer.writeu8(buf, write, bit32.bor(0xE0, bit32.rshift(code, 12)))
 				buffer.writeu8(buf, write + 1, bit32.bor(0x80, bit32.band(bit32.rshift(code, 6), 0x3F)))
 				buffer.writeu8(buf, write + 2, bit32.bor(0x80, bit32.band(code, 0x3F)))
 				write += 3
 			elseif code < 0x110000 then
-				-- Supplementary Planes
 				buffer.writeu8(buf, write, bit32.bor(0xF0, bit32.rshift(code, 18)))
 				buffer.writeu8(buf, write + 1, bit32.bor(0x80, bit32.band(bit32.rshift(code, 12), 0x3F)))
 				buffer.writeu8(buf, write + 2, bit32.bor(0x80, bit32.band(bit32.rshift(code, 6), 0x3F)))
 				buffer.writeu8(buf, write + 3, bit32.bor(0x80, bit32.band(code, 0x3F)))
 				write += 4
 			else
-				return false, nil -- Invalid unicode codepoint
+				return false, nil
 			end
 		else
 			if Digits[escape] then
@@ -624,7 +594,7 @@ local function isLiteralTable(expr: any): boolean
 	return true
 end
 
-local function isExprLValue(expr: any)
+local function isExprLValue(expr: Syntax.AstExpr)
 	local k = expr.kind
 
 	return k == "ExprLocal"
@@ -696,7 +666,7 @@ local kAttributeEntries = {
 
 -- // Main // --
 
-local options = {} :: Options
+local options = {} :: Syntax.Options
 local source = '' :: string
 
 -- // Settings init
@@ -741,12 +711,10 @@ local token_codepoint: number? = nil
 
 local recursionCounter = 0
 
-local commentLocations = {}
-local hotcomments = {} :: {any}
-local parseErrors = {}
-local cstNodes = {} :: {[any]: any}
-
-local hotcommentHeader = true
+local commentLocations: {Syntax.Comment} = {}
+local hotcomments = {} :: {Syntax.HotComment}
+local parseErrors: {Syntax.ParseError} = {}
+local cstNodes: {[any]: Syntax.CstNode} = {}
 
 -- // All unlocalized Parser functions
 
@@ -829,14 +797,14 @@ matchRecovery[Types.Eof] = 1
 
 -- // Stacks
 
-local functionStack = {
+local functionStack: {Syntax.FunctionState} = {
 	{vararg = true, loopDepth = 0}
-} :: {any}
+}
 
-local localStack : {any} = {}
-local localMap : {any} = {}
+local localStack : {Syntax.AstLocal?} = {}
+local localMap : {[string]: Syntax.AstLocal?} = {}
 
--- // OPTIMIZED LEXER (No Cache, No Goto) // --
+-- // Lexer // --
 
 local function lex(skip_comments: boolean)
 	local ptr = offset
@@ -1109,7 +1077,11 @@ local function lex(skip_comments: boolean)
 		end
 
 	elseif ch == 61 then -- '='
-		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.Equal else next_type = 61 end
+		if ptr < size and buffer.readu8(buff, ptr) == 61 then
+			ptr += 1; next_type = Types.Equal
+		else
+			next_type = 61
+		end
 	elseif ch == 60 then -- '<'
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.LessEqual else next_type = 60 end
 	elseif ch == 62 then -- '>'
@@ -1335,7 +1307,7 @@ local function fillNext()
 						end_ = {line = next_end_line, column = next_end_col}
 					},
 					content = next_string
-				})
+				} :: Syntax.HotComment)
 			end
 
 			if next_type == Types.BrokenComment then
@@ -1373,22 +1345,22 @@ end
 
 -- // INIT
 
-local function get_begin(): Position
+local function get_begin(): Syntax.Position
 	return {line = token_start_line, column = token_start_col}
 end
 
-local function get_end(): Position
+local function get_end(): Syntax.Position
 	return {line = token_end_line, column = token_end_col}
 end
 
-local function snapshot(): Location
+local function snapshot(): Syntax.Location
 	return {
 		begin = {line = token_start_line, column = token_start_col},
 		end_ = {line = token_end_line, column = token_end_col}
 	}
 end
 
-local function get_lexeme(): {type: number, location: Location}
+local function get_lexeme(): {type: number, location: Syntax.Location}
 	return {
 		type = token_type,
 		location = {
@@ -1398,14 +1370,14 @@ local function get_lexeme(): {type: number, location: Location}
 	}
 end
 
-local function getprev(): Location
+local function getprev(): Syntax.Location
 	return {
 		begin = {line = prev_start_line, column = prev_start_col},
 		end_ = {line = prev_end_line, column = prev_end_col}
 	}
 end
 
-local function report(loc: Location, fmt: string, ...: any)
+local function report(loc: Syntax.Location, fmt: string, ...: any)
 	if #parseErrors > 0 and parseErrors[#parseErrors].location == loc then
 		return
 	end
@@ -1542,7 +1514,7 @@ local function expectMatchEndAndConsume(type_: number, begin_type: number, line:
 end
 
 local function reportStatError(
-	location: Location,
+	location: Syntax.Location,
 	exprs: {any},
 	stats: {any},
 	fmt: string,
@@ -1560,11 +1532,11 @@ local function reportStatError(
 end
 
 local function reportExprError(
-	location: Location,
-	exprs: {any},
+	location: Syntax.Location,
+	exprs: {Syntax.AstExpr},
 	fmt: string,
 	...: any
-)
+): Syntax.AstExprError
 	report(location, fmt, ...)
 
 	return {
@@ -1576,11 +1548,11 @@ local function reportExprError(
 end
 
 local function reportTypeError(
-	location: Location,
-	types: {any},
+	location: Syntax.Location,
+	types: {Syntax.AstType},
 	fmt: string,
 	...: any
-)
+): Syntax.AstTypeError
 	report(location, fmt, ...)
 
 	return {
@@ -1612,7 +1584,7 @@ end
 
 local function restoreLocals(offset: number)
 	for i = #localStack, offset + 1, -1 do
-		local l = localStack[i]
+		local l = localStack[i] :: Syntax.AstLocal
 		localMap[l.name] = l.shadow
 	end
 
@@ -1621,7 +1593,7 @@ local function restoreLocals(offset: number)
 	end
 end
 
-local function pushLocal(binding: any)
+local function pushLocal(binding: any): Syntax.AstLocal
 	local name = binding.name.value
 	local shadow = localMap[name]
 
@@ -1632,7 +1604,7 @@ local function pushLocal(binding: any)
 		functionDepth = #functionStack - 1,
 		loopDepth = functionStack[#functionStack].loopDepth,
 		annotation = binding.annotation
-	}
+	} :: Syntax.AstLocal
 
 	localMap[name] = local_
 	table.insert(localStack, local_)
@@ -1676,10 +1648,10 @@ end
 local function parseBindingList(
 	result: {any},
 	allowDot3: boolean,
-	commaPositions: {any}?,
-	initialComma: any?,
+	commaPositions: {Syntax.Position}?,
+	initialComma: Syntax.Position?,
 	varargAnnotColonPos: any?
-): any
+): (boolean, Syntax.Location?, any)
 
 	local localCommaPositions = {}
 
@@ -1748,7 +1720,7 @@ end
 -- local attributes function Name funcbody |
 -- local namelist [`=' explist]
 -- laststat ::= return [explist] | break
-local function parseStat(): any
+local function parseStat(): Syntax.AstStat
 	local type_ = token_type
 
 	if type_ == Types.ReservedIf then
@@ -1794,8 +1766,10 @@ local function parseStat(): any
 	end
 
 	local ident = nil :: string?
-	if expr.kind == "ExprLocal" or expr.kind == "ExprGlobal" then
-		ident = expr.name or ((expr :: any).local_ and expr.local_.name)
+	if expr.kind == "ExprGlobal" then
+		ident = expr.name
+	elseif expr.kind == "ExprLocal" then
+		ident = expr['local'] and expr['local'].name
 	end
 
 	if ident == "type" then
@@ -1822,7 +1796,7 @@ local function parseStat(): any
 	)
 end
 
-local function parseBlockNoScope()
+local function parseBlockNoScope(): Syntax.AstStatBlock
 	local body = {}
 
 	local prevPos = {
@@ -1839,8 +1813,8 @@ local function parseBlockNoScope()
 		recursionCounter = oldRecursion
 
 		if token_type == 59 then 
-			nextLexeme()
-			stat.hasSemicolon = true
+			nextLexeme();
+			(stat :: any).hasSemicolon = true
 
 			stat.location.end_.line = prev_end_line
 			stat.location.end_.column = prev_end_col
@@ -1864,12 +1838,12 @@ local function parseBlockNoScope()
 		},
 		body = body,
 		hasEnd = false
-	}
+	} :: Syntax.AstStatBlock
 end
 
 -- chunk ::= {stat [`;']} [laststat [`;']]
 -- block ::= chunk
-local function parseBlock()
+local function parseBlock(): Syntax.AstStatBlock
 	local localsBegin = #localStack
 	local result = parseBlockNoScope()
 	restoreLocals(localsBegin)
@@ -1877,7 +1851,7 @@ local function parseBlock()
 end
 
 -- if exp then block {elseif exp then block} [else block] end
-function parseIf()
+function parseIf(): Syntax.AstStatIf
 	local start = snapshot()
 
 	nextLexeme()
@@ -1897,7 +1871,7 @@ function parseIf()
 
 	local thenbody = parseBlock()
 
-	local elsebody = nil
+	local elsebody: Syntax.AstStat? = nil
 	local end_ = start
 	local elseLocation = nil
 
@@ -1908,7 +1882,7 @@ function parseIf()
 
 		elseLocation = snapshot()
 		elsebody = parseIf()
-		end_ = elsebody.location
+		end_ = (elsebody :: any).location
 
 		recursionCounter = oldRecursionCount
 	else
@@ -1928,8 +1902,9 @@ function parseIf()
 
 			nextLexeme()
 
-			elsebody = parseBlock()
-			elsebody.location.begin = {line = ThenElse_end_line, column = ThenElse_end_col}
+			local body = parseBlock()
+			body.location.begin = {line = ThenElse_end_line, column = ThenElse_end_col}
+			elsebody = body
 		end
 
 		end_ = snapshot()
@@ -1956,11 +1931,11 @@ function parseIf()
 		elsebody = elsebody, 
 		thenLocation = thenLocation, 
 		elseLocation = elseLocation 
-	}
+	} :: Syntax.AstStatIf
 end
 
 -- while exp do block end
-function parseWhile()
+function parseWhile(): Syntax.AstStatWhile
 	local start = snapshot()
 	nextLexeme() 
 
@@ -1997,11 +1972,11 @@ function parseWhile()
 			begin = {line = Do_start_line, column = Do_start_col},
 			end_ = {line = Do_end_line, column = Do_end_col}
 		}
-	}
+	} :: Syntax.AstStatWhile
 end
 
 -- repeat block until exp
-function parseRepeat()
+function parseRepeat(): Syntax.AstStatRepeat
 	local start = snapshot()
 
 	local Repeat_type = token_type
@@ -2030,7 +2005,7 @@ function parseRepeat()
 		condition = cond,
 		body = body,
 		hasUntil = hasUntil
-	}
+	} :: Syntax.AstStatRepeat
 
 	if storeCstData then
 		cstNodes[node] = {
@@ -2043,7 +2018,7 @@ function parseRepeat()
 end
 
 -- do block end
-function parseDo()
+function parseDo(): Syntax.AstStatBlock
 	local start = snapshot()
 
 	local Do_type = token_type
@@ -2072,7 +2047,7 @@ function parseDo()
 end
 
 -- break
-function parseBreak(): any
+function parseBreak(): Syntax.AstStatBreak
 	local start = snapshot()
 	nextLexeme() -- break
 
@@ -2091,7 +2066,7 @@ function parseBreak(): any
 end
 
 -- continue
-function parseContinue(start: any): any
+function parseContinue(start: Syntax.Location): Syntax.AstStatContinue
 	if functionStack[#functionStack].loopDepth == 0 then
 		return reportStatError(
 			start,
@@ -2110,7 +2085,7 @@ end
 
 -- for binding `=' exp `,' exp [`,' exp] do block end |
 -- for bindinglist in explist do block end |
-function parseFor(): any
+function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 	local start = snapshot()
 	nextLexeme() -- for
 
@@ -2153,7 +2128,7 @@ function parseFor(): any
 		functionStack[#functionStack].loopDepth -= 1
 		restoreLocals(localsBegin)
 
-		local end_ = get_end()
+		local end_ = (get_end() :: any)
 		local hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, Do_type, Do_start_line, Do_start_col)
 		body.hasEnd = hasEnd
 
@@ -2170,7 +2145,7 @@ function parseFor(): any
 				begin = {line = Do_start_line, column = Do_start_col},
 				end_ = {line = Do_end_line, column = Do_end_col}
 			}
-		}
+		} :: Syntax.AstStatFor
 
 		if storeCstData then
 			cstNodes[node] = {
@@ -2211,7 +2186,7 @@ function parseFor(): any
 		local localsBegin = #localStack
 		functionStack[#functionStack].loopDepth += 1
 
-		local vars = {}
+		local vars = {} :: {Syntax.AstLocal}
 		for _, binding in names do
 			table.insert(vars, pushLocal(binding))
 		end
@@ -2228,7 +2203,7 @@ function parseFor(): any
 
 		local node = {
 			kind = "StatForIn",
-			location = {begin=start.begin, end_= end_},
+			location = {begin=start.begin, end_= end_ :: any},
 			vars = vars,
 			values = values,
 			body = body,
@@ -2239,7 +2214,7 @@ function parseFor(): any
 				begin = {line = Do_start_line, column = Do_start_col},
 				end_ = {line = Do_end_line, column = Do_end_col}
 			}
-		}
+		} :: Syntax.AstStatForIn
 
 		if storeCstData then
 			cstNodes[node] = {
@@ -2255,7 +2230,7 @@ function parseFor(): any
 end
 
 -- funcname ::= Name {`.' Name} [`:' Name]
-local function parseFunctionName(hasRef: {boolean}, debugnameRef: {string?}): any
+local function parseFunctionName(hasRef: {boolean}, debugnameRef: {string?}): Syntax.AstExprIndexName
 	if token_type == Types.Name then
 		debugnameRef[1] = token_string
 	end
@@ -2322,9 +2297,8 @@ local function parseFunctionName(hasRef: {boolean}, debugnameRef: {string?}): an
 	return expr
 end
 
--- fix
 -- function funcname funcbody
-function parseFunctionStat(attributes: {any})
+function parseFunctionStat(attributes: {Syntax.AstAttr}): Syntax.AstStatFunction
 	local start = snapshot()
 	if #attributes > 0 then
 		start = attributes[1].location
@@ -2339,8 +2313,7 @@ function parseFunctionStat(attributes: {any})
 
 	matchRecovery[Types.ReservedEnd] += 1
 
-	local bodyData = parseFunctionBody(hasRef[1], matchFunction, debugnameRef[1], nil, attributes)
-	local body = bodyData[1] :: any
+	local body = parseFunctionBody(hasRef[1], matchFunction, debugnameRef[1], nil, attributes)
 
 	matchRecovery[Types.ReservedEnd] -= 1
 
@@ -2352,7 +2325,7 @@ function parseFunctionStat(attributes: {any})
 		},
 		name = expr,
 		func = body
-	}
+	} :: Syntax.AstStatFunction
 
 	if storeCstData then
 		cstNodes[node] = {
@@ -2365,9 +2338,9 @@ function parseFunctionStat(attributes: {any})
 end
 
 local function validateAttribute(
-	loc: any,
+	loc: Syntax.Location,
 	attributeName: string,
-	attributes: {any},
+	attributes: {Syntax.AstAttr},
 	args: {any}
 )
 	-- check if the attribute name is valid
@@ -2406,7 +2379,7 @@ local function validateAttribute(
 end
 
 -- attribute ::= '@' NAME
-local function parseAttribute(attributes: {any})
+local function parseAttribute(attributes: {Syntax.AstAttr})
 	if token_type == Types.Attribute then
 		local loc = snapshot()
 		local name = token_string or ""
@@ -2418,7 +2391,7 @@ local function parseAttribute(attributes: {any})
 			type = type_,
 			args = {},
 			name = name
-		})
+		} :: Syntax.AstAttr)
 	else
 		local open_type = token_type
 
@@ -2454,7 +2427,7 @@ local function parseAttribute(attributes: {any})
 					type = "Unknown",
 					args = args,
 					name = attrName
-				})
+				} :: Syntax.AstAttr)
 
 				if token_type == 44 then 
 					nextLexeme()
@@ -2473,7 +2446,7 @@ local function parseAttribute(attributes: {any})
 end
 
 -- attributes ::= {attribute}
-local function parseAttributes()
+local function parseAttributes(): {Syntax.AstAttr}
 	local attributes = {}
 
 	while token_type == Types.Attribute
@@ -2507,7 +2480,7 @@ end
 
 -- local function Name funcbody |
 -- local bindinglist [`=' explist]
-function parseLocal(attributes: {any}): any
+function parseLocal(attributes: {Syntax.AstAttr}): Syntax.AstStatLocal | Syntax.AstStatLocalFunction
 	local start = snapshot()
 	if #attributes > 0 then
 		start = attributes[1].location
@@ -2531,9 +2504,7 @@ function parseLocal(attributes: {any}): any
 
 		matchRecovery[Types.ReservedEnd] += 1
 
-		local bodyData = parseFunctionBody(false, matchFunction, name.name.value, name, attributes)
-		local body = bodyData[1] :: any
-		local var = bodyData[2]
+		local body, var = parseFunctionBody(false, matchFunction, name.name.value, name, attributes)
 
 		matchRecovery[Types.ReservedEnd] -= 1
 
@@ -2542,7 +2513,7 @@ function parseLocal(attributes: {any}): any
 			location = {begin=start.begin, end_=body.location.end_},
 			name = var,
 			func = body
-		}
+		} :: Syntax.AstStatLocalFunction
 
 		if storeCstData then
 			cstNodes[node] = {
@@ -2589,7 +2560,7 @@ function parseLocal(attributes: {any}): any
 			table.insert(vars, pushLocal(binding))
 		end
 
-		local end_ = start
+		local end_ = start.end_
 		if #values > 0 then
 			end_ = values[#values].location.end_
 		else
@@ -2602,7 +2573,7 @@ function parseLocal(attributes: {any}): any
 			vars = vars,
 			values = values,
 			equalsSignLocation = equalsSignLocation
-		}
+		} :: Syntax.AstStatLocal
 
 		if storeCstData then
 			cstNodes[node] = {
@@ -2618,7 +2589,7 @@ function parseLocal(attributes: {any}): any
 end
 
 -- return [explist]
-function parseReturn()
+function parseReturn(): Syntax.AstStatReturn
 	local start = snapshot()
 	nextLexeme()
 
@@ -2641,7 +2612,7 @@ function parseReturn()
 			end_ = end_
 		},
 		list = list
-	}
+	} :: Syntax.AstStatReturn
 
 	if storeCstData then
 		cstNodes[node] = {
@@ -2659,7 +2630,7 @@ function parseTypeAlias(
 	start: any,
 	exported: boolean,
 	typeKeywordPosition: any
-): any
+): Syntax.AstStatTypeAlias | Syntax.AstStatTypeFunction
 
 	-- parsing a type function
 	if token_type == Types.ReservedFunction then
@@ -2691,15 +2662,12 @@ function parseTypeAlias(
 		{line = 0, column = 0}
 	}
 
-	local genericsData = nil
-
+	local generics, genericPacks = nil, nil
 	if storeCstData then
-		genericsData = parseGenericTypeList(true, genericsOpenPos, genericsCommaPos, genericsClosePos)
+		generics, genericPacks = parseGenericTypeList(true, genericsOpenPos, genericsCommaPos, genericsClosePos)
 	else
-		genericsData = parseGenericTypeList(true)
+		generics, genericPacks = parseGenericTypeList(true)
 	end
-
-	local generics, genericPacks = genericsData[1], genericsData[2]
 
 	local equalsPosition = get_begin()
 	expectAndConsume(61, "type alias") 
@@ -2715,7 +2683,7 @@ function parseTypeAlias(
 		genericPacks = genericPacks,
 		type = type_,
 		exported = exported
-	}
+	} :: Syntax.AstStatTypeAlias
 
 	if storeCstData then
 		cstNodes[node] = {
@@ -2738,7 +2706,7 @@ function parseTypeFunction(
 	start: any,
 	exported: boolean,
 	typeKeywordPosition: any
-)
+): Syntax.AstStatTypeFunction
 
 	local matchFn = get_lexeme()
 	nextLexeme()
@@ -2761,8 +2729,7 @@ function parseTypeFunction(
 	local oldTypeFunctionDepth = typeFunctionDepth
 	typeFunctionDepth = #functionStack
 
-	local bodyData = parseFunctionBody(false, matchFn, fnName.name.value, nil, {})
-	local body = bodyData[1] :: any
+	local body = parseFunctionBody(false, matchFn, fnName.name.value, nil, {})
 
 	typeFunctionDepth = oldTypeFunctionDepth
 	matchRecovery[Types.ReservedEnd] -= 1
@@ -2780,7 +2747,7 @@ function parseTypeFunction(
 		body = body,
 		exported = exported,
 		hasErrors = hasErrors
-	}
+	} :: Syntax.AstStatTypeFunction
 
 	if storeCstData then
 		cstNodes[node] = {
@@ -2831,7 +2798,7 @@ local function tableSeparator(): number?
 end
 
 -- explist ::= {exp `,'} exp
-function parseExprList(result: {any}, commaPositions: any)
+function parseExprList(result: {Syntax.AstExpr}, commaPositions: {Syntax.Position}?)
 	table.insert(result, parseExpr())
 
 	while token_type == 44 do
@@ -2851,10 +2818,9 @@ end
 
 
 -- varlist `=' explist
-function parseAssignment(initial: any): any
+function parseAssignment(initial: Syntax.AstExpr): Syntax.AstStatAssign
 	if not isExprLValue(initial) then
 		initial = reportExprError(
-
 			initial.location,
 			{initial},
 			"Assigned expression must be a variable or a field"
@@ -2891,7 +2857,7 @@ function parseAssignment(initial: any): any
 		location = {begin=initial.location.begin, end_=end_.end_},
 		vars = vars,
 		values = values
-	}
+	} :: Syntax.AstStatAssign
 
 	if storeCstData then
 		cstNodes[node] = {
@@ -2907,12 +2873,9 @@ end
 
 -- var [`+=' | `-=' | `*=' | `/=' | `%=' | `^=' | `..='] exp
 function parseCompoundAssignment(
-
-
-	initial: any,
+	initial: Syntax.AstExpr,
 	op: number
-
-): any
+): Syntax.AstStatCompoundAssign
 
 	if not isExprLValue(initial) then
 		initial = reportExprError(
@@ -2934,7 +2897,7 @@ function parseCompoundAssignment(
 		op = op,
 		var = initial,
 		value = value
-	}
+	} :: Syntax.AstStatCompoundAssign
 
 	if storeCstData then
 		cstNodes[node] = {
@@ -2972,15 +2935,13 @@ end
 -- funcbody ::= `(' [parlist] `)' [`:' ReturnType] block end
 -- parlist ::= bindinglist [`,' `...'] | `...'
 function parseFunctionBody(
-
-
 	hasself: boolean,
 	matchFunction: any,
 	debugname: any,
 	localName: any,
-	attributes: {any}
+	attributes: {Syntax.AstAttr}
+): (Syntax.AstExprFunction, Syntax.AstLocal?)
 
-)
 	local start = matchFunction.location
 	if #attributes > 0 then
 		start = attributes[1].location
@@ -3005,8 +2966,7 @@ function parseFunctionBody(
 	local genCommaPosRef = cstNode and cstNode.genericsCommaPositions or nil
 	local closeGenPosRef = cstNode and {cstNode.closeGenericsPosition} or nil
 
-	local genericsData = parseGenericTypeList(false, openGenPosRef, genCommaPosRef, closeGenPosRef)
-	local generics, genericPacks = genericsData[1], genericsData[2]
+	local generics, genericPacks = parseGenericTypeList(false, openGenPosRef, genCommaPosRef, closeGenPosRef)
 
 	if cstNode and openGenPosRef then cstNode.openGenericsPosition = openGenPosRef[1] end
 	if cstNode and closeGenPosRef then cstNode.closeGenericsPosition = closeGenPosRef[1] end
@@ -3029,7 +2989,7 @@ function parseFunctionBody(
 
 	matchRecovery[41] += 1
 
-	local args = {}
+	local args = {} :: {Syntax.AstLocal}
 	local vararg = false
 	local varargLocation = nil
 	local varargAnnotation = nil
@@ -3073,7 +3033,7 @@ function parseFunctionBody(
 
 	local localsBegin = #localStack
 
-	local fun = { vararg = vararg, loopDepth = 0 }
+	local fun = { vararg = vararg, loopDepth = 0 } :: Syntax.FunctionState
 	table.insert(functionStack, fun)
 
 	local selfLocal, vars = prepareFunctionArguments(start, hasself, args)
@@ -3109,14 +3069,14 @@ function parseFunctionBody(
 		returnAnnotation = typelist,
 		varargAnnotation = varargAnnotation,
 		argLocation = argLocation
-	}
+	} :: Syntax.AstExprFunction
 
 	if storeCstData and cstNode then
 		cstNode.argsAnnotationColonPositions = extractAnnotationColonPositions(args)
 		cstNodes[node] = cstNode
 	end
 
-	return { node, funLocal }
+	return node, funLocal
 end
 
 function parseGenericTypeList(
@@ -3124,7 +3084,7 @@ function parseGenericTypeList(
 	withDefaultValues: boolean,
 	openPosRef: any, commaPosRef: any,
 	closePosRef: any
-)
+): ({Syntax.AstGenericType}, {Syntax.AstGenericTypePack})
 	local names = {}
 	local namePacks = {}
 	local localCommaPositions = {}
@@ -3177,14 +3137,14 @@ function parseGenericTypeList(
 						location = nameLoc,
 						name = name,
 						defaultValue = typePack
-					}
+					} :: Syntax.AstGenericTypePack
 
 					if storeCstData then
 						cstNodes[node] = {
 							kind = "CstGenericTypePack",
 							ellipsisPosition = ellipsisPosition,
 							defaultEqualsPosition = equalsPosition
-						}
+						} :: Syntax.CstGenericTypePack
 					end
 
 					table.insert(namePacks, node)
@@ -3197,13 +3157,15 @@ function parseGenericTypeList(
 						kind = "GenericTypePack",
 						location = nameLoc,
 						name = name,
-					}
+						defaultValue = nil,
+					} :: Syntax.AstGenericTypePack
 
 					if storeCstData then
 						cstNodes[node] = {
 							kind = "CstGenericTypePack",
 							ellipsisPosition = ellipsisPosition,
-						}
+							defaultEqualsPosition = nil
+						} :: Syntax.CstGenericTypePack
 					end
 
 					table.insert(namePacks, node)
@@ -3221,13 +3183,13 @@ function parseGenericTypeList(
 						location = nameLoc,
 						name = name,
 						defaultValue = defaultType
-					}
+					} :: Syntax.AstGenericType
 
 					if storeCstData then
 						cstNodes[node] = {
 							kind = "CstGenericType",
 							defaultEqualsPosition = equalsPosition
-						}
+						} :: Syntax.CstGenericType
 					end
 					table.insert(names, node)
 				else
@@ -3237,12 +3199,14 @@ function parseGenericTypeList(
 						kind = "GenericType",
 						location = nameLoc,
 						name = name,
-					}
+						defaultValue = nil,
+					} :: Syntax.AstGenericType
 
 					if storeCstData then
 						cstNodes[node] = {
-							kind = "CstGenericType"
-						}
+							kind = "CstGenericType",
+							defaultEqualsPosition = nil
+						} :: Syntax.CstGenericType
 					end
 					table.insert(names, node)
 				end
@@ -3274,7 +3238,7 @@ function parseGenericTypeList(
 		end
 	end
 
-	return { names, namePacks }
+	return names, namePacks
 end
 
 
@@ -3292,7 +3256,7 @@ function shouldParseTypePack()
 	return false
 end
 
-function parseOptionalType()
+function parseOptionalType(): Syntax.AstType?
 	if token_type == 58 then 
 		nextLexeme()
 		return parseType(false)
@@ -3301,7 +3265,7 @@ function parseOptionalType()
 	end
 end
 
-function extractAnnotationColonPositions(bindings: {any})
+function extractAnnotationColonPositions(bindings: {any}): {Syntax.Position?}
 	local positions = {}
 	for _, binding in bindings do
 		if binding.colonPosition then
@@ -3315,8 +3279,8 @@ end
 function parseTypeList(
 	result: {any},
 	resultNames: {any},
-	commaPositions: {any}?,
-	nameColonPositions: {any}?
+	commaPositions: {Syntax.Position}?,
+	nameColonPositions: {Syntax.Position?}?
 )
 
 	while true do
@@ -3382,7 +3346,7 @@ function parseOptionalReturnType(
 
 	returnSpecifierPosRef: any
 
-): any
+): Syntax.AstTypePack?
 
 	if token_type == 58
 		or token_type == Types.SkinnyArrow then 
@@ -3420,7 +3384,7 @@ function parseOptionalReturnType(
 end
 
 -- ReturnType ::= Type | `(' TypeList `)'
-function parseReturnType()
+function parseReturnType(): Syntax.AstTypePackExplicit
 	incrementRecursionCounter("type annotation")
 
 	local begin = get_lexeme()
@@ -3437,7 +3401,7 @@ function parseReturnType()
 				kind = "TypePackExplicit",
 				location = type_.location,
 				types = { type_ },
-			}
+			} :: Syntax.AstTypePackExplicit
 
 			if storeCstData then
 				cstNodes[node] = {
@@ -3479,8 +3443,12 @@ function parseReturnType()
 		-- If it turns out that it's just '(A)', it's possible that there are unions/intersections to follow, so fold over it.
 		if #result == 1 then
 			-- TODO(CLI-140667): stop parsing type suffix when varargAnnotation != nullptr - this should be a parse error
-			local inner = varargAnnotation == nil
-				and { kind = "TypeGroup", location = {begin=begin.location.begin, end_=endLoc.end_}, type = result[1] } 
+			local inner: Syntax.AstType = varargAnnotation == nil
+				and {
+					kind = "TypeGroup",
+					location = {begin=begin.location.begin, end_=endLoc.end_},
+					type = result[1]
+				} 
 				or result[1]
 
 			local returnType = parseTypeSuffix(inner, begin.location)
@@ -3497,7 +3465,7 @@ function parseReturnType()
 				},
 				types = { returnType },
 				tailType = varargAnnotation
-			}
+			} :: Syntax.AstTypePackExplicit
 
 			if storeCstData then
 				cstNodes[node] = {
@@ -3515,7 +3483,7 @@ function parseReturnType()
 			},
 			types = result,
 			tailType = varargAnnotation
-		}
+		} :: Syntax.AstTypePackExplicit
 
 		if storeCstData then
 			cstNodes[node] = {
@@ -3552,7 +3520,7 @@ function parseReturnType()
 			end_ = tail.location.end_
 		},
 		types = { tail }
-	}
+	} :: Syntax.AstTypePackExplicit
 
 	if storeCstData then
 		cstNodes[node] = {
@@ -3581,14 +3549,17 @@ end
 
 -- TableIndexer ::= `[' Type `]' `:' Type
 function parseTableIndexer(
-
-
 	access: string,
 	accessLoc: any,
 	begin: any
-
-)
-
+) :
+	{
+		node: Syntax.AstTableIndexer,
+		indexerOpenPosition: Syntax.Position,
+		indexerClosePosition: Syntax.Position,
+		colonPosition: Syntax.Position
+	}
+	
 	local index = parseType(false)
 
 	local indexerClosePos = get_begin()
@@ -3623,12 +3594,12 @@ end
 -- TablePropOrIndexer ::= TableProp | TableIndexer
 -- PropList ::= TablePropOrIndexer {fieldsep TablePropOrIndexer} [fieldsep]
 -- TableType ::= `{' PropList `}'
-function parseTableType(inDeclarationContext: boolean)
+function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
 	incrementRecursionCounter("type annotation")
 
-	local props = {}
+	local props: {Syntax.AstTableProp} = {}
 	local cstItems: {any} = {} 
-	local indexer = nil
+	local indexer: Syntax.AstTableIndexer? = nil
 
 	local start = snapshot()
 	local matchBrace = get_lexeme()
@@ -3683,12 +3654,13 @@ function parseTableType(inDeclarationContext: boolean)
 
 				if chars then
 					table.insert(props, {
+						kind = "TableProp",
 						name = { value = chars }, 
 						location = begin.location,
 						type = type_,
 						access = access,
 						accessLocation = accessLoc
-					})
+					} :: Syntax.AstTableProp)
 
 					if storeCstData then
 						local cstString = {
@@ -3746,7 +3718,7 @@ function parseTableType(inDeclarationContext: boolean)
 				nameLocation = type_.location,
 				hasParameterList = false,
 				parameters = {}
-			}
+			} :: Syntax.AstTypeReference
 
 			indexer = {
 				kind = "TableIndexer",
@@ -3755,7 +3727,7 @@ function parseTableType(inDeclarationContext: boolean)
 				resultType = type_,
 				access = access,
 				accessLocation = accessLoc
-			}
+			} :: Syntax.AstTableIndexer
 			break
 		else
 			local nameOpt = parseNameOpt("table field")
@@ -3767,12 +3739,13 @@ function parseTableType(inDeclarationContext: boolean)
 			local type_ = parseType(inDeclarationContext)
 
 			table.insert(props, {
+				kind = "TableProp",
 				name = nameOpt.name,
 				location = nameOpt.location,
 				type = type_,
 				access = access,
 				accessLocation = accessLoc
-			})
+			} :: Syntax.AstTableProp)
 
 			if storeCstData then
 				table.insert(cstItems, {
@@ -3801,7 +3774,7 @@ function parseTableType(inDeclarationContext: boolean)
 		location = {begin=start.begin, end_=endLoc.end_},
 		props = props,
 		indexer = indexer
-	}
+	} :: Syntax.AstTypeTable
 
 	if storeCstData then
 		cstNodes[node] = {
@@ -3948,8 +3921,6 @@ function parseFunctionType(
 end
 
 function parseFunctionTypeTail(
-
-
 	begin: any,
 	attributes: {any},
 	generics: {any},
@@ -3957,8 +3928,7 @@ function parseFunctionTypeTail(
 	params: {any},
 	paramNames: {any},
 	varargAnnotation: any
-
-): any
+): Syntax.AstType
 
 	incrementRecursionCounter("type annotation")
 
@@ -3986,9 +3956,10 @@ function parseFunctionTypeTail(
 			kind = "TypeReference",
 			location = begin.location,
 			name = nameNil,
+			nameLocation = begin.location,
 			hasParameterList = false,
 			parameters = {}
-		}
+		} :: Syntax.AstTypeReference
 	else
 		expectAndConsume(Types.SkinnyArrow, "function type")
 	end
@@ -4019,7 +3990,7 @@ end
 --      `{' [PropList] `}' |
 --      `(' [TypeList] `)' `->` ReturnType
 --      `typeof` Type
-function parseTypeSuffix( type_: any, begin: any)
+function parseTypeSuffix(type_: Syntax.AstType?, begin: any): Syntax.AstType
 	local parts = {} :: {any}
 	if type_ then 
 		table.insert(parts, type_) 
@@ -4110,7 +4081,7 @@ function parseTypeSuffix( type_: any, begin: any)
 	local loc = { begin = begin.begin, end_ = parts[#parts].location.end_ }
 
 	if isUnion then
-		local node = { kind = "TypeUnion", location = loc, types = parts }
+		local node = { kind = "TypeUnion", location = loc, types = parts } :: Syntax.AstTypeUnion
 		if storeCstData then
 			cstNodes[node] = {
 				kind = "CstTypeUnion",
@@ -4122,7 +4093,7 @@ function parseTypeSuffix( type_: any, begin: any)
 	end
 
 	if isIntersection then
-		local node = { kind = "TypeIntersection", location = loc, types = parts }
+		local node = { kind = "TypeIntersection", location = loc, types = parts } :: Syntax.AstTypeIntersection
 		if storeCstData then
 			cstNodes[node] = {
 				kind = "CstTypeIntersection",
@@ -4153,7 +4124,7 @@ function parseSimpleTypeOrPack(): (any, any)
 	return parseTypeSuffix(type_, begin)
 end
 
-function parseType( inDeclarationContext: boolean?)
+function parseType(inDeclarationContext: boolean?): Syntax.AstType
 	local oldRec = recursionCounter
 	-- recursion counter is incremented in parseSimpleType and/or parseTypeSuffix
 
@@ -4175,12 +4146,9 @@ end
 -- Type ::= nil | Name[`.' Name] [ `<' Type [`,' ...] `>' ] | `typeof' `(' expr `)' | `{' [PropList] `}'
 --   | [`<' varlist `>'] `(' [TypeList] `)' `->` ReturnType
 function parseSimpleType(
-
-
 	allowPack: boolean,
 	inDeclarationContext: boolean
-
-): (any?, TypePack?)
+): (Syntax.AstType?, Syntax.AstTypePack?)
 
 	incrementRecursionCounter("type annotation")
 
@@ -4193,7 +4161,7 @@ function parseSimpleType(
 				start,
 				{},
 				"attributes are not allowed in declaration context"
-			)
+			), nil
 		else
 			local attributes = parseAttributes()
 
@@ -4201,7 +4169,7 @@ function parseSimpleType(
 
 				allowPack,
 				attributes
-			)
+			), nil
 		end
 	elseif token_type == Types.ReservedNil then
 		nextLexeme()
@@ -4210,9 +4178,10 @@ function parseSimpleType(
 			kind = "TypeReference",
 			location = start,
 			name = nameNil,
+			nameLocation = start,
 			hasParameterList = false,
 			parameters = {}
-		}
+		} :: Syntax.AstTypeReference, nil
 	elseif token_type == Types.ReservedTrue then
 		nextLexeme()
 
@@ -4220,7 +4189,7 @@ function parseSimpleType(
 			kind = "TypeSingletonBool",
 			location = start,
 			value = true
-		}
+		} :: Syntax.AstTypeSingletonBool, nil
 	elseif token_type == Types.ReservedFalse then
 		nextLexeme()
 
@@ -4228,7 +4197,7 @@ function parseSimpleType(
 			kind = "TypeSingletonBool",
 			location = start,
 			value = false
-		}
+		} :: Syntax.AstTypeSingletonBool, nil
 	elseif token_type == Types.RawString or token_type == Types.QuotedString then
 		local chars = parseCharArray()
 		if chars then
@@ -4236,14 +4205,14 @@ function parseSimpleType(
 				kind = "TypeSingletonString",
 				location = start,
 				value = chars
-			}
+			} :: Syntax.AstTypeSingletonString, nil
 		else
 			return reportTypeError(
 
 				start, 
 				{},
 				"String literal contains malformed escape sequence"
-			)
+			), nil
 		end
 	elseif token_type == Types.InterpStringBegin or token_type == Types.InterpStringSimple then
 		parseInterpString()
@@ -4253,7 +4222,7 @@ function parseSimpleType(
 			start,
 			{},
 			"Interpolated string literals cannot be used as types"
-		)
+		), nil
 	elseif token_type == Types.BrokenString then
 		nextLexeme()
 		return reportTypeError(
@@ -4261,7 +4230,7 @@ function parseSimpleType(
 			start,
 			{},
 			"Malformed string; did you forget to finish it?"
-		)
+		), nil
 	elseif token_type == Types.Name then
 		local name = parseName("type name")
 		local prefix = nil
@@ -4296,7 +4265,7 @@ function parseSimpleType(
 					end_=endLoc.end_
 				},
 				expr = expr
-			}
+			} :: Syntax.AstTypeTypeof
 
 			if storeCstData then
 				cstNodes[node] = {
@@ -4305,7 +4274,7 @@ function parseSimpleType(
 					closePosition = endLoc.begin
 				}
 			end
-			return node
+			return node, nil
 		end
 
 		local hasParams = false
@@ -4327,12 +4296,12 @@ function parseSimpleType(
 				end_ = getprev().end_
 			}, 
 			prefix = prefix, 
-			name = name.name.value, 
+			name = name.name, 
 			prefixLocation = prefixLoc, 
 			nameLocation = name.location, 
 			hasParameterList = hasParams, 
 			parameters = params 
-		}
+		} :: Syntax.AstTypeReference
 
 		if storeCstData then
 			cstNodes[node] = {
@@ -4344,9 +4313,9 @@ function parseSimpleType(
 			}
 		end
 
-		return node
+		return node, nil
 	elseif token_type == 123 then 
-		return parseTableType(inDeclarationContext)
+		return parseTableType(inDeclarationContext), nil
 	elseif token_type == 40 or token_type == 60 then 
 		return parseFunctionType(allowPack, {})
 	elseif token_type == Types.ReservedFunction then
@@ -4356,7 +4325,7 @@ function parseSimpleType(
 
 			start, {},
 			"Using 'function' as a type annotation is not supported..."
-		)
+		), nil
 	else
 		report(start, "Expected type, got %s", ToString(token_type, token_string, token_codepoint))
 
@@ -4366,11 +4335,11 @@ function parseSimpleType(
 			types = {},
 			isMissing = true,
 			messageIndex = #parseErrors
-		}
+		}, nil
 	end
 end
 
-function parseVariadicArgumentTypePack()
+function parseVariadicArgumentTypePack(): any
 	-- Generic: a...
 	if token_type == Types.Name and next_type == Types.Dot3 then
 		local name = parseName("generic name")
@@ -4516,7 +4485,7 @@ function parseTypeParams(
 							kind = "TypeGroup",
 							location = parenTy.location,
 							type = parenTy
-						}
+						} :: Syntax.AstTypeGroup
 
 						table.insert(params, {type = parseTypeSuffix(node, beginParen)})
 					else
@@ -4533,7 +4502,7 @@ function parseTypeParams(
 					--   separator. We just fall right into
 					--   `parseTypeSuffix`, which allows its first
 					--   argument to be `nullptr`
-					table.insert(params, { type = parseTypeSuffix(type_, beginParen)})
+					table.insert(params, { type = parseTypeSuffix(type_, beginParen) :: Syntax.AstType })
 				end
 			elseif token_type == 62 and #params == 0 then
 				break
@@ -4624,17 +4593,17 @@ end
 
 -- subexpr -> (asexp | unop subexpr) { binop subexpr }
 -- where `binop' is any binary operator with a priority higher than `limit'
-function parseExpr(limit: number?): any
-	limit = limit or 0
+function parseExpr(limit_val: number?): Syntax.AstExpr
+	local limit: number = limit_val or 0
 	local oldRecursion = recursionCounter
 
 	-- this handles recursive calls to parseSubExpr/parseExpr
 	incrementRecursionCounter("expression")
 
 	local start = snapshot()
-	local expr = nil
+	local expr: Syntax.AstExpr? = nil
 
-	local uop = UnaryOpLookup[token_type] -- Fix: Lookup based on token type
+	local uop: number? = UnaryOpLookup[token_type] -- Fix: Lookup based on token type
 	if not uop then uop = checkUnaryConfusables() end
 
 	if uop then
@@ -4649,9 +4618,9 @@ function parseExpr(limit: number?): any
 				begin = start.begin,
 				end_ = subexpr.location.end_
 			},
-			op = uop,
+			op = uop :: number,
 			expr = subexpr
-		}
+		} :: Syntax.AstExprUnary
 
 		if storeCstData then
 			cstNodes[expr] = {
@@ -4664,7 +4633,7 @@ function parseExpr(limit: number?): any
 	end
 
 	-- expand while operators have priorities higher than `limit'
-	local op = BinaryOpLookup[token_type]
+	local op: number? = BinaryOpLookup[token_type]
 
 	if not op then
 		op = checkBinaryConfusables(limit)
@@ -4684,10 +4653,10 @@ function parseExpr(limit: number?): any
 				begin = start.begin,
 				end_ = nextExpr.location.end_
 			},
-			op = op,
-			left = expr,
+			op = op :: number,
+			left = expr :: Syntax.AstExpr,
 			right = nextExpr
-		}
+		} :: Syntax.AstExprBinary
 
 		if storeCstData then
 			cstNodes[expr] = {
@@ -4739,7 +4708,7 @@ function parseNameExpr(context: string): any
 		return {
 			kind = "ExprLocal",
 			location = name.location,
-			local_ = local_,
+			['local'] = local_,
 			upvalue = local_.functionDepth ~= (#functionStack - 1)
 		}
 	end
@@ -4752,7 +4721,7 @@ function parseNameExpr(context: string): any
 end
 
 -- prefixexp -> NAME | '(' expr ')'
-function parsePrefixExpr()
+function parsePrefixExpr(): Syntax.AstExpr
 	if token_type == 40 then 
 		local start = get_begin()
 		local Paren_type = token_type
@@ -4802,7 +4771,7 @@ local function parseTypeInstantiationExpr(cstNodeOut: any)
 	return typesOrPacks
 end
 
-local function parseExplicitTypeInstantiationExpr(start: any, basedOnExpr: any)
+local function parseExplicitTypeInstantiationExpr(start: Syntax.Position, basedOnExpr: Syntax.AstExpr): Syntax.AstExprInstantiate
 	local typesOrPacks = parseTypeInstantiationExpr() 
 	local endLocation = getprev() 
 
@@ -4811,7 +4780,7 @@ local function parseExplicitTypeInstantiationExpr(start: any, basedOnExpr: any)
 		location = {begin=start, end_=endLocation.end_},
 		expr = basedOnExpr,
 		typeArguments = typesOrPacks
-	}
+	} :: Syntax.AstExprInstantiate
 end
 
 local function reportAmbiguousCallError()
@@ -4822,9 +4791,9 @@ local function reportAmbiguousCallError()
 end
 
 -- primaryexp -> prefixexp { `.' NAME | `[' exp `]' | `:' NAME funcargs | funcargs }
-function parsePrimaryExpr(asStatement: boolean): any
+function parsePrimaryExpr(asStatement: boolean): Syntax.AstExpr
 	local start = get_begin()
-	local expr = parsePrefixExpr()
+	local expr: Syntax.AstExpr = parsePrefixExpr()
 
 	local oldRecursion = recursionCounter
 
@@ -4843,7 +4812,7 @@ function parsePrimaryExpr(asStatement: boolean): any
 				indexLocation = index.location,
 				opPosition = opPosition,
 				op = 46 
-			}
+			} :: Syntax.AstExprIndexName
 		elseif token_type == 91 then 
 			local bracket_type, bracket_line, bracket_col = token_type, token_start_line, token_start_col
 			nextLexeme()
@@ -4858,7 +4827,7 @@ function parsePrimaryExpr(asStatement: boolean): any
 				location = {begin=start, end_=end_},
 				expr = expr,
 				index = index
-			}
+			} :: Syntax.AstExprIndexExpr
 		elseif token_type == 58 then 
 			local opPosition = get_begin()
 			nextLexeme()
@@ -4873,7 +4842,7 @@ function parsePrimaryExpr(asStatement: boolean): any
 				indexLocation = index.location,
 				opPosition = opPosition,
 				op = 58 
-			}
+			} :: Syntax.AstExprIndexName
 
 			if ExplicitTypeExpressionInstantiation then
 				local typeArgs = {}
@@ -4882,10 +4851,11 @@ function parsePrimaryExpr(asStatement: boolean): any
 					typeArgs = parseTypeInstantiationExpr()
 				end
 
-				expr = parseFunctionArgs(func, true)
+				local callExpr = parseFunctionArgs(func, true)
+				expr = callExpr
 
-				if #typeArgs > 0 then
-					expr.typeArguments = typeArgs
+				if #typeArgs > 0 and callExpr.kind == "ExprCall" then
+					callExpr.typeArguments = typeArgs
 				end
 			else
 				expr = parseFunctionArgs(func, true)
@@ -4917,7 +4887,7 @@ function parsePrimaryExpr(asStatement: boolean): any
 end
 
 -- asexp -> simpleexp [`::' Type]
-function parseAssertionExpr()
+function parseAssertionExpr(): Syntax.AstExpr
 	local start = snapshot()
 	local expr = parseSimpleExpr()
 
@@ -4932,14 +4902,14 @@ function parseAssertionExpr()
 			},
 			expr = expr,
 			annotation = annotation
-		}
+		} :: Syntax.AstExprTypeAssertion
 	else
 		return expr
 	end
 end
 
 -- simpleexp -> NUMBER | STRING | NIL | true | false | ... | constructor | [attributes] FUNCTION body | primaryexp
-function parseSimpleExpr(): any
+function parseSimpleExpr(): Syntax.AstExpr
 	local start = snapshot()
 
 	local attributes = {}
@@ -4981,7 +4951,8 @@ function parseSimpleExpr(): any
 	elseif token_type == Types.ReservedFunction then
 		local matchFunction = get_lexeme()
 		nextLexeme()
-		return parseFunctionBody(false, matchFunction, nil, nil, attributes)[1]
+		local node = parseFunctionBody(false, matchFunction, nil, nil, attributes)
+		return node
 	elseif token_type == Types.Number then
 		return parseNumber()
 	elseif token_type == Types.RawString or token_type == Types.QuotedString or token_type == Types.InterpStringSimple then
@@ -5027,7 +4998,7 @@ function parseSimpleExpr(): any
 end
 
 -- args ::=  `(' [explist] `)' | tableconstructor | String
-function parseFunctionArgs(func: any, selfCall: boolean): any
+function parseFunctionArgs(func: Syntax.AstExpr, selfCall: boolean): Syntax.AstExpr
 
 	if token_type == 40 then 
 		local argStart = get_end()
@@ -5052,9 +5023,9 @@ function parseFunctionArgs(func: any, selfCall: boolean): any
 			func = func,
 			args = args,
 			self = selfCall,
-			typeArguments = {},
+			typeArguments = {} :: {Syntax.AstTypeOrPack},
 			argLocation = {begin=argStart, end_=end_.end_}
-		}
+		} :: Syntax.AstExprCall
 	elseif token_type == 123 then
 		local argStart = get_end()
 		local expr = parseTableConstructor()
@@ -5096,11 +5067,11 @@ function parseFunctionArgs(func: any, selfCall: boolean): any
 	end
 end
 
-function reportFunctionArgsError(func: any, selfCall: boolean)
+function reportFunctionArgsError(func: Syntax.AstExpr, selfCall: boolean): Syntax.AstExpr
 	if selfCall and token_start_line ~= func.location.end_.line then
 		return reportExprError(
 
-			func.location :: Location,
+			func.location :: Syntax.Location,
 			{func},
 			"Expected function call arguments after '('"
 		)
@@ -5195,7 +5166,7 @@ end
 -- fieldsep ::= `,' | `;'
 function parseTableConstructor(): any
 	local items = {} :: {any}
-	local cstItems = {} 
+	local cstItems: {Syntax.CstExprTableItem} = {} 
 
 	local start = snapshot()
 
@@ -5234,12 +5205,13 @@ function parseTableConstructor(): any
 
 			if storeCstData then
 				table.insert(cstItems, {
+					kind = "General",
 					indexerOpenPosition = indexerOpenPos,
 					indexerClosePosition = indexerClosePos,
 					equalsPosition = equalsPos,
 					separator = tableSeparator(),
 					separatorPosition = get_begin()
-				})
+				} :: Syntax.CstExprTableItem)
 			end
 
 		elseif token_type == Types.Name and next_type == 61 then 
@@ -5269,10 +5241,11 @@ function parseTableConstructor(): any
 
 			if storeCstData then
 				table.insert(cstItems, {
+					kind = "Record",
 					equalsPosition = equalsPos,
 					separator = tableSeparator(),
 					separatorPosition = get_begin()
-				})
+				} :: Syntax.CstExprTableItem)
 			end
 		else
 			local expr = parseExpr()
@@ -5283,9 +5256,10 @@ function parseTableConstructor(): any
 
 			if storeCstData then
 				table.insert(cstItems, {
+					kind = "List",
 					separator = tableSeparator(),
 					separatorPosition = get_begin()
-				})
+				} :: Syntax.CstExprTableItem)
 			end
 		end
 
@@ -5318,7 +5292,7 @@ function parseTableConstructor(): any
 		cstNodes[node] = {
 			kind = "CstExprTable",
 			items = cstItems
-		}
+		} :: Syntax.CstExprTable
 	end
 
 	return node
@@ -5380,7 +5354,7 @@ function parseInterpString(): any
 	local strings = {}
 	local sourceStrings = {} 
 	local stringPositions = {} 
-	local expressions = {}
+	local expressions: {Syntax.AstExpr} = {}
 
 	local startLocation = snapshot()
 	local endLocation = nil
@@ -5471,7 +5445,7 @@ function parseInterpString(): any
 		kind = "ExprInterpString",
 		location = {
 			begin = startLocation.begin,
-			end_ = (endLocation :: Location).end_
+			end_ = (endLocation :: Syntax.Location).end_
 		},
 		strings = strings,
 		expressions = expressions
@@ -5494,7 +5468,7 @@ function parseCharArray(): string?
 			nextLexeme()
 			return nil
 		end
-		data = fixed
+		data = fixed :: string
 	else
 		data = fixupMultilineString(data)
 	end
@@ -5579,12 +5553,15 @@ function parseNumber(): any
 			parseResult = "HexOverflow"
 			value = 0
 		else
-			value = tonumber(cleanData) :: number
-			if value == nil then
+			local v = tonumber(cleanData)
+			if v == nil then
 				parseResult = "Malformed"
 				value = 0
-			elseif value >= 9007199254740992 then -- 2^53
-				parseResult = "Imprecise"
+			else
+				value = v :: number
+				if value >= 9007199254740992 then -- 2^53
+					parseResult = "Imprecise"
+				end
 			end
 		end
 	elseif string.find(cleanData, "^0[bB][01]+") then
@@ -5597,7 +5574,7 @@ function parseNumber(): any
 			value = 0
 		else
 			local v = tonumber(content, 2)
-			value = v
+			value = v or 0
 
 			if value == nil then
 				parseResult = "Malformed"
@@ -5607,9 +5584,10 @@ function parseNumber(): any
 			end
 		end
 	else
-		value = tonumber(cleanData)
+		local v_val = tonumber(cleanData)
+		value = v_val or 0
 
-		if value == nil then
+		if v_val == nil then
 			parseResult = "Malformed"
 			value = 0
 		else
@@ -5642,7 +5620,7 @@ function parseNumber(): any
 	return node
 end
 
-local function parse(source: string, options: Options)
+local function parse(source: string, options: Syntax.Options)
 	captureComments = options.captureComments
 	storeCstData = options.storeCstData
 
@@ -5676,7 +5654,7 @@ local function parse(source: string, options: Options)
 	commentLocations = {}
 	hotcomments = {}
 	parseErrors = {}
-	cstNodes = {} :: {[any]: any}
+	cstNodes = {}
 
 	hotcommentHeader = true
 
@@ -5711,18 +5689,9 @@ local function parse(source: string, options: Options)
 	return result
 end
 
-type Result = {
-	root: {{kind: string, location: Location}},
-
-	commentLocations: {any},
-	hotcomments: {any},
-
-	errors: {any}
-}
-
 return {
-	parse = function(source: string, options: Options?): (boolean, Result)
-		local success, root = pcall(parse, source, options or {} :: Options)
+	parse = function(source: string, options: Syntax.Options?): (boolean, Syntax.Result)
+		local success, root = pcall(parse, source, options or {} :: Syntax.Options)
 
 		return success and #parseErrors == 0, {
 			root = root,
