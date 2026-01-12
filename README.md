@@ -1,5 +1,5 @@
 # [0.703] Luau Parser in pure Luau
-Entire port of [Parser.cpp](https://github.com/luau-lang/luau/blob/master/Ast/src/Parser.cpp) (Lua*u* **[0.703]** Parser) both AST & CST.
+Entire port of [Parser.cpp](https://github.com/luau-lang/luau/blob/master/Ast/src/Parser.cpp) (Lua*u* **[0.703]** Parser) both AST ( Abstract Syntax Tree ) & CST ( Concrete Syntax Tree ).
 Currently not built for speed, and not type-checked properly.
 
 Lua*u* Parser only useful when building plugins or creating Lua*u* compilers.
@@ -16,7 +16,7 @@ QuoteStyle: {Single, Double}
 -- Contains things that define node is a normal string or an interpolated string
 BraceType: {Normal, InterpolatedString}
 
--- Contains all Ast types, you need this for detect what AstNodes are these
+-- Contains all Ast types, you need this for detect what LexemeNodes are these
 Types: {number}
 ```
 
@@ -52,7 +52,8 @@ Types: {number}
 }
 ```
 # Change logs
-Removed some useless options and unused variables, same as internal declaration features.
+Finally! Type-checking added! That was long! It's not that type-check that properly but it works! stict-typing of course.
+Autocomplete when parsing now visible, so you can see what types is it, make it wayy easier to use.
 
 # Documentations
-There's no AST and CST documentation for now, but In the future, I could type-check and build a documentation for better usability for sure
+There's no AST and CST documentation for now, but In the future, I could build a documentation for better usability for sure
