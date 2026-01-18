@@ -1,5 +1,6 @@
 # [0.705] Luau Parser in pure Luau
-Entire port of [Parser.cpp](https://github.com/luau-lang/luau/blob/master/Ast/src/Parser.cpp) (Lua*u* **[0.705]** Parser) both AST ( Abstract Syntax Tree ) & Simplified CST ( Simplified Concrete Syntax Tree ). Not trying to misleading but this is a "full" port, so the CST won't have like the low-value trivia like whitespace.
+Entire port of [Parser.cpp](https://github.com/luau-lang/luau/blob/master/Ast/src/Parser.cpp) (Lua*u* **[0.705]** Parser) both AST ( Abstract Syntax Tree ) & CST ( Concrete Syntax Tree ).
+Not trying to misleading but this is a "full" port, so the CST won't have like the low-value trivia like whitespace.
 
 Currently not built for speed, but still pretty fast.
 
@@ -17,7 +18,7 @@ QuoteStyle: {Single, Double}
 -- Contains things that define node is a normal string or an interpolated string
 BraceType: {Normal, InterpolatedString}
 
--- See what unary ops is it, could be length `#`, negative `-` or `Not`
+-- See what unary ops is it, could be length `#`, negative `-` or `not`
 UnaryOp: {Not, Minus, Len}
 
 -- Contains all operators, helpful for which operators `AstExprBinary` contains
