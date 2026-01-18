@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luau Parser Documentation</title>
+    <style>
+        /* ================================================================
+           🎨 THEME SETTINGS - CHANGE COLORS HERE
+           ================================================================ 
+        */
+        :root {
+            /* The main accent color (currently a Luau Blue) */
+            --primary-color: #00a2ff; 
+            /* Hover state for links/buttons */
+            --primary-hover: #0088d6; 
+            
+            /* Background colors */
+            --bg-body: #0d1117;       /* Dark GitHub style background */
+            --bg-sidebar: #161b22;    /* Slightly lighter sidebar */
+            --bg-card: #21262d;       /* Card/Box background */
+            
+            /* Text colors */
+            --text-main: #c9d1d9;
+            --text-heading: #ffffff;
+            --text-muted: #8b949e;
+            
+            /* Code block colors */
+            --code-bg: #0d1117;
+            --border-color: #30363d;
+        }
+
+        /* ================================================================
+           CORE STYLES (You generally don't need to touch these)
+           ================================================================ 
+        */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* SIDEBAR NAVIGATION */
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            height: 100%;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar h1 {
+            font-size: 1.2rem;
+            color: var(--text-heading);
+            margin-bottom: 2rem;
+            font-weight: 800;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            display: inline-block;
+        }
+        .nav-links a {
+            display: block;
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 8px 0;
+            transition: 0.2s;
+            font-size: 0.95rem;
+        }
+        .nav-links a:hover { color: var(--primary-color); transform: translateX(5px); }
+        .nav-category {
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            color: var(--text-heading);
+            font-weight: bold;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.6;
+        }
+
+        /* MAIN CONTENT AREA */
+        .content {
+            margin-left: 260px;
+            padding: 4rem 6rem;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        /* TYPOGRAPHY */
+        h1, h2, h3 { color: var(--text-heading); margin-bottom: 1rem; }
+        h1 { font-size: 2.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; }
+        h2 { font-size: 1.8rem; margin-top: 3rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+        h3 { font-size: 1.4rem; margin-top: 2rem; }
+        p { margin-bottom: 1rem; }
+        a { color: var(--primary-color); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* COMPONENT: BADGES */
+        .badge-container { display: flex; gap: 8px; margin-bottom: 20px; }
+        .badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: white;
+            background-color: var(--border-color);
+        }
+        .badge.blue { background-color: #007bff; }
+        .badge.green { background-color: #28a745; }
+        .badge.purple { background-color: #6f42c1; }
+
+        /* COMPONENT: CODE BLOCKS */
+        pre {
+            background-color: black;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            margin: 1.5rem 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+        }
+        code { font-family: 'Consolas', 'Monaco', monospace; color: #ff7b72; }
+        .code-comment { color: #8b949e; }
+        .code-keyword { color: #ff7b72; }
+        .code-string { color: #a5d6ff; }
+        .code-func { color: #d2a8ff; }
+
+        /* COMPONENT: TABLES */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { background-color: var(--bg-sidebar); color: var(--text-heading); font-weight: 600; }
+        tr:last-child td { border-bottom: none; }
+
+        /* COMPONENT: ALERTS / CALLOUTS */
+        .alert {
+            padding: 1rem;
+            border-radius: 6px;
+            border-left: 4px solid var(--primary-color);
+            background-color: rgba(0, 162, 255, 0.1);
+            margin: 1.5rem 0;
+        }
+        .alert.warning {
+            border-left-color: #e3b341;
+            background-color: rgba(227, 179, 65, 0.1);
+        }
+
+        /* MOBILE RESPONSIVENESS */
+        @media (max-width: 768px) {
+            .sidebar { display: none; } /* Hide sidebar on mobile for simplicity */
+            .content { margin-left: 0; padding: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <h1>MyParser<span style="color:var(--primary-color)">.luau</span></h1>
+        
+        <div class="nav-links">
+            <div class="nav-category">Getting Started</div>
+            <a href="#introduction">Introduction</a>
+            <a href="#installation">Installation</a>
+            <a href="#quick-start">Quick Start</a>
+
+            <div class="nav-category">API Reference</div>
+            <a href="#api-parser">Parser.new</a>
+            <a href="#api-methods">Methods</a>
+            <a href="#ast-structure">AST Structure</a>
+
+            <div class="nav-category">Misc</div>
+            <a href="#config">Configuration</a>
+            <a href="#changelog">Changelog</a>
+        </div>
+    </nav>
+
+    <main class="content">
+
+        <section id="introduction">
+            <h1>Documentation</h1>
+            
+            <div class="badge-container">
+                <span class="badge blue">v1.0.0</span>
+                <span class="badge green">Luau Optimized</span>
+                <span class="badge purple">MIT License</span>
+            </div>
+
+            <p>
+                Welcome to the documentation for <strong>[Your Parser Name]</strong>. This is a high-performance, purely Luau-based lexical analyzer and parser intended for use in Roblox or Lune environments.
+            </p>
+
+            <div class="alert">
+                <strong>Note:</strong> This parser currently supports Luau syntax up to version 0.500.
+            </div>
+        </section>
+
+        <section id="installation">
+            <h2>📦 Installation</h2>
+            <p>You can install this via Wally or by downloading the RBXM file.</p>
+            
+            <h3>Wally</h3>
+            <pre><code>[dependencies]
+<span class="code-keyword">Parser</span> = "username/repo@0.1.0"</code></pre>
+        </section>
+
+        <section id="quick-start">
+            <h2>🚀 Quick Start</h2>
+            <p>Here is the most basic example of how to convert a string into an AST.</p>
+
+            <pre><code><span class="code-comment">-- 1. Require the module</span>
+<span class="code-keyword">local</span> Parser = <span class="code-func">require</span>(path.to.Parser)
+
+<span class="code-keyword">local</span> source = <span class="code-string">"print('Hello World')"</span>
+
+<span class="code-comment">-- 2. Create instance</span>
+<span class="code-keyword">local</span> parserInstance = Parser.<span class="code-func">new</span>(source)
+
+<span class="code-comment">-- 3. Parse</span>
+<span class="code-keyword">local</span> ast = parserInstance:<span class="code-func">Parse</span>()
+<span class="code-func">print</span>(ast)</code></pre>
+        </section>
+
+        <section id="api-methods">
+            <h2>⚙️ API Methods</h2>
+            <p>The core methods available on the Parser object.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Arguments</th>
+                        <th>Returns</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>:Parse()</code></td>
+                        <td>None</td>
+                        <td>Table (AST)</td>
+                        <td>Runs the main parsing loop and returns the tree.</td>
+                    </tr>
+                    <tr>
+                        <td><code>:SetStrict(bool)</code></td>
+                        <td>boolean</td>
+                        <td>nil</td>
+                        <td>Enables strict mode which throws errors on warnings.</td>
+                    </tr>
+                    <tr>
+                        <td><code>:GetTokens()</code></td>
+                        <td>None</td>
+                        <td>Array</td>
+                        <td>Returns the raw lexical tokens without parsing.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="ast-structure">
+            <h2>🌳 AST Structure</h2>
+            <p>The abstract syntax tree output is a nested table structure. Here is what a simple Variable Declaration looks like:</p>
+
+            <div class="alert warning">
+                <strong>Warning:</strong> The AST format is subject to change in v2.0.
+            </div>
+
+            <pre><code>{
+    <span class="code-string">"Type"</span>: <span class="code-string">"VariableDeclaration"</span>,
+    <span class="code-string">"Name"</span>: <span class="code-string">"MyVar"</span>,
+    <span class="code-string">"Value"</span>: {
+        <span class="code-string">"Type"</span>: <span class="code-string">"NumberLiteral"</span>,
+        <span class="code-string">"Value"</span>: 50
+    }
+}</code></pre>
+        </section>
+
+        <footer style="margin-top: 4rem; border-top: 1px solid var(--border-color); padding-top: 2rem; color: var(--text-muted); font-size: 0.9rem;">
+            <p>&copy; 2024 Your Username. Distributed under the MIT License.</p>
+        </footer>
+
+    </main>
+</body>
+</html>
