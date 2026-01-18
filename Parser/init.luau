@@ -3,7 +3,7 @@
 
 -- // PARSER SETTINGS // --
 
-local ExplicitTypeExpressionInstantiation = true
+local LuauExplicitTypeInstantiationSyntax = true
 
 local TypeLengthLimit = 1000
 local RecursionLimit = 1000
@@ -104,7 +104,6 @@ local Types = {
 }
 
 -- // Lookup for keywords
-
 local ReversedKeywords = {
 	[291] = "and",
 	[292] = "break",
@@ -432,9 +431,7 @@ local function fixupQuotedString(data: string): (boolean, string?)
 end
 
 local function fixupMultilineString(data: string): string
-	if #data == 0 then
-		return data
-	end
+	if #data == 0 then return data end
 
 	data = string.gsub(data, "^\r?\n", "")
 	data = string.gsub(data, "\r\n", "\n")
@@ -541,7 +538,7 @@ local function ToString(t: number, data: string?, codepoint: number?): string
 		if codepoint then
 			local confusable = findConfusable(codepoint)
 			if confusable then
-				return string.format(`Unicode character U+%x (did you mean '{confusable}'?)` :: any, codepoint)
+				return `Unicode character {string.format('U+%x', codepoint)} (did you mean '{confusable}'?)`
 			end
 			return string.format("Unicode character U+%x", codepoint)
 		else
@@ -605,7 +602,7 @@ end
 
 -- // Attributes
 
-local function deprecatedArgsValidator(attrLoc: Syntax.Location, args: {any})
+local function deprecatedArgsValidator(attrLoc: Syntax.Location, args: {Syntax.AstExprTable})
 	local errors = {}
 	if #args == 0 then
 		return errors
@@ -628,14 +625,16 @@ local function deprecatedArgsValidator(attrLoc: Syntax.Location, args: {any})
 	end
 
 	for _, item in arg.items do
-		if item.kind == "Record" then
+		if item.key and item.kind == "Record" and item.key.kind == "ExprConstantString" then
 			local keyString = item.key.value
-			if keyString ~= "use" and keyString ~= "reason" then
-				table.insert(errors, {
-					location = item.key.location,
-					message = `Unknown argument '{keyString}' for @deprecated. Only string constants for 'use' and 'reason' are allowed`
-				})
-			elseif (item :: any).value.kind ~= "ExprConstantString" then
+			if item.value.kind == "ExprConstantString" then
+				if keyString ~= "use" and keyString ~= "reason" then
+					table.insert(errors, {
+						location = item.key.location,
+						message = `Unknown argument '{keyString}' for @deprecated. Only string constants for 'use' and 'reason' are allowed`
+					})
+				end
+			else
 				table.insert(errors, {
 					location = item.value.location,
 					message = `Only constant string allowed as value for '{keyString}'`
@@ -714,10 +713,9 @@ local recursionCounter = 0
 local commentLocations: {Syntax.Comment} = {}
 local hotcomments = {} :: {Syntax.HotComment}
 local parseErrors: {Syntax.ParseError} = {}
-local cstNodes: {[any]: Syntax.CstNode} = {}
+local cstNodes: {[Syntax.AstNode]: Syntax.CstNode} = {}
 
 -- // All unlocalized Parser functions
-
 local parseIf
 local parseWhile
 local parseRepeat
@@ -756,8 +754,6 @@ local parseSimpleType
 local parseVariadicArgumentTypePack
 local parseTypePack
 local parseTypeParams
-local checkUnaryConfusables
-local checkBinaryConfusables
 local parseExpr
 local parseNameExpr
 local parsePrefixExpr
@@ -896,7 +892,6 @@ local function lex(skip_comments: boolean)
 			end
 		end
 
-		-- Trailing identifier check
 		while ptr < size do
 			local c = buffer.readu8(buff, ptr)
 			if Alpha[c] or Digits[c] or c == 95 then ptr += 1 else break end
@@ -1282,7 +1277,7 @@ local function lex(skip_comments: boolean)
 	next_end_col = ptr - lineOffset
 end
 
--- // Parser Interface (Optimized Ring Buffer)
+-- // Parser Interface
 
 local function fillNext()
 	while true do
@@ -1321,7 +1316,6 @@ local function fillNext()
 	end
 end
 
--- Advances the pipeline: moves NEXT -> CURRENT, and scans a new NEXT
 local function nextLexeme()
 	-- Save previous current to prev
 	prev_start_line = token_start_line
@@ -1345,14 +1339,6 @@ end
 
 -- // INIT
 
-local function get_begin(): Syntax.Position
-	return {line = token_start_line, column = token_start_col}
-end
-
-local function get_end(): Syntax.Position
-	return {line = token_end_line, column = token_end_col}
-end
-
 local function snapshot(): Syntax.Location
 	return {
 		begin = {line = token_start_line, column = token_start_col},
@@ -1360,7 +1346,7 @@ local function snapshot(): Syntax.Location
 	}
 end
 
-local function get_lexeme(): {type: number, location: Syntax.Location}
+local function get_lexeme(): Syntax.Lexeme
 	return {
 		type = token_type,
 		location = {
@@ -1515,11 +1501,11 @@ end
 
 local function reportStatError(
 	location: Syntax.Location,
-	exprs: {any},
-	stats: {any},
+	exprs: {Syntax.AstExpr},
+	stats: {Syntax.AstStat},
 	fmt: string,
 	...: any
-): any
+): Syntax.AstStatError
 	report(location, fmt, ...)
 
 	return {
@@ -1593,13 +1579,13 @@ local function restoreLocals(offset: number)
 	end
 end
 
-local function pushLocal(binding: any): Syntax.AstLocal
+local function pushLocal(binding: Syntax.Binding): Syntax.AstLocal
 	local name = binding.name.value
 	local shadow = localMap[name]
 
 	local local_ = {
 		name = name,
-		location = binding.name.location,
+		location = binding.location,
 		shadow = shadow,
 		functionDepth = #functionStack - 1,
 		loopDepth = functionStack[#functionStack].loopDepth,
@@ -1622,23 +1608,23 @@ local function incrementRecursionCounter(context: string)
 	end
 end
 
-local function parseBinding()
-	local nameOpt = parseNameOpt("variable name")
-	local name = nameOpt
+local function parseBinding(): Syntax.Binding
+	local nameOpt = parseNameOpt"variable name"
 
-	if not name then
-		name = {
-			name = {value = nameError },
-			location = snapshot()
-		}
+	local bindingName = nameOpt :: Syntax.Binding
+	if not bindingName then
+		bindingName = {
+			name = {value = nameError},
+			location = snapshot(),
+		} :: Syntax.Binding
 	end
 
-	local colonPos = get_begin()
+	local colonPos = {line = token_start_line, column = token_start_col}
 	local annotation = parseOptionalType()
 
 	return {
-		name = name.name,
-		location = name.location,
+		name = bindingName.name,
+		location = bindingName.location,
 		annotation = annotation,
 		colonPosition = colonPos
 	}
@@ -1646,12 +1632,12 @@ end
 
 -- bindinglist ::= (binding | `...') [`,' bindinglist]
 local function parseBindingList(
-	result: {any},
+	result: {Syntax.Binding},
 	allowDot3: boolean,
 	commaPositions: {Syntax.Position}?,
 	initialComma: Syntax.Position?,
-	varargAnnotColonPos: any?
-): (boolean, Syntax.Location?, any)
+	varargAnnotColonPos: {Syntax.Position?}?
+): (boolean, Syntax.Location?, Syntax.AstTypePack?)
 
 	local localCommaPositions = {}
 
@@ -1667,7 +1653,7 @@ local function parseBindingList(
 			local tailAnnotation = nil
 			if token_type == 58 then 
 				if varargAnnotColonPos then
-					varargAnnotColonPos[1] = get_begin()
+					varargAnnotColonPos[1] = {line = token_start_line, column = token_start_col}
 				end
 
 				nextLexeme()
@@ -1690,7 +1676,7 @@ local function parseBindingList(
 		end
 
 		if commaPositions then
-			table.insert(localCommaPositions, get_begin())
+			table.insert(localCommaPositions, {line = token_start_line, column = token_start_col})
 		end
 
 		nextLexeme()
@@ -1777,7 +1763,7 @@ local function parseStat(): Syntax.AstStat
 	end
 
 	if ident == "export" and token_type == Types.Name and token_string == "type" then
-		local typeKeywordPos = get_begin()
+		local typeKeywordPos = {line = token_start_line, column = token_start_col}
 		nextLexeme()
 		return parseTypeAlias(expr.location, true, typeKeywordPos)
 	end
@@ -1814,7 +1800,7 @@ local function parseBlockNoScope(): Syntax.AstStatBlock
 
 		if token_type == 59 then 
 			nextLexeme();
-			(stat :: any).hasSemicolon = true
+			stat.hasSemicolon = true
 
 			stat.location.end_.line = prev_end_line
 			stat.location.end_.column = prev_end_col
@@ -1882,7 +1868,7 @@ function parseIf(): Syntax.AstStatIf
 
 		elseLocation = snapshot()
 		elsebody = parseIf()
-		end_ = (elsebody :: any).location
+		end_ = elsebody.location
 
 		recursionCounter = oldRecursionCount
 	else
@@ -1992,7 +1978,7 @@ function parseRepeat(): Syntax.AstStatRepeat
 
 	functionStack[#functionStack].loopDepth -= 1
 
-	local untilPosition = get_begin()
+	local untilPosition = {line = token_start_line, column = token_start_col}
 	local hasUntil = expectMatchEndAndConsume(Types.ReservedUntil, Repeat_type, Repeat_start_line, Repeat_start_col)
 
 	local cond = parseExpr()
@@ -2047,7 +2033,7 @@ function parseDo(): Syntax.AstStatBlock
 end
 
 -- break
-function parseBreak(): Syntax.AstStatBreak
+function parseBreak(): Syntax.AstStatBreak | Syntax.AstStatError
 	local start = snapshot()
 	nextLexeme() -- break
 
@@ -2066,7 +2052,7 @@ function parseBreak(): Syntax.AstStatBreak
 end
 
 -- continue
-function parseContinue(start: Syntax.Location): Syntax.AstStatContinue
+function parseContinue(start: Syntax.Location): Syntax.AstStatContinue | Syntax.AstStatError
 	if functionStack[#functionStack].loopDepth == 0 then
 		return reportStatError(
 			start,
@@ -2092,12 +2078,12 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 	local varname = parseBinding()
 
 	if token_type == 61 then 
-		local equalsPosition = get_begin()
+		local equalsPosition = {line = token_start_line, column = token_start_col}
 		nextLexeme()
 
 		local from = parseExpr()
 
-		local endCommaPosition = get_begin()
+		local endCommaPosition = {line = token_start_line, column = token_start_col}
 		expectAndConsume(44, "index range") 
 
 		local to = parseExpr()
@@ -2106,7 +2092,7 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 		local step = nil
 
 		if token_type == 44 then 
-			stepCommaPosition = get_begin()
+			stepCommaPosition = {line = token_start_line, column = token_start_col}
 			nextLexeme()
 			step = parseExpr()
 		end
@@ -2128,7 +2114,7 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 		functionStack[#functionStack].loopDepth -= 1
 		restoreLocals(localsBegin)
 
-		local end_ = get_end()
+		local end_ = {line = token_end_line, column = token_end_col}
 		local hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, Do_type, Do_start_line, Do_start_col)
 		body.hasEnd = hasEnd
 
@@ -2164,7 +2150,7 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 		local varsCommaPosition = {} 
 
 		if token_type == 44 then 
-			local initialCommaPos = get_begin()
+			local initialCommaPos = {line = token_start_line, column = token_start_col}
 			nextLexeme()
 			parseBindingList(names, false, varsCommaPosition, initialCommaPos)
 		end
@@ -2196,14 +2182,14 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 		functionStack[#functionStack].loopDepth -= 1
 		restoreLocals(localsBegin)
 
-		local end_ = get_end()
+		local end_ = {line = token_end_line, column = token_end_col}
 
 		local hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, Do_type, Do_start_line, Do_start_col)
 		body.hasEnd = hasEnd
 
 		local node = {
 			kind = "StatForIn",
-			location = {begin=start.begin, end_= end_},
+			location = {begin = start.begin, end_ = end_},
 			vars = vars,
 			values = values,
 			body = body,
@@ -2241,7 +2227,7 @@ local function parseFunctionName(hasRef: {boolean}, debugnameRef: {string?}): Sy
 	local oldRecursionCount = recursionCounter
 
 	while token_type == 46 do 
-		local opPosition = get_begin()
+		local opPosition = {line = token_start_line, column = token_start_col}
 		nextLexeme()
 
 		local name = parseName("field name")
@@ -2263,17 +2249,17 @@ local function parseFunctionName(hasRef: {boolean}, debugnameRef: {string?}): Sy
 		}
 
 		-- note: while the parser isn't recursive here, we're generating recursive structures of unbounded depth
-		incrementRecursionCounter("function name")
+		incrementRecursionCounter"function name"
 	end
 
 	recursionCounter = oldRecursionCount
 
 	-- finish with :
 	if token_type == 58 then 
-		local opPosition = get_begin()
+		local opPosition = {line = token_start_line, column = token_start_col}
 		nextLexeme()
 
-		local name = parseName("method name")
+		local name = parseName"method name"
 
 		-- while we could concatenate the name chain, for now let's just write the short name
 		debugnameRef[1] = name.name.value
@@ -2294,11 +2280,11 @@ local function parseFunctionName(hasRef: {boolean}, debugnameRef: {string?}): Sy
 		hasRef[1] = true
 	end
 
-	return expr
+	return expr :: Syntax.AstExprIndexName
 end
 
 -- function funcname funcbody
-function parseFunctionStat(attributes: {Syntax.AstAttr}): Syntax.AstStatFunction
+function parseFunctionStat(attributes: Syntax.Attrs): Syntax.AstStatFunction
 	local start = snapshot()
 	if #attributes > 0 then
 		start = attributes[1].location
@@ -2340,8 +2326,8 @@ end
 local function validateAttribute(
 	loc: Syntax.Location,
 	attributeName: string,
-	attributes: {Syntax.AstAttr},
-	args: {any}
+	attributes: Syntax.Attrs,
+	args: {Syntax.AstExpr}
 )
 	-- check if the attribute name is valid
 	local entry = kAttributeEntries[attributeName]
@@ -2379,7 +2365,7 @@ local function validateAttribute(
 end
 
 -- attribute ::= '@' NAME
-local function parseAttribute(attributes: {Syntax.AstAttr})
+local function parseAttribute(attributes: Syntax.Attrs)
 	if token_type == Types.Attribute then
 		local loc = snapshot()
 		local name = token_string or ""
@@ -2409,9 +2395,9 @@ local function parseAttribute(attributes: {Syntax.AstAttr})
 				if token_type == Types.RawString
 					or token_type == Types.QuotedString or 
 					token_type == 123 or token_type == 40 then 
-					local callData = parseCallList()
-					args = callData[1]
-					argsLocation = callData[2] 
+					local args_, argsLoc_ = parseCallList()
+					args = args_
+					argsLocation = argsLoc_
 					for _, arg in args do
 						if not isConstantLiteral(arg) and not isLiteralTable(arg) then
 							report(argsLocation, "Only literals can be passed as arguments for attributes")
@@ -2438,7 +2424,7 @@ local function parseAttribute(attributes: {Syntax.AstAttr})
 		else
 			report({
 				begin = {line = open_start_line, column = open_start_col},
-				end_ = get_end()
+				end_ = {line = token_end_line, column = token_end_col}
 			}, "Attribute list cannot be empty")
 		end
 		expectMatchAndConsume(93, open_type, open_start_line, open_start_col) 
@@ -2446,7 +2432,7 @@ local function parseAttribute(attributes: {Syntax.AstAttr})
 end
 
 -- attributes ::= {attribute}
-local function parseAttributes(): {Syntax.AstAttr}
+local function parseAttributes(): Syntax.Attrs
 	local attributes = {}
 
 	while token_type == Types.Attribute
@@ -2461,7 +2447,7 @@ end
 -- attributes function funcname funcbody
 -- attributes `declare function' Name`(' [parlist] `)' [`:` Type]
 -- declare Name '{' Name ':' attributes `(' [parlist] `)' [`:` Type] '}'
-function parseAttributeStat(): any
+function parseAttributeStat(): Syntax.AstStat
 	local attributes = parseAttributes()
 	local type_ = token_type
 
@@ -2480,13 +2466,13 @@ end
 
 -- local function Name funcbody |
 -- local bindinglist [`=' explist]
-function parseLocal(attributes: {Syntax.AstAttr}): Syntax.AstStatLocal | Syntax.AstStatLocalFunction
+function parseLocal(attributes: Syntax.Attrs): Syntax.AstStatLocal | Syntax.AstStatLocalFunction | Syntax.AstStatError
 	local start = snapshot()
 	if #attributes > 0 then
 		start = attributes[1].location
 	end
 
-	local localKeywordPosition = get_begin()
+	local localKeywordPosition = {line = token_start_line, column = token_start_col}
 	nextLexeme() -- local
 
 	if token_type == Types.ReservedFunction then
@@ -2504,13 +2490,13 @@ function parseLocal(attributes: {Syntax.AstAttr}): Syntax.AstStatLocal | Syntax.
 
 		matchRecovery[Types.ReservedEnd] += 1
 
-		local body, var = parseFunctionBody(false, matchFunction, name.name.value, name, attributes)
+		local body, var = parseFunctionBody(false, matchFunction, name.name.value, name.name.value, attributes)
 
 		matchRecovery[Types.ReservedEnd] -= 1
 
 		local node = {
 			kind = "StatLocalFunction",
-			location = {begin=start.begin, end_=body.location.end_},
+			location = {begin = start.begin, end_ =  body.location.end_},
 			name = var,
 			func = body
 		} :: Syntax.AstStatLocalFunction
@@ -2624,12 +2610,11 @@ function parseReturn(): Syntax.AstStatReturn
 	return node
 end
 
-
 -- type Name [`<' varlist `>'] `=' Type
 function parseTypeAlias(
-	start: any,
+	start: Syntax.Location,
 	exported: boolean,
-	typeKeywordPosition: any
+	typeKeywordPosition: Syntax.Position
 ): Syntax.AstStatTypeAlias | Syntax.AstStatTypeFunction
 
 	-- parsing a type function
@@ -2641,15 +2626,15 @@ function parseTypeAlias(
 
 	-- note: `type` token is already parsed for us, so we just need to parse the rest
 
-	local nameOpt = parseNameOpt("type name")
-	local name = nameOpt
+	local nameOpt = parseNameOpt"type name"
+	local name = nameOpt :: Syntax.Binding
 
 	-- Use error name if the name is missing
 	if not name then
 		name = {
 			name = { value = nameError },
 			location = snapshot()
-		}
+		} :: Syntax.Binding
 	end
 
 	local genericsCommaPos = {}
@@ -2669,7 +2654,7 @@ function parseTypeAlias(
 		generics, genericPacks = parseGenericTypeList(true)
 	end
 
-	local equalsPosition = get_begin()
+	local equalsPosition = {line = token_start_line, column = token_start_col}
 	expectAndConsume(61, "type alias") 
 
 	local type_ = parseType()
@@ -2703,9 +2688,9 @@ local typeFunctionDepth = 0
 
 -- type function Name `(' arglist `)' `=' funcbody `end'
 function parseTypeFunction(
-	start: any,
+	start: Syntax.Location,
 	exported: boolean,
-	typeKeywordPosition: any
+	typeKeywordPosition: Syntax.Position
 ): Syntax.AstStatTypeFunction
 
 	local matchFn = get_lexeme()
@@ -2714,14 +2699,14 @@ function parseTypeFunction(
 	local errorsAtStart = #parseErrors
 
 	-- parse the name of the type function
+	local fnNameOpt = parseNameOpt"type function name"
+	local fnName = fnNameOpt :: Syntax.Binding
 
-	local fnNameOpt = parseNameOpt("type function name")
-	local fnName = fnNameOpt
-	if not fnName then
+	if fnName == nil then
 		fnName = {
 			name = { value = nameError },
 			location = snapshot()
-		}
+		} :: Syntax.Binding
 	end
 
 	matchRecovery[Types.ReservedEnd] += 1
@@ -2760,22 +2745,22 @@ function parseTypeFunction(
 	return node
 end
 
-function parseNameOpt(context: string?): any
+function parseNameOpt(context: string?): Syntax.Binding?
 	if token_type ~= Types.Name then
 		reportNameError(context)
 		return nil
 	end
 
 	local result = {
-		name = { value = token_string },
-		location = snapshot()
-	}
+		name = { value = token_string :: string },
+		location = snapshot(),
+	} :: Syntax.Binding
 
 	nextLexeme()
 	return result
 end
 
-function parseName(context: string?): any
+function parseName(context: string?): Syntax.Binding
 	local name = parseNameOpt(context)
 	if name then
 		return name
@@ -2816,7 +2801,6 @@ function parseExprList(result: {Syntax.AstExpr}, commaPositions: {Syntax.Positio
 	end
 end
 
-
 -- varlist `=' explist
 function parseAssignment(initial: Syntax.AstExpr): Syntax.AstStatAssign
 	if not isExprLValue(initial) then
@@ -2832,7 +2816,7 @@ function parseAssignment(initial: Syntax.AstExpr): Syntax.AstStatAssign
 
 	while token_type == 44 do 
 		if storeCstData then
-			table.insert(varsCommaPositions, get_begin())
+			table.insert(varsCommaPositions, {line = token_start_line, column = token_start_col})
 		end
 		nextLexeme()
 
@@ -2843,7 +2827,7 @@ function parseAssignment(initial: Syntax.AstExpr): Syntax.AstStatAssign
 		table.insert(vars, expr)
 	end
 
-	local equalsPosition = get_begin()
+	local equalsPosition = {line = token_start_line, column = token_start_col}
 	expectAndConsume(61, "assignment") 
 
 	local values = {}
@@ -2854,7 +2838,7 @@ function parseAssignment(initial: Syntax.AstExpr): Syntax.AstStatAssign
 
 	local node = {
 		kind = "StatAssign",
-		location = {begin=initial.location.begin, end_=end_.end_},
+		location = {begin = initial.location.begin, end_ =  end_.end_},
 		vars = vars,
 		values = values
 	} :: Syntax.AstStatAssign
@@ -2872,10 +2856,7 @@ function parseAssignment(initial: Syntax.AstExpr): Syntax.AstStatAssign
 end
 
 -- var [`+=' | `-=' | `*=' | `/=' | `%=' | `^=' | `..='] exp
-function parseCompoundAssignment(
-	initial: Syntax.AstExpr,
-	op: number
-): Syntax.AstStatCompoundAssign
+function parseCompoundAssignment(initial: Syntax.AstExpr, op: number): Syntax.AstStatCompoundAssign
 
 	if not isExprLValue(initial) then
 		initial = reportExprError(
@@ -2886,14 +2867,14 @@ function parseCompoundAssignment(
 		)
 	end
 
-	local opPosition = get_begin()
+	local opPosition = {line = token_start_line, column = token_start_col}
 	nextLexeme()
 
 	local value = parseExpr()
 
 	local node = {
 		kind = "StatCompoundAssign",
-		location = {begin=initial.location.begin, end_=value.location.end_},
+		location = {begin = initial.location.begin, end_ =  value.location.end_},
 		op = op,
 		var = initial,
 		value = value
@@ -2909,18 +2890,14 @@ function parseCompoundAssignment(
 	return node
 end
 
-function prepareFunctionArguments(
-
-
-	start: any,
-	hasself: boolean,
-	args: {any}
-
-)
+function prepareFunctionArguments(start: Syntax.Location, hasself: boolean, args: {Syntax.Binding})
 	local selfLocal = nil
 	if hasself then
 		selfLocal = pushLocal({ 
-			name = { value = nameSelf, location = start },
+			name = { value = nameSelf },
+			location = start,
+			annotation = nil,
+			colonPosition = nil
 		})
 	end
 
@@ -2936,10 +2913,10 @@ end
 -- parlist ::= bindinglist [`,' `...'] | `...'
 function parseFunctionBody(
 	hasself: boolean,
-	matchFunction: any,
-	debugname: any,
-	localName: any,
-	attributes: {Syntax.AstAttr}
+	matchFunction: Syntax.Lexeme,
+	debugname: string?,
+	localName: string?,
+	attributes: Syntax.Attrs
 ): (Syntax.AstExprFunction, Syntax.AstLocal?)
 
 	local start = matchFunction.location
@@ -2989,16 +2966,15 @@ function parseFunctionBody(
 
 	matchRecovery[41] += 1
 
-	local args = {} :: {Syntax.AstLocal}
+	local args = {} :: {Syntax.Binding}
 	local vararg = false
 	local varargLocation = nil
 	local varargAnnotation = nil
 
 	if token_type ~= 41 then 
-		local vaAnnotPosRef = cstNode and {cstNode.varargAnnotationColonPosition} or nil
+		local vaAnnotPosRef = cstNode and {cstNode.varargAnnotationColonPosition :: Syntax.Position?} or nil
 
 		vararg, varargLocation, varargAnnotation = parseBindingList(
-
 			args, 
 			true, 
 			if cstNode then cstNode.argsCommaPositions else nil, 
@@ -3015,7 +2991,7 @@ function parseFunctionBody(
 	if token_type == 40 and token_type == 41 then
 		argLocation = {
 			begin = {line = Paren_line, column = Paren_col},
-			end_ = get_end()
+			end_ = {line = token_end_line, column = token_end_col}
 		}
 	end
 
@@ -3028,7 +3004,12 @@ function parseFunctionBody(
 
 	local funLocal = nil
 	if localName then
-		funLocal = pushLocal(localName)
+		funLocal = pushLocal({ 
+			name = { value = localName },
+			location = start,
+			annotation = nil,
+			colonPosition = nil
+		})
 	end
 
 	local localsBegin = #localStack
@@ -3080,10 +3061,9 @@ function parseFunctionBody(
 end
 
 function parseGenericTypeList(
-
 	withDefaultValues: boolean,
-	openPosRef: any, commaPosRef: any,
-	closePosRef: any
+	openPosRef: {Syntax.Position}?, commaPosRef: {Syntax.Position}?,
+	closePosRef: {Syntax.Position}?
 ): ({Syntax.AstGenericType}, {Syntax.AstGenericTypePack})
 	local names = {}
 	local namePacks = {}
@@ -3104,11 +3084,12 @@ function parseGenericTypeList(
 
 		while true do
 			local nameLoc = snapshot()
-			local name = parseName().name
+			local nameBinding = parseName()
+			local name = nameBinding.name.value
 
 			if token_type == Types.Dot3 or seenPack then
 				seenPack = true
-				local ellipsisPosition = get_begin()
+				local ellipsisPosition = {line = token_start_line, column = token_start_col}
 
 				if token_type ~= Types.Dot3 then
 					report(snapshot(), "Generic types come before generic type packs")
@@ -3118,7 +3099,7 @@ function parseGenericTypeList(
 
 				if withDefaultValues and token_type == 61 then 
 					seenDefault = true
-					local equalsPosition = get_begin()
+					local equalsPosition = {line = token_start_line, column = token_start_col}
 					nextLexeme()
 
 					local typePack = nil
@@ -3173,7 +3154,7 @@ function parseGenericTypeList(
 			else
 				if withDefaultValues and token_type == 61 then 
 					seenDefault = true
-					local equalsPosition = get_begin()
+					local equalsPosition = {line = token_start_line, column = token_start_col}
 					nextLexeme()
 
 					local defaultType = parseType()
@@ -3213,7 +3194,7 @@ function parseGenericTypeList(
 			end
 
 			if token_type == 44 then 
-				if commaPosRef then table.insert(localCommaPositions, get_begin()) end
+				if commaPosRef then table.insert(localCommaPositions, {line = token_start_line, column = token_start_col}) end
 				nextLexeme()
 
 				if token_type == 62 then 
@@ -3226,7 +3207,7 @@ function parseGenericTypeList(
 		end
 
 		if closePosRef then
-			closePosRef[1] = get_begin()
+			closePosRef[1] = {line = token_start_line, column = token_start_col}
 		end
 
 		expectMatchAndConsume(62, begin_type, begin_start_line, begin_start_col) 
@@ -3265,23 +3246,21 @@ function parseOptionalType(): Syntax.AstType?
 	end
 end
 
-function extractAnnotationColonPositions(bindings: {any}): {Syntax.Position?}
+function extractAnnotationColonPositions(bindings: {Syntax.Binding}): {Syntax.Position?}
 	local positions = {}
-	for _, binding in bindings do
-		if binding.colonPosition then
-			table.insert(positions, binding.colonPosition)
-		end
+	for i, binding in bindings do
+		positions[i] = binding.colonPosition
 	end
 	return positions
 end
 
 -- TypeList ::= Type [`,' TypeList] | ...Type
 function parseTypeList(
-	result: {any},
-	resultNames: {any},
+	result: {Syntax.AstType},
+	resultNames: {Syntax.AstArgumentName?},
 	commaPositions: {Syntax.Position}?,
 	nameColonPositions: {Syntax.Position?}?
-)
+): Syntax.AstTypePack?
 
 	while true do
 		if shouldParseTypePack() then
@@ -3298,7 +3277,7 @@ function parseTypeList(
 			end
 
 			local name = {
-				name = { value = token_string },
+				name = token_string :: string,
 				location = snapshot()
 			}
 
@@ -3306,7 +3285,7 @@ function parseTypeList(
 			nextLexeme()
 
 			if nameColonPositions then
-				table.insert(nameColonPositions, get_begin())
+				table.insert(nameColonPositions, {line = token_start_line, column = token_start_col})
 			end
 
 			expectAndConsume(58)
@@ -3325,7 +3304,7 @@ function parseTypeList(
 		end
 
 		if commaPositions then
-			table.insert(commaPositions, get_begin())
+			table.insert(commaPositions, {line = token_start_line, column = token_start_col})
 		end
 		nextLexeme()
 
@@ -3341,13 +3320,7 @@ function parseTypeList(
 	return nil
 end
 
-function parseOptionalReturnType(
-
-
-	returnSpecifierPosRef: any
-
-): Syntax.AstTypePack?
-
+function parseOptionalReturnType(returnSpecifierPosRef: {Syntax.Position}?): Syntax.AstTypePack?
 	if token_type == 58
 		or token_type == Types.SkinnyArrow then 
 		if token_type == Types.SkinnyArrow then
@@ -3358,7 +3331,7 @@ function parseOptionalReturnType(
 		end
 
 		if returnSpecifierPosRef then
-			returnSpecifierPosRef[1] = get_begin()
+			returnSpecifierPosRef[1] = {line = token_start_line, column = token_start_col}
 		end
 
 		nextLexeme()
@@ -3384,8 +3357,8 @@ function parseOptionalReturnType(
 end
 
 -- ReturnType ::= Type | `(' TypeList `)'
-function parseReturnType(): Syntax.AstTypePackExplicit
-	incrementRecursionCounter("type annotation")
+function parseReturnType(): Syntax.AstTypePack
+	incrementRecursionCounter"type annotation"
 
 	local begin = get_lexeme()
 
@@ -3433,12 +3406,12 @@ function parseReturnType(): Syntax.AstTypePackExplicit
 	end
 
 	local endLoc = snapshot()
-	local closeParenPos = get_begin()
+	local closeParenPos = {line = token_start_line, column = token_start_col}
 
 	expectMatchAndConsume(41, begin_type, begin_line, begin_col, true) 
 
 	matchRecovery[Types.SkinnyArrow] -= 1
-
+	
 	if token_type ~= Types.SkinnyArrow and #resultNames == 0 then
 		-- If it turns out that it's just '(A)', it's possible that there are unions/intersections to follow, so fold over it.
 		if #result == 1 then
@@ -3446,7 +3419,7 @@ function parseReturnType(): Syntax.AstTypePackExplicit
 			local inner: Syntax.AstType = varargAnnotation == nil
 				and {
 					kind = "TypeGroup",
-					location = {begin=begin.location.begin, end_=endLoc.end_},
+					location = {begin = begin.location.begin, end_ =  endLoc.end_},
 					type = result[1]
 				} 
 				or result[1]
@@ -3496,7 +3469,7 @@ function parseReturnType(): Syntax.AstTypePackExplicit
 		return node
 	end
 
-	local returnArrowPosition = get_begin()
+	local returnArrowPosition = {line = token_start_line, column = token_start_col}
 	local tail = parseFunctionTypeTail(begin, {}, {}, {}, result, resultNames, varargAnnotation)
 
 	if storeCstData and tail.kind == "TypeFunction" then
@@ -3550,8 +3523,8 @@ end
 -- TableIndexer ::= `[' Type `]' `:' Type
 function parseTableIndexer(
 	access: string,
-	accessLoc: any,
-	begin: any
+	accessLoc: Syntax.Location?,
+	begin: Syntax.Lexeme
 ) :
 	{
 		node: Syntax.AstTableIndexer,
@@ -3559,13 +3532,13 @@ function parseTableIndexer(
 		indexerClosePosition: Syntax.Position,
 		colonPosition: Syntax.Position
 	}
-	
+
 	local index = parseType(false)
 
-	local indexerClosePos = get_begin()
+	local indexerClosePos = {line = token_start_line, column = token_start_col}
 	expectMatchAndConsume(93, begin.type, begin.location.begin.line, begin.location.begin.column)
 
-	local colonPos = get_begin()
+	local colonPos = {line = token_start_line, column = token_start_col}
 	expectAndConsume(58, "table field") 
 
 	local result = parseType(false)
@@ -3580,7 +3553,7 @@ function parseTableIndexer(
 		resultType = result,
 		access = access,
 		accessLocation = accessLoc
-	}
+	} :: Syntax.AstTableIndexer
 
 	return {
 		node = node,
@@ -3595,10 +3568,10 @@ end
 -- PropList ::= TablePropOrIndexer {fieldsep TablePropOrIndexer} [fieldsep]
 -- TableType ::= `{' PropList `}'
 function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
-	incrementRecursionCounter("type annotation")
+	incrementRecursionCounter"type annotation"
 
 	local props: {Syntax.AstTableProp} = {}
-	local cstItems: {any} = {} 
+	local cstItems: {Syntax.CstTypeTableItem} = {} 
 	local indexer: Syntax.AstTableIndexer? = nil
 
 	local start = snapshot()
@@ -3636,7 +3609,7 @@ function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
 					style, depth = extractStringDetails()
 				end
 
-				local stringPos = get_begin()
+				local stringPos = {line = token_start_line, column = token_start_col}
 				local sourceString = nil
 				if storeCstData then
 					sourceString = token_string
@@ -3644,10 +3617,10 @@ function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
 
 				local chars = parseCharArray()
 
-				local indexerClosePos = get_begin()
+				local indexerClosePos = {line = token_start_line, column = token_start_col}
 				expectMatchAndConsume(93, begin.type, begin.location.begin.line, begin.location.begin.column) 
 
-				local colonPos = get_begin()
+				local colonPos = {line = token_start_line, column = token_start_col}
 				expectAndConsume(58, "table field") 
 
 				local type_ = parseType()
@@ -3676,10 +3649,10 @@ function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
 							indexerClosePosition = indexerClosePos,
 							colonPosition = colonPos,
 							separator = tableSeparator(),
-							separatorPosition = get_begin(),
+							separatorPosition = {line = token_start_line, column = token_start_col},
 							stringInfo = cstString,
 							stringPosition = stringPos
-						})
+						} :: Syntax.CstTypeTableItem)
 					end
 				else
 					report(begin.location, "String literal contains malformed escape sequence or \\0")
@@ -3702,8 +3675,8 @@ function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
 							indexerClosePosition = idxRes.indexerClosePosition,
 							colonPosition = idxRes.colonPosition, 
 							separator = tableSeparator(),
-							separatorPosition = get_begin()
-						})
+							separatorPosition = {line = token_start_line, column = token_start_col}
+						} :: Syntax.CstTypeTableItem)
 					end
 				end
 			end
@@ -3730,10 +3703,10 @@ function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
 			} :: Syntax.AstTableIndexer
 			break
 		else
-			local nameOpt = parseNameOpt("table field")
+			local nameOpt = parseNameOpt"table field"
 			if not nameOpt then break end
 
-			local colonPos = get_begin()
+			local colonPos = {line = token_start_line, column = token_start_col}
 			expectAndConsume(58, "table field")
 
 			local type_ = parseType(inDeclarationContext)
@@ -3752,8 +3725,8 @@ function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
 					kind = "Property",
 					colonPosition = colonPos,
 					separator = tableSeparator(),
-					separatorPosition = get_begin()
-				})
+					separatorPosition = {line = token_start_line, column = token_start_col}
+				} :: Syntax.CstTypeTableItem)
 			end
 		end
 
@@ -3771,7 +3744,7 @@ function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
 
 	local node = {
 		kind = "TypeTable",
-		location = {begin=start.begin, end_=endLoc.end_},
+		location = {begin = start.begin, end_ =  endLoc.end_},
 		props = props,
 		indexer = indexer
 	} :: Syntax.AstTypeTable
@@ -3787,19 +3760,17 @@ function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
 	return node
 end
 
--- aaa
-
 -- ReturnType ::= Type | `(' TypeList `)'
 -- FunctionType ::= [`<' varlist `>'] `(' [TypeList] `)' `->` ReturnType
 function parseFunctionType(
 
 
 	allowPack: boolean,
-	attributes: {any}
+	attributes: Syntax.Attrs
 
-): (any, any) 
+): (Syntax.AstType?, Syntax.AstTypePack?) 
 
-	incrementRecursionCounter("type annotation")
+	incrementRecursionCounter"type annotation"
 
 	local forceFunctionType = (token_type == 60) 
 	local begin = get_lexeme()
@@ -3856,7 +3827,7 @@ function parseFunctionType(
 				kind = "TypePackExplicit",
 				location = begin.location,
 				types = paramTypes
-			}
+			} :: Syntax.AstTypePackExplicit
 
 			if storeCstData then
 				cstNodes[node] = {
@@ -3876,7 +3847,7 @@ function parseFunctionType(
 					end_ =closeArgsLoc.end_
 				},
 				type = params[1]
-			}
+			}, nil
 		end
 	end
 
@@ -3886,7 +3857,7 @@ function parseFunctionType(
 			location = begin.location,
 			types = paramTypes,
 			tailType = varargAnnotation
-		}
+		} :: Syntax.AstTypePackExplicit
 
 		if storeCstData then
 			cstNodes[node] = {
@@ -3900,7 +3871,7 @@ function parseFunctionType(
 		return nil, node
 	end
 
-	local returnArrowPosition = get_begin()
+	local returnArrowPosition = {line = token_start_line, column = token_start_col}
 	local node = parseFunctionTypeTail(begin, attributes, generics, genericPacks, paramTypes, names, varargAnnotation)
 
 	if storeCstData and node.kind == "TypeFunction" then
@@ -3921,16 +3892,16 @@ function parseFunctionType(
 end
 
 function parseFunctionTypeTail(
-	begin: any,
-	attributes: {any},
-	generics: {any},
-	genericPacks: {any},
-	params: {any},
-	paramNames: {any},
-	varargAnnotation: any
+	begin: Syntax.Lexeme,
+	attributes: Syntax.Attrs,
+	generics: {Syntax.AstGenericType},
+	genericPacks: {Syntax.AstGenericTypePack},
+	params: {Syntax.AstType},
+	paramNames: {Syntax.AstArgumentName?},
+	varargAnnotation: Syntax.AstTypePack?
 ): Syntax.AstType
 
-	incrementRecursionCounter("type annotation")
+	incrementRecursionCounter"type annotation"
 
 	if token_type == 58 then
 		report(
@@ -3947,7 +3918,7 @@ function parseFunctionTypeTail(
 
 			{
 				begin = begin.location.begin,
-				end_ = getprev().end_
+				end_ = {line = prev_end_line, column = prev_end_col}
 			},
 			"Expected '->' after '()' when parsing function type; did you mean 'nil'?"
 		)
@@ -3990,13 +3961,13 @@ end
 --      `{' [PropList] `}' |
 --      `(' [TypeList] `)' `->` ReturnType
 --      `typeof` Type
-function parseTypeSuffix(type_: Syntax.AstType?, begin: any): Syntax.AstType
-	local parts = {} :: {any}
+function parseTypeSuffix(type_: Syntax.AstType?, begin: Syntax.Location): Syntax.AstType
+	local parts = {} :: {Syntax.AstType}
 	if type_ then 
 		table.insert(parts, type_) 
 	end
 
-	incrementRecursionCounter("type annotation")
+	incrementRecursionCounter"type annotation"
 
 	local isUnion = false
 	local isIntersection = false
@@ -4007,7 +3978,7 @@ function parseTypeSuffix(type_: Syntax.AstType?, begin: any): Syntax.AstType
 
 	while true do
 		local t = token_type
-		local separatorPosition = get_begin()
+		local separatorPosition = {line = token_start_line, column = token_start_col}
 
 		if t == 124 then 
 			nextLexeme()
@@ -4015,7 +3986,9 @@ function parseTypeSuffix(type_: Syntax.AstType?, begin: any): Syntax.AstType
 			local oldRecursion = recursionCounter
 
 			local typePart, _ = parseSimpleType(false, false) 
-			table.insert(parts, typePart)
+			if typePart then
+				table.insert(parts, typePart)
+			end
 
 			recursionCounter = oldRecursion
 
@@ -4033,7 +4006,7 @@ function parseTypeSuffix(type_: Syntax.AstType?, begin: any): Syntax.AstType
 			local loc = snapshot()
 			nextLexeme()
 
-			table.insert(parts, { kind = "TypeOptional", location = loc })
+			table.insert(parts, { kind = "TypeOptional", location = loc } :: Syntax.AstTypeOptional)
 
 			optionalCount += 1
 			isUnion = true
@@ -4043,8 +4016,9 @@ function parseTypeSuffix(type_: Syntax.AstType?, begin: any): Syntax.AstType
 			local oldRecursion = recursionCounter
 
 			local typePart, _ = parseSimpleType(false, false)
-
-			table.insert(parts, typePart)
+			if typePart then
+				table.insert(parts, typePart)
+			end
 
 			recursionCounter = oldRecursion
 
@@ -4107,7 +4081,7 @@ function parseTypeSuffix(type_: Syntax.AstType?, begin: any): Syntax.AstType
 	return parts[1]
 end
 
-function parseSimpleTypeOrPack(): (any, any)
+function parseSimpleTypeOrPack(): (Syntax.AstType?, Syntax.AstTypePack?)
 	local oldRec = recursionCounter
 	-- recursion counter is incremented in parseSimpleType
 
@@ -4121,7 +4095,7 @@ function parseSimpleTypeOrPack(): (any, any)
 
 	recursionCounter = oldRec
 
-	return parseTypeSuffix(type_, begin)
+	return parseTypeSuffix(type_, begin), nil
 end
 
 function parseType(inDeclarationContext: boolean?): Syntax.AstType
@@ -4145,12 +4119,9 @@ end
 
 -- Type ::= nil | Name[`.' Name] [ `<' Type [`,' ...] `>' ] | `typeof' `(' expr `)' | `{' [PropList] `}'
 --   | [`<' varlist `>'] `(' [TypeList] `)' `->` ReturnType
-function parseSimpleType(
-	allowPack: boolean,
-	inDeclarationContext: boolean
-): (Syntax.AstType?, Syntax.AstTypePack?)
+function parseSimpleType(allowPack: boolean, inDeclarationContext: boolean): (Syntax.AstType?, Syntax.AstTypePack?)
 
-	incrementRecursionCounter("type annotation")
+	incrementRecursionCounter"type annotation"
 
 	local start = snapshot()
 
@@ -4208,7 +4179,6 @@ function parseSimpleType(
 			} :: Syntax.AstTypeSingletonString, nil
 		else
 			return reportTypeError(
-
 				start, 
 				{},
 				"String literal contains malformed escape sequence"
@@ -4218,7 +4188,6 @@ function parseSimpleType(
 		parseInterpString()
 
 		return reportTypeError(
-
 			start,
 			{},
 			"Interpolated string literals cannot be used as types"
@@ -4226,7 +4195,6 @@ function parseSimpleType(
 	elseif token_type == Types.BrokenString then
 		nextLexeme()
 		return reportTypeError(
-
 			start,
 			{},
 			"Malformed string; did you forget to finish it?"
@@ -4238,14 +4206,13 @@ function parseSimpleType(
 		local prefixPointPos = nil
 
 		if token_type == 46 then 
-			prefixPointPos = get_begin()
+			prefixPointPos = {line = token_start_line, column = token_start_col}
 			nextLexeme()
 			prefix = name.name.value
 			prefixLoc = name.location
 			name = parseIndexName("field name", name.location.end_)
 		elseif token_type == Types.Dot3 then
 			report(
-
 				snapshot(),
 				"Unexpected '...' after type name; type pack is not allowed in this context"
 			)
@@ -4261,8 +4228,8 @@ function parseSimpleType(
 			local node = {
 				kind = "TypeTypeof",
 				location = {
-					begin=start.begin,
-					end_=endLoc.end_
+					begin = start.begin,
+					end_ =  endLoc.end_
 				},
 				expr = expr
 			} :: Syntax.AstTypeTypeof
@@ -4293,12 +4260,12 @@ function parseSimpleType(
 			kind = "TypeReference", 
 			location = {
 				begin = start.begin,
-				end_ = getprev().end_
+				end_ = {line = prev_end_line, column = prev_end_col}
 			}, 
 			prefix = prefix, 
-			name = name.name, 
+			name = name.name.value, 
 			prefixLocation = prefixLoc, 
-			nameLocation = name.location, 
+			nameLocation = name.location,  
 			hasParameterList = hasParams, 
 			parameters = params 
 		} :: Syntax.AstTypeReference
@@ -4322,7 +4289,6 @@ function parseSimpleType(
 		nextLexeme()
 
 		return reportTypeError(
-
 			start, {},
 			"Using 'function' as a type annotation is not supported..."
 		), nil
@@ -4339,7 +4305,7 @@ function parseSimpleType(
 	end
 end
 
-function parseVariadicArgumentTypePack(): any
+function parseVariadicArgumentTypePack(): Syntax.AstTypePackVariadic | Syntax.AstTypePackGeneric
 	-- Generic: a...
 	if token_type == Types.Name and next_type == Types.Dot3 then
 		local name = parseName("generic name")
@@ -4355,7 +4321,7 @@ function parseVariadicArgumentTypePack(): any
 				end_ = endLoc.end_
 			},
 			genericName = name.name.value
-		}
+		} :: Syntax.AstTypePackGeneric
 
 		if storeCstData then
 			cstNodes[node] = {
@@ -4376,7 +4342,7 @@ function parseVariadicArgumentTypePack(): any
 	end
 end
 
-function parseTypePack(): any
+function parseTypePack(): Syntax.AstTypePackVariadic | Syntax.AstTypePackGeneric
 	-- Variadic: ...T
 	if token_type == Types.Dot3 then
 		local start = snapshot()
@@ -4415,24 +4381,22 @@ function parseTypePack(): any
 			}
 		end
 
-		return node
+		return node :: Syntax.AstTypePackGeneric
 	end
 
-	return nil
+	-- TODO: shouldParseTypePack can be removed and parseTypePack can be called unconditionally instead
+	error("parseTypePack can't be called if shouldParseTypePack() returned false")
 end
 
 function parseTypeParams(
+	openingPosRef: {Syntax.Position}?,
+	commaPosRef: {Syntax.Position}?,
+	closingPosRef: {Syntax.Position}?
+): {Syntax.AstTypeOrPack}
 
-
-	openingPosRef: any,
-	commaPosRef: any,
-	closingPosRef: any
-
-)
-
-	local params = {}
+	local params = {} :: {Syntax.AstTypeOrPack}
+	
 	if token_type == 60 then
-
 		local begin = get_lexeme()
 		if openingPosRef then
 			openingPosRef[1] = begin.location.begin
@@ -4443,7 +4407,7 @@ function parseTypeParams(
 		while true do
 			if shouldParseTypePack() then
 				local pack = parseTypePack()
-				table.insert(params, { typePack = pack })
+				table.insert(params, {typePack = pack, type = nil})
 			elseif token_type == 40 then
 				local beginParen = snapshot()
 				local type_ = nil
@@ -4487,45 +4451,35 @@ function parseTypeParams(
 							type = parenTy
 						} :: Syntax.AstTypeGroup
 
-						table.insert(params, {type = parseTypeSuffix(node, beginParen)})
+						table.insert(params, {type = parseTypeSuffix(node, beginParen), typePack = nil})
 					else
 						-- Otherwise, it's a type pack.
-						table.insert(params, { type = nil, typePack = typePack })
+						table.insert(params, {type = nil, typePack = typePack})
 					end
 				else
-					-- There's two cases in which `typePack` will be null:
-					-- - We try to parse a simple type or a type pack, and
-					--   we get a simple type: there's no ambiguity and
-					--   we attempt to parse a complex type.
-					-- - The next lexeme was a `|` or `&` indicating a
-					--   union or intersection type with a leading
-					--   separator. We just fall right into
-					--   `parseTypeSuffix`, which allows its first
-					--   argument to be `nullptr`
-					table.insert(params, { type = parseTypeSuffix(type_, beginParen) :: Syntax.AstType })
+					table.insert(params, {type = parseTypeSuffix(type_, beginParen), typePack = nil})
 				end
 			elseif token_type == 62 and #params == 0 then
 				break
 			else
-				table.insert(params, { type = parseType(false)})
+				table.insert(params, {type = parseType(false), typePack = nil})
 			end
 
 			if token_type == 44 then
-				if commaPosRef then table.insert(commaPosRef, get_begin()) end
+				if commaPosRef then table.insert(commaPosRef, {line = token_start_line, column = token_start_col}) end
 				nextLexeme()
 			else
 				break
 			end
 		end
 
-		if closingPosRef then closingPosRef[1] = get_begin() end
+		if closingPosRef then closingPosRef[1] = {line = token_start_line, column = token_start_col} end
 		expectMatchAndConsume(62, begin.type, begin.location.begin.line, begin.location.begin.column, false)
 	end
 	return params
 end
 
-
-function checkUnaryConfusables(): number?
+local function checkUnaryConfusables(): number?
 	-- early-out: need to check if this is a possible confusable quickly
 	if token_type ~= 33 then 
 		return nil
@@ -4539,7 +4493,7 @@ function checkUnaryConfusables(): number?
 	return UnaryOp.Not
 end
 
-function checkBinaryConfusables(limit: number): number?
+local function checkBinaryConfusables(limit: number): number?
 	local curr = get_lexeme()
 
 	-- arly-out: need to check if this is a possible confusable quickly
@@ -4598,7 +4552,7 @@ function parseExpr(limit_val: number?): Syntax.AstExpr
 	local oldRecursion = recursionCounter
 
 	-- this handles recursive calls to parseSubExpr/parseExpr
-	incrementRecursionCounter("expression")
+	incrementRecursionCounter"expression"
 
 	local start = snapshot()
 	local expr: Syntax.AstExpr? = nil
@@ -4607,7 +4561,7 @@ function parseExpr(limit_val: number?): Syntax.AstExpr
 	if not uop then uop = checkUnaryConfusables() end
 
 	if uop then
-		local opPosition = get_begin()
+		local opPosition = {line = token_start_line, column = token_start_col}
 		nextLexeme()
 
 		local subexpr = parseExpr(8)
@@ -4641,7 +4595,7 @@ function parseExpr(limit_val: number?): Syntax.AstExpr
 
 	-- expand while operators have priorities higher than `limit'
 	while op and BinaryPriority[op][1] > limit do
-		local opPosition = get_begin()
+		local opPosition = {line = token_start_line, column = token_start_col}
 		nextLexeme()
 
 		-- read sub-expression with higher priority
@@ -4671,7 +4625,7 @@ function parseExpr(limit_val: number?): Syntax.AstExpr
 		end
 
 		-- note: while the parser isn't recursive here, we're generating recursive structures of unbounded depth
-		incrementRecursionCounter("expression")
+		incrementRecursionCounter"expression"
 	end
 
 	recursionCounter = oldRecursion
@@ -4679,7 +4633,7 @@ function parseExpr(limit_val: number?): Syntax.AstExpr
 end
 
 -- NAME
-function parseNameExpr(context: string): any
+function parseNameExpr(context: string): Syntax.AstExprLocal | Syntax.AstExprGlobal | Syntax.AstExprError
 	local nameOpt = parseNameOpt(context)
 
 	if not nameOpt then
@@ -4723,7 +4677,7 @@ end
 -- prefixexp -> NAME | '(' expr ')'
 function parsePrefixExpr(): Syntax.AstExpr
 	if token_type == 40 then 
-		local start = get_begin()
+		local start = {line = token_start_line, column = token_start_col}
 		local Paren_type = token_type
 		local Paren_line = token_start_line
 		local Paren_col = token_start_col
@@ -4731,7 +4685,7 @@ function parsePrefixExpr(): Syntax.AstExpr
 
 		local expr = parseExpr()
 
-		local end_ = get_end()
+		local end_ = {line = token_end_line, column = token_end_col}
 		if token_type ~= 41 then 
 			expectMatchAndConsumeFail(
 
@@ -4740,7 +4694,7 @@ function parsePrefixExpr(): Syntax.AstExpr
 				token_type == 61 and "; did you mean to use '{' when defining a table?" or nil
 			)
 
-			end_ = getprev().end_
+			end_ = {line = prev_end_line, column = prev_end_col}
 		else
 			nextLexeme()
 		end
@@ -4760,27 +4714,51 @@ end
 
 -- // Explicit Type Instantiation 
 
-local function parseTypeInstantiationExpr(cstNodeOut: any)
+local function parseTypeInstantiationExpr(): ({Syntax.AstTypeOrPack}, Syntax.CstTypeInstantiation)
 	local begin_type, begin_line, begin_col = token_type, token_start_line, token_start_col
+	local leftArrow1 = {line = token_start_line, column = token_start_col}
 	nextLexeme()
 
-	local typesOrPacks = parseTypeParams() 
+	local leftArrow2Ref = {}
+	local commaPositions = {}
+	local rightArrow1Ref = {}
 
+	local typesOrPacks = parseTypeParams(leftArrow2Ref, commaPositions, rightArrow1Ref) 
+
+	local rightArrow2 = {line = token_start_line, column = token_start_col}
 	expectMatchAndConsume(62, begin_type, begin_line, begin_col)
 
-	return typesOrPacks
+	local cstData = {
+		kind = "CstTypeInstantiation",
+		leftArrow1Position = leftArrow1,
+		leftArrow2Position = leftArrow2Ref[1],
+		commaPositions = commaPositions,
+		rightArrow1Position = rightArrow1Ref[1],
+		rightArrow2Position = rightArrow2
+	}
+
+	return typesOrPacks, cstData
 end
 
 local function parseExplicitTypeInstantiationExpr(start: Syntax.Position, basedOnExpr: Syntax.AstExpr): Syntax.AstExprInstantiate
-	local typesOrPacks = parseTypeInstantiationExpr() 
+	local typesOrPacks, cstInstantiation = parseTypeInstantiationExpr() 
 	local endLocation = getprev() 
 
-	return {
+	local expr = {
 		kind = "ExprInstantiate",
-		location = {begin=start, end_=endLocation.end_},
+		location = {begin = start, end_ =  endLocation.end_},
 		expr = basedOnExpr,
 		typeArguments = typesOrPacks
 	} :: Syntax.AstExprInstantiate
+
+	if storeCstData then
+		cstNodes[expr] = {
+			kind = "CstExprExplicitTypeInstantiation",
+			instantiation = cstInstantiation
+		}
+	end
+
+	return expr
 end
 
 local function reportAmbiguousCallError()
@@ -4792,21 +4770,21 @@ end
 
 -- primaryexp -> prefixexp { `.' NAME | `[' exp `]' | `:' NAME funcargs | funcargs }
 function parsePrimaryExpr(asStatement: boolean): Syntax.AstExpr
-	local start = get_begin()
+	local start = {line = token_start_line, column = token_start_col}
 	local expr: Syntax.AstExpr = parsePrefixExpr()
 
 	local oldRecursion = recursionCounter
 
 	while true do
 		if token_type == 46 then 
-			local opPosition = get_begin()
+			local opPosition = {line = token_start_line, column = token_start_col}
 			nextLexeme()
 
 			local index = parseIndexName(nil, opPosition)
 
 			expr = {
 				kind = "ExprIndexName",
-				location = {begin=start, end_=index.location.end_},
+				location = {begin = start, end_ =  index.location.end_},
 				expr = expr,
 				index = index.name.value,
 				indexLocation = index.location,
@@ -4815,28 +4793,38 @@ function parsePrimaryExpr(asStatement: boolean): Syntax.AstExpr
 			} :: Syntax.AstExprIndexName
 		elseif token_type == 91 then 
 			local bracket_type, bracket_line, bracket_col = token_type, token_start_line, token_start_col
+			local openBracket = {line = token_start_line, column = token_start_col}
 			nextLexeme()
 
 			local index = parseExpr()
-			local end_ = get_end()
+			local end_ = {line = token_end_line, column = token_end_col}
+			local closeBracket = {line = token_start_line, column = token_start_col}
 
 			expectMatchAndConsume(93, bracket_type, bracket_line, bracket_col) 
 
 			expr = {
 				kind = "ExprIndexExpr",
-				location = {begin=start, end_=end_},
+				location = {begin = start, end_ =  end_},
 				expr = expr,
 				index = index
 			} :: Syntax.AstExprIndexExpr
+
+			if storeCstData then
+				cstNodes[expr] = {
+					kind = "CstExprIndexExpr",
+					openBracketPosition = openBracket,
+					closeBracketPosition = closeBracket
+				}
+			end
 		elseif token_type == 58 then 
-			local opPosition = get_begin()
+			local opPosition = {line = token_start_line, column = token_start_col}
 			nextLexeme()
 
 			local index = parseIndexName("method name", opPosition)
 
 			local func = {
 				kind = "ExprIndexName",
-				location = {begin=start, end_=index.location.end_},
+				location = {begin = start, end_ =  index.location.end_},
 				expr = expr,
 				index = index.name.value,
 				indexLocation = index.location,
@@ -4844,11 +4832,12 @@ function parsePrimaryExpr(asStatement: boolean): Syntax.AstExpr
 				op = 58 
 			} :: Syntax.AstExprIndexName
 
-			if ExplicitTypeExpressionInstantiation then
+			if LuauExplicitTypeInstantiationSyntax then
 				local typeArgs = {}
+				local cstInstantiation = nil
 
 				if token_type == 60 and next_type == 60 then
-					typeArgs = parseTypeInstantiationExpr()
+					typeArgs, cstInstantiation = parseTypeInstantiationExpr()
 				end
 
 				local callExpr = parseFunctionArgs(func, true)
@@ -4856,6 +4845,10 @@ function parsePrimaryExpr(asStatement: boolean): Syntax.AstExpr
 
 				if #typeArgs > 0 and callExpr.kind == "ExprCall" then
 					callExpr.typeArguments = typeArgs
+				end
+
+				if storeCstData and cstInstantiation and cstNodes[callExpr] then
+					(cstNodes[callExpr] :: Syntax.CstExprCall).explicitTypes = cstInstantiation
 				end
 			else
 				expr = parseFunctionArgs(func, true)
@@ -4871,7 +4864,7 @@ function parsePrimaryExpr(asStatement: boolean): Syntax.AstExpr
 			token_type == Types.RawString or 
 			token_type == Types.QuotedString then
 			expr = parseFunctionArgs(expr, false)
-		elseif ExplicitTypeExpressionInstantiation and 
+		elseif LuauExplicitTypeInstantiationSyntax and 
 			token_type == 60 and next_type == 60 then 
 			expr = parseExplicitTypeInstantiationExpr(start, expr)
 		else
@@ -4879,7 +4872,7 @@ function parsePrimaryExpr(asStatement: boolean): Syntax.AstExpr
 		end
 
 		-- note: while the parser isn't recursive here, we're generating recursive structures of unbounded depth
-		incrementRecursionCounter("expression")
+		incrementRecursionCounter"expression"
 	end
 
 	recursionCounter = oldRecursion
@@ -4892,9 +4885,10 @@ function parseAssertionExpr(): Syntax.AstExpr
 	local expr = parseSimpleExpr()
 
 	if token_type == Types.DoubleColon then
+		local opPos = {line = token_start_line, column = token_start_col}
 		nextLexeme()
 		local annotation = parseType()
-		return {
+		local node = {
 			kind = "ExprTypeAssertion",
 			location = {
 				begin = start.begin,
@@ -4903,6 +4897,15 @@ function parseAssertionExpr(): Syntax.AstExpr
 			expr = expr,
 			annotation = annotation
 		} :: Syntax.AstExprTypeAssertion
+
+		if storeCstData then
+			cstNodes[node] = {
+				kind = "CstExprTypeAssertion",
+				opPosition = opPos
+			}
+		end
+
+		return node
 	else
 		return expr
 	end
@@ -4999,9 +5002,8 @@ end
 
 -- args ::=  `(' [explist] `)' | tableconstructor | String
 function parseFunctionArgs(func: Syntax.AstExpr, selfCall: boolean): Syntax.AstExpr
-
 	if token_type == 40 then 
-		local argStart = get_end()
+		local argStart = {line = token_end_line, column = token_end_col}
 		if func.location.end_.line ~= token_start_line then
 			reportAmbiguousCallError()
 		end
@@ -5010,28 +5012,42 @@ function parseFunctionArgs(func: Syntax.AstExpr, selfCall: boolean): Syntax.AstE
 		nextLexeme()
 
 		local args = {}
+		local commaPositions = {}
 		if token_type ~= 41 then 
-			parseExprList(args)
+			parseExprList(args, commaPositions)
 		end
 
+		local closeParen = {line = token_start_line, column = token_start_col}
 		local end_ = snapshot()
 		expectMatchAndConsume(41, paren_type, paren_line, paren_col)
 
-		return {
+		local result = {
 			kind = "ExprCall",
-			location = {begin=func.location.begin, end_=end_.end_},
+			location = {begin = func.location.begin, end_ =  end_.end_},
 			func = func,
 			args = args,
 			self = selfCall,
 			typeArguments = {} :: {Syntax.AstTypeOrPack},
-			argLocation = {begin=argStart, end_=end_.end_}
+			argLocation = {begin = argStart, end_ =  end_.end_}
 		} :: Syntax.AstExprCall
-	elseif token_type == 123 then
-		local argStart = get_end()
-		local expr = parseTableConstructor()
-		local argEnd = getprev().end_
 
-		return {
+		if storeCstData then
+			cstNodes[result] = {
+				kind = "CstExprCall",
+				openParens = {line=paren_line, column=paren_col},
+				closeParens = closeParen,
+				commaPositions = commaPositions,
+				explicitTypes = nil
+			}
+		end
+
+		return result
+	elseif token_type == 123 then
+		local argStart = {line = token_end_line, column = token_end_col}
+		local expr = parseTableConstructor()
+		local argEnd = {line = prev_end_line, column = prev_end_col}
+
+		local result = {
 			kind = "ExprCall",
 			location = {
 				begin = func.location.begin,
@@ -5045,12 +5061,22 @@ function parseFunctionArgs(func: Syntax.AstExpr, selfCall: boolean): Syntax.AstE
 				begin = argStart,
 				end_ = argEnd
 			}
-		}
+		} :: Syntax.AstExprCall
+
+		if storeCstData then
+			cstNodes[result] = {
+				kind = "CstExprCall",
+				commaPositions = {},
+				explicitTypes = nil
+			}
+		end
+
+		return result
 	elseif token_type == Types.RawString or token_type == Types.QuotedString then
 		local argLocation = snapshot()
 		local expr = parseString()
 
-		return {
+		local result = {
 			kind = "ExprCall",
 			location = {
 				begin = func.location.begin,
@@ -5061,7 +5087,17 @@ function parseFunctionArgs(func: Syntax.AstExpr, selfCall: boolean): Syntax.AstE
 			self = selfCall,
 			typeArguments = {},
 			argLocation = argLocation
-		}
+		} :: Syntax.AstExprCall
+
+		if storeCstData then
+			cstNodes[result] = {
+				kind = "CstExprCall",
+				commaPositions = {},
+				explicitTypes = nil
+			}
+		end
+
+		return result
 	else
 		return reportFunctionArgsError(func, selfCall)
 	end
@@ -5070,17 +5106,15 @@ end
 function reportFunctionArgsError(func: Syntax.AstExpr, selfCall: boolean): Syntax.AstExpr
 	if selfCall and token_start_line ~= func.location.end_.line then
 		return reportExprError(
-
 			func.location :: Syntax.Location,
 			{func},
 			"Expected function call arguments after '('"
 		)
 	else
 		return reportExprError(
-
 			{
 				begin = func.location.begin,
-				end_ = get_begin()
+				end_ = {line = token_start_line, column = token_start_col}
 			},
 			{func},
 			"Expected '(', '{' or <string> when parsing function call, got %s",
@@ -5089,8 +5123,7 @@ function reportFunctionArgsError(func: Syntax.AstExpr, selfCall: boolean): Synta
 	end
 end
 
-function parseIndexName(context: string?, prev: any)
-
+function parseIndexName(context: string?, prev: Syntax.Position): Syntax.Binding
 	local nameOpt = parseNameOpt(context)
 	if nameOpt then return nameOpt end
 
@@ -5101,7 +5134,7 @@ function parseIndexName(context: string?, prev: any)
 		local result = {
 			name = { value = token_string },
 			location = snapshot()
-		}
+		} :: Syntax.Binding
 
 		nextLexeme()
 		return result
@@ -5113,10 +5146,9 @@ function parseIndexName(context: string?, prev: any)
 	}
 end
 
-function parseCallList(commaPositions: any): any
-
+function parseCallList(commaPositions: {Syntax.Position}?): ({Syntax.AstExpr}, Syntax.Location, Syntax.Location)
 	if token_type == 40 then 
-		local argStart = get_end()
+		local argStart = {line = token_end_line, column = token_end_col}
 		local paren_type, paren_line, paren_col = token_type, token_start_line, token_start_col
 
 		nextLexeme()
@@ -5130,33 +5162,31 @@ function parseCallList(commaPositions: any): any
 		local end_ = snapshot()
 		expectMatchAndConsume(41, paren_type, paren_line, paren_col)
 
-		return {
+		return 
 			args,
-			{
-				begin = argStart,
-				end_ = end_.end_
-			},
-			{
-				begin = {line = paren_line, column = paren_col},
-				end_ = getprev().begin
-			}
+		{
+			begin = argStart,
+			end_ = end_.end_
+		},
+		{
+			begin = {line = paren_line, column = paren_col},
+			end_ = {line = prev_start_line, column = prev_start_col}
 		}
+
 	elseif token_type == 123 then 
-		local argStart = get_end()
+		local argStart = {line = token_end_line, column = token_end_col}
 		local expr = parseTableConstructor()
 
-		return {
-			{expr},
-			{
-				begin=argStart,
-				end_=getprev().end_
-			},
-			expr.location
-		}
+		return {expr} :: {Syntax.AstExpr},
+		{
+			begin = argStart,
+			end_ =  {line = prev_end_line, column = prev_end_col}
+		}, expr.location
+
 	else
 		local argLoc = snapshot()
 		local expr = parseString()
-		return { {expr}, argLoc, expr.location }
+		return {expr} :: {Syntax.AstExpr}, argLoc, expr.location
 	end
 end
 
@@ -5164,8 +5194,8 @@ end
 -- fieldlist ::= field {fieldsep field} [fieldsep]
 -- field ::= `[' exp `]' `=' exp | Name `=' exp | exp
 -- fieldsep ::= `,' | `;'
-function parseTableConstructor(): any
-	local items = {} :: {any}
+function parseTableConstructor(): Syntax.AstExprTable
+	local items = {} :: {Syntax.AstExprTableItem}
 	local cstItems: {Syntax.CstExprTableItem} = {} 
 
 	local start = snapshot()
@@ -5176,23 +5206,23 @@ function parseTableConstructor(): any
 	local lastElementIndent = 0
 
 	while token_type ~= 125 do 
-		lastElementIndent = get_begin().column
+		lastElementIndent = token_start_col
 
 		local indexerOpenPos = nil
 		local indexerClosePos = nil
 		local equalsPos = nil
 
 		if token_type == 91 then 
-			indexerOpenPos = get_begin()
+			indexerOpenPos = {line = token_start_line, column = token_start_col}
 			local bracket_type, bracket_line, bracket_col = token_type, token_start_line, token_start_col
 			nextLexeme()
 
 			local key = parseExpr()
 
-			indexerClosePos = get_begin()
+			indexerClosePos = {line = token_start_line, column = token_start_col}
 			expectMatchAndConsume(93, bracket_type, bracket_line, bracket_col) 
 
-			equalsPos = get_begin()
+			equalsPos = {line = token_start_line, column = token_start_col}
 			expectAndConsume(61, "table field") 
 
 			local value = parseExpr()
@@ -5201,7 +5231,7 @@ function parseTableConstructor(): any
 				kind = "General",
 				key = key,
 				value = value
-			})
+			} :: Syntax.AstExprTableItem)
 
 			if storeCstData then
 				table.insert(cstItems, {
@@ -5210,14 +5240,14 @@ function parseTableConstructor(): any
 					indexerClosePosition = indexerClosePos,
 					equalsPosition = equalsPos,
 					separator = tableSeparator(),
-					separatorPosition = get_begin()
+					separatorPosition = {line = token_start_line, column = token_start_col}
 				} :: Syntax.CstExprTableItem)
 			end
 
 		elseif token_type == Types.Name and next_type == 61 then 
 			local name = parseName("table field")
 
-			equalsPos = get_begin()
+			equalsPos = {line = token_start_line, column = token_start_col}
 			expectAndConsume(61, "table field") 
 
 			local key = {
@@ -5237,14 +5267,14 @@ function parseTableConstructor(): any
 				kind = "Record",
 				key = key,
 				value = value
-			})
+			} :: Syntax.AstExprTableItem)
 
 			if storeCstData then
 				table.insert(cstItems, {
 					kind = "Record",
 					equalsPosition = equalsPos,
 					separator = tableSeparator(),
-					separatorPosition = get_begin()
+					separatorPosition = {line = token_start_line, column = token_start_col}
 				} :: Syntax.CstExprTableItem)
 			end
 		else
@@ -5252,13 +5282,13 @@ function parseTableConstructor(): any
 			table.insert(items, {
 				kind = "List",
 				value = expr
-			})
+			} :: Syntax.AstExprTableItem)
 
 			if storeCstData then
 				table.insert(cstItems, {
 					kind = "List",
 					separator = tableSeparator(),
-					separatorPosition = get_begin()
+					separatorPosition = {line = token_start_line, column = token_start_col}
 				} :: Syntax.CstExprTableItem)
 			end
 		end
@@ -5266,7 +5296,7 @@ function parseTableConstructor(): any
 		if token_type == 44 or token_type == 59 then 
 			nextLexeme()
 		elseif (token_type == 91 or token_type == Types.Name) and 
-			get_begin().column == lastElementIndent then
+			token_start_col == lastElementIndent then
 			report(
 
 				snapshot(),
@@ -5284,9 +5314,9 @@ function parseTableConstructor(): any
 
 	local node = {
 		kind = "ExprTable",
-		location = {begin=start.begin, end_=end_.end_},
+		location = {begin = start.begin, end_ =  end_.end_},
 		items = items
-	}
+	} :: Syntax.AstExprTable
 
 	if storeCstData then
 		cstNodes[node] = {
@@ -5298,7 +5328,7 @@ function parseTableConstructor(): any
 	return node
 end
 
-function parseIfElseExpr(): any
+function parseIfElseExpr(): Syntax.AstExprIfElse
 	local hasElse = false
 	local start = snapshot()
 
@@ -5306,18 +5336,18 @@ function parseIfElseExpr(): any
 
 	local condition = parseExpr()
 
-	local thenPosition = get_begin()
+	local thenPosition = {line = token_start_line, column = token_start_col}
 	local hasThen = expectAndConsume(Types.ReservedThen, "if then else expression")
 
 	local trueExpr = parseExpr()
 	local falseExpr = nil
 
-	local elsePosition = get_begin()
+	local elsePosition = {line = token_start_line, column = token_start_col}
 	local isElseIf = false
 
 	if token_type == Types.ReservedElseif then
 		local oldRecursion = recursionCounter
-		incrementRecursionCounter("expression")
+		incrementRecursionCounter"expression"
 		hasElse = true
 		falseExpr = parseIfElseExpr()
 		recursionCounter = oldRecursion
@@ -5329,13 +5359,13 @@ function parseIfElseExpr(): any
 
 	local node = {
 		kind = "ExprIfElse",
-		location = {begin=start.begin, end_=falseExpr.location.end_},
+		location = {begin = start.begin, end_ =  falseExpr.location.end_},
 		condition = condition,
 		hasThen = hasThen,
 		trueExpr = trueExpr,
 		hasElse = hasElse,
 		falseExpr = falseExpr
-	}
+	} :: Syntax.AstExprIfElse
 
 	if storeCstData then
 		cstNodes[node] = {
@@ -5349,8 +5379,7 @@ function parseIfElseExpr(): any
 	return node
 end
 
-
-function parseInterpString(): any
+function parseInterpString(): Syntax.AstExprInterpString | Syntax.AstExprError
 	local strings = {}
 	local sourceStrings = {} 
 	local stringPositions = {} 
@@ -5373,7 +5402,13 @@ function parseInterpString(): any
 		local ok, fixedData = fixupQuotedString(data)
 		if not ok then
 			nextLexeme()
-			return reportExprError({begin=startLocation.begin, end_=endLocation.end_}, {}, "Interpolated string literal contains malformed escape sequence")
+			return reportExprError(
+				{
+					begin = startLocation.begin,
+					end_ =  endLocation.end_
+				}, {},
+				"Interpolated string literal contains malformed escape sequence"
+			)
 		end
 
 		nextLexeme()
@@ -5415,10 +5450,16 @@ function parseInterpString(): any
 
 			local node = {
 				kind = "ExprInterpString",
-				location = {begin=startLocation.begin, end_=getprev().end_},
+				location = {
+					begin = startLocation.begin,
+					end_ =  {
+						line = prev_end_line,
+						column = prev_end_col
+					}
+				},
 				strings = strings,
 				expressions = expressions
-			}
+			} :: Syntax.AstExprInterpString
 
 			if storeCstData then
 				cstNodes[node] = { kind = "CstExprInterpString", sourceStrings = sourceStrings, stringPositions = stringPositions }
@@ -5435,7 +5476,7 @@ function parseInterpString(): any
 				report(getprev(), "Malformed interpolated string; did you forget to add a '`'?")
 			end
 
-			return node
+			return node :: Syntax.AstExprInterpString
 		else
 			return reportExprError(endLocation, {}, "Malformed interpolated string, got %s", ToString(token_type, token_string, token_codepoint))
 		end
@@ -5449,13 +5490,13 @@ function parseInterpString(): any
 		},
 		strings = strings,
 		expressions = expressions
-	}
+	} :: Syntax.AstExprInterpString
 
 	if storeCstData then
 		cstNodes[node] = { kind = "CstExprInterpString", sourceStrings = sourceStrings, stringPositions = stringPositions }
 	end
 
-	return node
+	return node :: Syntax.AstExprInterpString
 end
 
 function parseCharArray(): string?
@@ -5477,7 +5518,7 @@ function parseCharArray(): string?
 	return data
 end
 
-function parseString(): any
+function parseString(): Syntax.AstExprConstantString | Syntax.AstExprError
 	local location = snapshot()
 	local quoteStyle = 0
 
@@ -5512,7 +5553,7 @@ function parseString(): any
 			location = location,
 			value = value,
 			quoteStyle = quoteStyle
-		}
+		} :: Syntax.AstExprConstantString
 
 		if storeCstData then
 			cstNodes[node] = { 
@@ -5523,12 +5564,13 @@ function parseString(): any
 			}
 		end
 
-		return node
+		return node :: Syntax.AstExprConstantString
 	else
 		return reportExprError(location, {}, "String literal contains malformed escape sequence")
 	end
 end
-function parseNumber(): any
+
+function parseNumber(): Syntax.AstExprConstantNumber | Syntax.AstExprError
 	local start = snapshot()
 	local data = token_string or ""
 
@@ -5611,13 +5653,13 @@ function parseNumber(): any
 		location = start,
 		value = value,
 		parseResult = parseResult
-	}
+	} :: Syntax.AstExprConstantNumber
 
 	if storeCstData then
 		cstNodes[node] = { kind = "CstExprConstantNumber", value = sourceData }
 	end
 
-	return node
+	return node :: Syntax.AstExprConstantNumber
 end
 
 local function parse(source: string, options: Syntax.Options)
@@ -5665,8 +5707,6 @@ local function parse(source: string, options: Syntax.Options)
 	matchRecovery = table.create(Types.Reserved_END, 0)
 	matchRecovery[Types.Eof] = 1
 
-	-- // Stacks
-
 	functionStack = {
 		{vararg = true, loopDepth = 0}
 	}
@@ -5704,6 +5744,7 @@ return {
 	end,
 
 	BraceType = BraceType,
-	Types = Types,
 	QuoteStyle = QuoteStyle,
+	UnaryOp = UnaryOp,
+	BinaryOp = BinaryOp,
 }
