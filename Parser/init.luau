@@ -198,7 +198,7 @@ local CompoundLookup = {
 	[Types.DivAssign] = BinaryOp.Div,
 }
 
-local BinaryOpLookup: {[number]: number} = {
+local BinaryOpLookup = {
 	[43] = BinaryOp.Add,
 	[45] = BinaryOp.Sub,
 	[42] = BinaryOp.Mul,
@@ -224,10 +224,32 @@ local BinaryOpLookup: {[number]: number} = {
 	[Types.ReservedOr] = BinaryOp.Or,
 }
 
-local UnaryOpLookup: {[number]: number} = {
+local UnaryOpLookup = {
 	[Types.ReservedNot] = UnaryOp.Not,
 	[45] = UnaryOp.Minus,
 	[35] = UnaryOp.Len,
+}
+
+local BlockFollow = {
+	[Types.ReservedElseif] = true,
+	[Types.ReservedUntil] = true,
+	[Types.ReservedElse] = true,
+	[Types.ReservedEnd] = true,
+	[Types.Eof] = true,
+}
+
+local ConstantLiteral = {
+	ExprConstantNil = true,
+	ExprConstantBool = true,
+	ExprConstantNumber = true,
+	ExprConstantString = true,
+}
+
+local ExprLValues = {
+	ExprLocal = true,
+	ExprGlobal = true,
+	ExprIndexExpr = true,
+	ExprIndexName = true,
 }
 
 -- // Lookups for Lexer
@@ -557,23 +579,6 @@ end
 
 -- // Parser Helpers
 
-local function blockFollow(t: number): boolean
-	return t == Types.Eof
-		or t == Types.ReservedElse
-		or t == Types.ReservedElseif
-		or t == Types.ReservedEnd
-		or t == Types.ReservedUntil
-end
-
-local function isConstantLiteral(expr: Syntax.AstExpr): boolean
-	local k = expr.kind
-
-	return k == "ExprConstantNil"
-		or k == "ExprConstantBool"
-		or k == "ExprConstantNumber"
-		or k == "ExprConstantString"
-end
-
 local function isLiteralTable(expr: Syntax.AstExpr): boolean
 	if expr.kind ~= "ExprTable" then
 		return false
@@ -583,21 +588,13 @@ local function isLiteralTable(expr: Syntax.AstExpr): boolean
 		if item.kind == "General" then
 			return false
 		elseif item.kind == "Record" or item.kind == "List" then
-			if not isConstantLiteral(item.value) and not isLiteralTable(item.value) then
+			if not ConstantLiteral[item.value.kind] and not isLiteralTable(item.value) then
 				return false
 			end
 		end
 	end
+	
 	return true
-end
-
-local function isExprLValue(expr: Syntax.AstExpr)
-	local k = expr.kind
-
-	return k == "ExprLocal"
-		or k == "ExprGlobal"
-		or k == "ExprIndexExpr"
-		or k == "ExprIndexName"
 end
 
 -- // Attributes
@@ -780,9 +777,9 @@ local next_end_line = 0
 local next_start_col = 0
 local next_end_col = 0
 
-local next_string = nil :: string?
-local next_aux = nil :: number?
-local next_codepoint = nil :: number?
+local next_codepoint: number? = nil
+local next_string: string? = nil
+local next_aux: number? = nil
 
 local suspect_type = Types.Eof
 
@@ -806,7 +803,6 @@ local function lex(skip_comments: boolean)
 	local ptr = offset
 	local cur_line = line
 
-	-- 1. Skip Whitespace
 	while true do
 		if ptr >= size then
 			-- EOF Logic
@@ -841,11 +837,10 @@ local function lex(skip_comments: boolean)
 		elseif c == 11 or c == 12 then -- \v, \f
 			ptr += 1
 		else
-			break -- Not whitespace
+			break -- not whitespace
 		end
 	end
 
-	-- 2. Record Start Position
 	next_start_line = cur_line
 	next_start_col = ptr - lineOffset
 	next_string = nil
@@ -856,9 +851,7 @@ local function lex(skip_comments: boolean)
 	local start_ptr = ptr
 	ptr += 1 -- Consume current char
 
-	-- 3. Switch on char
-
-	-- Identifiers / Keywords (a-z, A-Z, _)
+	-- Identifiers / Keywords
 	if Alpha[ch] or ch == 95 then
 		while ptr < size do
 			local c = buffer.readu8(buff, ptr)
@@ -1000,7 +993,8 @@ local function lex(skip_comments: boolean)
 								break
 							end
 						elseif c == 10 then
-							cur_line += 1; lineOffset = ptr + 1
+							cur_line += 1
+							lineOffset = ptr + 1
 						end
 						ptr += 1
 					end
@@ -1060,9 +1054,14 @@ local function lex(skip_comments: boolean)
 						end
 					else break end
 				end
+				
 				while ptr < size do
 					local tc = buffer.readu8(buff, ptr)
-					if Alpha[tc] or Digits[tc] or tc == 95 then ptr += 1 else break end
+					if Alpha[tc] or Digits[tc] or tc == 95 then
+						ptr += 1
+					else
+						break
+					end
 				end
 				next_type = Types.Number
 				next_string = buffer.readstring(buff, n_start, ptr - n_start)
@@ -1078,28 +1077,77 @@ local function lex(skip_comments: boolean)
 			next_type = 61
 		end
 	elseif ch == 60 then -- '<'
-		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.LessEqual else next_type = 60 end
+		if ptr < size and buffer.readu8(buff, ptr) == 61 then
+			ptr += 1
+			next_type = Types.LessEqual
+		else
+			next_type = 60
+		end
 	elseif ch == 62 then -- '>'
-		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.GreaterEqual else next_type = 62 end
+		if ptr < size and buffer.readu8(buff, ptr) == 61 then
+			ptr += 1
+			next_type = Types.GreaterEqual
+		else
+			next_type = 62
+		end
 	elseif ch == 126 then -- '~'
-		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.NotEqual else next_type = 126 end
+		if ptr < size and buffer.readu8(buff, ptr) == 61 then
+			ptr += 1
+			next_type = Types.NotEqual
+		else
+			next_type = 126
+		end
 	elseif ch == 43 then -- '+'
-		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.AddAssign else next_type = 43 end
+		if ptr < size and buffer.readu8(buff, ptr) == 61 then
+			ptr += 1
+			next_type = Types.AddAssign
+		else
+			next_type = 43
+		end
 	elseif ch == 42 then -- '*'
-		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.MulAssign else next_type = 42 end
+		if ptr < size and buffer.readu8(buff, ptr) == 61 then
+			ptr += 1
+			next_type = Types.MulAssign
+		else
+			next_type = 42
+		end
 	elseif ch == 37 then -- '%'
-		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.ModAssign else next_type = 37 end
+		if ptr < size and buffer.readu8(buff, ptr) == 61 then
+			ptr += 1
+			next_type = Types.ModAssign
+		else
+			next_type = 37
+		end
 	elseif ch == 94 then -- '^'
-		if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.PowAssign else next_type = 94 end
+		if ptr < size and buffer.readu8(buff, ptr) == 61 then
+			ptr += 1
+			next_type = Types.PowAssign
+		else
+			next_type = 94
+		end
 	elseif ch == 47 then -- '/'
 		local c = if ptr < size then buffer.readu8(buff, ptr) else 0
-		if c == 61 then ptr += 1; next_type = Types.DivAssign
+		if c == 61 then
+			ptr += 1
+			next_type = Types.DivAssign
 		elseif c == 47 then
 			ptr += 1
-			if ptr < size and buffer.readu8(buff, ptr) == 61 then ptr += 1; next_type = Types.FloorDivAssign else next_type = Types.FloorDiv end
-		else next_type = 47 end
+			if ptr < size and buffer.readu8(buff, ptr) == 61 then
+				ptr += 1
+				next_type = Types.FloorDivAssign
+			else
+				next_type = Types.FloorDiv
+			end
+		else
+			next_type = 47
+		end
 	elseif ch == 58 then -- ':'
-		if ptr < size and buffer.readu8(buff, ptr) == 58 then ptr += 1; next_type = Types.DoubleColon else next_type = 58 end
+		if ptr < size and buffer.readu8(buff, ptr) == 58 then
+			ptr += 1
+			next_type = Types.DoubleColon
+		else
+			next_type = 58
+		end
 
 		-- Single Char / Interp
 	elseif ch == 40 or ch == 41 or ch == 93 or ch == 59 or ch == 44 or ch == 35 or ch == 63 or ch == 38 or ch == 124 or ch == 123 or ch == 125 then
@@ -1140,14 +1188,30 @@ local function lex(skip_comments: boolean)
 									while ptr < size do
 										local wc = buffer.readu8(buff, ptr)
 										if wc == 32 or wc == 9 or wc == 10 or wc == 13 then
-											if wc == 10 then cur_line += 1; lineOffset = ptr+1 
-											elseif wc == 13 then cur_line += 1; lineOffset = ptr+1 end -- simplified CR
+											if wc == 10 then
+												cur_line += 1
+												lineOffset = ptr + 1 
+											elseif wc == 13 then
+												cur_line += 1
+												if ptr + 1 < size and buffer.readu8(buff, ptr + 1) == 10 then
+													ptr += 1
+												end
+												lineOffset = ptr + 1
+											end
 											ptr += 1
-										else break end
+										else
+											break
+										end
 									end
-								elseif ec == 10 then cur_line += 1; lineOffset = ptr+1 end
+								elseif ec == 10 then
+									cur_line += 1
+									lineOffset = ptr + 1
+								end
 							end
-						elseif c == 10 then cur_line += 1; lineOffset = ptr+1 end
+						elseif c == 10 then
+							cur_line += 1
+							lineOffset = ptr + 1
+						end
 						ptr += 1
 					end
 				end
@@ -1157,7 +1221,6 @@ local function lex(skip_comments: boolean)
 		if not handled then
 			next_type = ch
 		end
-
 	elseif ch == 96 then -- `
 		local istart = ptr
 		while ptr < size do
@@ -1181,9 +1244,15 @@ local function lex(skip_comments: boolean)
 				ptr += 1
 				if ptr < size then
 					local ec = buffer.readu8(buff, ptr)
-					if ec == 10 then cur_line += 1; lineOffset = ptr+1 end
+					if ec == 10 then
+						cur_line += 1
+						lineOffset = ptr + 1
+					end
 				end
-			elseif c == 10 then cur_line += 1; lineOffset = ptr+1 end
+			elseif c == 10 then
+				cur_line += 1
+				lineOffset = ptr + 1
+			end
 			ptr += 1
 		end
 
@@ -1198,11 +1267,16 @@ local function lex(skip_comments: boolean)
 			-- Long String
 			local ls_start = ptr
 			local found = false
+			
 			while ptr < size do
 				if buffer.readu8(buff, ptr) == 93 then
 					local c2 = ptr + 1
 					local cc = 0
-					while c2 < size and buffer.readu8(buff, c2) == 61 do c2 += 1; cc += 1 end
+					
+					while c2 < size and buffer.readu8(buff, c2) == 61 do
+						c2 += 1; cc += 1
+					end
+					
 					if cc == count and c2 < size and buffer.readu8(buff, c2) == 93 then
 						next_type = Types.RawString
 						next_string = buffer.readstring(buff, ls_start, ptr - ls_start)
@@ -1212,7 +1286,8 @@ local function lex(skip_comments: boolean)
 						break
 					end
 				elseif buffer.readu8(buff, ptr) == 10 then
-					cur_line += 1; lineOffset = ptr + 1
+					cur_line += 1
+					lineOffset = ptr + 1
 				end
 				ptr += 1
 			end
@@ -1235,14 +1310,16 @@ local function lex(skip_comments: boolean)
 			next_type = Types.Attribute
 			next_string = buffer.readstring(buff, name_start, ptr - name_start)
 		end
-
 	else
 		if bit32.band(ch, 0x80) ~= 0 then
 			local cp = 0
 			local seq_len = 0
-			if bit32.band(ch, 0xE0) == 0xC0 then seq_len = 1; cp = bit32.band(ch, 0x1F)
-			elseif bit32.band(ch, 0xF0) == 0xE0 then seq_len = 2; cp = bit32.band(ch, 0x0F)
-			elseif bit32.band(ch, 0xF8) == 0xF0 then seq_len = 3; cp = bit32.band(ch, 0x07)
+			if bit32.band(ch, 0xE0) == 0xC0 then
+				seq_len = 1; cp = bit32.band(ch, 0x1F)
+			elseif bit32.band(ch, 0xF0) == 0xE0 then
+				seq_len = 2; cp = bit32.band(ch, 0x0F)
+			elseif bit32.band(ch, 0xF8) == 0xF0 then
+				seq_len = 3; cp = bit32.band(ch, 0x07)
 			else 
 				next_type = Types.BrokenUnicode
 				seq_len = -1 -- signal fail
@@ -1790,7 +1867,7 @@ local function parseBlockNoScope(): Syntax.AstStatBlock
 		column = prev_end_col,
 	}
 
-	while not blockFollow(token_type) do
+	while not BlockFollow[token_type] do
 		local oldRecursion = recursionCounter
 		recursionCounter += 1
 
@@ -2399,7 +2476,7 @@ local function parseAttribute(attributes: Syntax.Attrs)
 					args = args_
 					argsLocation = argsLoc_
 					for _, arg in args do
-						if not isConstantLiteral(arg) and not isLiteralTable(arg) then
+						if not ConstantLiteral[arg.kind] and not isLiteralTable(arg) then
 							report(argsLocation, "Only literals can be passed as arguments for attributes")
 						end
 					end
@@ -2582,7 +2659,7 @@ function parseReturn(): Syntax.AstStatReturn
 	local list = {}
 	local commaPositions = {}
 
-	if not blockFollow(token_type) and token_type ~= 59 then
+	if not BlockFollow[token_type] and token_type ~= 59 then
 		parseExprList(list, storeCstData and commaPositions or nil)
 	end
 
@@ -2803,7 +2880,7 @@ end
 
 -- varlist `=' explist
 function parseAssignment(initial: Syntax.AstExpr): Syntax.AstStatAssign
-	if not isExprLValue(initial) then
+	if not ExprLValues[initial.kind] then
 		initial = reportExprError(
 			initial.location,
 			{initial},
@@ -2821,7 +2898,7 @@ function parseAssignment(initial: Syntax.AstExpr): Syntax.AstStatAssign
 		nextLexeme()
 
 		local expr = parsePrimaryExpr(true)
-		if not isExprLValue(expr) then
+		if not ExprLValues[expr.kind] then
 			expr = reportExprError(expr.location, {expr}, "Assigned expression must be a variable or a field")
 		end
 		table.insert(vars, expr)
@@ -2858,7 +2935,7 @@ end
 -- var [`+=' | `-=' | `*=' | `/=' | `%=' | `^=' | `..='] exp
 function parseCompoundAssignment(initial: Syntax.AstExpr, op: number): Syntax.AstStatCompoundAssign
 
-	if not isExprLValue(initial) then
+	if not ExprLValues[initial.kind] then
 		initial = reportExprError(
 
 			initial.location,
@@ -2929,13 +3006,13 @@ function parseFunctionBody(
 		cstNode = {
 			kind = "CstExprFunction",
 			functionKeywordPosition = matchFunction.location.begin,
-			openGenericsPosition = {line=0, column=0},
+			openGenericsPosition = {line = 0, column = 0},
 			genericsCommaPositions = {},
-			closeGenericsPosition = {line=0, column=0},
+			closeGenericsPosition = {line = 0, column = 0},
 			argsAnnotationColonPositions = {},
 			argsCommaPositions = {},
-			varargAnnotationColonPosition = {line=0, column=0},
-			returnSpecifierPosition = {line=0, column=0}
+			varargAnnotationColonPosition = {line = 0, column = 0},
+			returnSpecifierPosition = {line = 0, column = 0}
 		}
 	end
 
@@ -3475,9 +3552,9 @@ function parseReturnType(): Syntax.AstTypePack
 	if storeCstData and tail.kind == "TypeFunction" then
 		cstNodes[tail] = {
 			kind = "CstTypeFunction",
-			openGenericsPosition = {line=0, column=0},
+			openGenericsPosition = {line = 0, column = 0},
 			genericsCommaPositions = {},
-			closeGenericsPosition = {line=0, column=0},
+			closeGenericsPosition = {line = 0, column = 0},
 			openArgsPosition = begin.location.begin,
 			argumentNameColonPositions = nameColonPositions,
 			argumentsCommaPositions = commaPositions,
