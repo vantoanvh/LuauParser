@@ -1,6 +1,6 @@
 # [0.705] Luau Parser in pure Luau
 Entire port of [Parser.cpp](https://github.com/luau-lang/luau/blob/master/Ast/src/Parser.cpp) (Lua*u* **[0.705]** Parser) both AST ( Abstract Syntax Tree ) & CST ( Concrete Syntax Tree ).
-Not trying to misleading but this is a "full" port, so the CST won't have like the low-value trivia like whitespace.
+Not trying to misleading but this is a "full" port, so the CST won't have things like whitespace trivia.
 
 Currently not built for speed, but still pretty fast.
 
