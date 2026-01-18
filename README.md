@@ -37,8 +37,8 @@ BinaryOp: {
 	CompareLe, -- `<=`
 	CompareGt, -- `>`
 	CompareGe, -- `>=`
-	And = 14, -- `and`
-	Or = 15 -- `or`
+	And, -- `and`
+	Or -- `or`
 }
 ```
 
