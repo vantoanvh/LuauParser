@@ -1,6 +1,7 @@
-# [0.703] Luau Parser in pure Luau
-Entire port of [Parser.cpp](https://github.com/luau-lang/luau/blob/master/Ast/src/Parser.cpp) (Lua*u* **[0.703]** Parser) both AST ( Abstract Syntax Tree ) & CST ( Concrete Syntax Tree ).
-Currently not built for speed, and not type-checked properly.
+# [0.705] Luau Parser in pure Luau
+Entire port of [Parser.cpp](https://github.com/luau-lang/luau/blob/master/Ast/src/Parser.cpp) (Lua*u* **[0.705]** Parser) both AST ( Abstract Syntax Tree ) & Simplified CST ( Simplified Concrete Syntax Tree ). Not trying to misleading but this is a "full" port, so the CST won't have like the low-value trivia like whitespace.
+
+Currently not built for speed, but still pretty fast.
 
 Lua*u* Parser only useful when building plugins or creating Lua*u* compilers.
 
@@ -16,8 +17,28 @@ QuoteStyle: {Single, Double}
 -- Contains things that define node is a normal string or an interpolated string
 BraceType: {Normal, InterpolatedString}
 
--- Contains all Ast types, you need this for detect what LexemeNodes are these
-Types: {number}
+-- See what unary ops is it, could be length `#`, negative `-` or `Not`
+UnaryOp: {Not, Minus, Len}
+
+-- Contains all operators, helpful for which operators `AstExprBinary` contains
+BinaryOp: {
+	Add, -- `+`
+	Sub, -- `-`
+	Mul, -- `*`
+	Div, -- `/`
+	FloorDiv, -- `//`
+	Mod, -- `%`
+	Pow, -- `^`
+	Concat, -- `..`
+	CompareNe, -- `~=`
+	CompareEq, -- `==`
+	CompareLt, -- `<`
+	CompareLe, -- `<=`
+	CompareGt, -- `>`
+	CompareGe, -- `>=`
+	And = 14, -- `and`
+	Or = 15 -- `or`
+}
 ```
 
 
@@ -45,14 +66,14 @@ Types: {number}
 	hotcomments: {Comment},
 
 	-- Contains all CST nodes of the source, which you can get it by indexing cstNodeMap[AstNode] = CstNode
-	cstNodeMap: {CstNode},
+	cstNodeMap: {[AstNode] = CstNode},
 
 	-- Contains all parsing errors
 	errors: {ParseError},
 }
 ```
 # Change logs
-Finally! Type-checking added! That was long! It's not that type-check that properly but it works! stict-typing of course.
+Finally! Type-checking added! That was long! It's not that type-check that properly but it works! stict-typing of course with luau's NewTypeSolver.
 Autocomplete when parsing now visible, so you can see what types is it, make it wayy easier to use.
 
 # Documentations
