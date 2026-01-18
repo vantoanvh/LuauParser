@@ -117,6 +117,7 @@ export type CstNode = CstStatBlock
 | CstExprTypeAssertion
 | CstExprExplicitTypeInstantiation
 | CstTypeSingletonString
+| { kind: string, [any]: any }
 
 export type AstNode = AstStat
 | AstExpr
