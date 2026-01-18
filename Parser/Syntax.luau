@@ -79,17 +79,58 @@ AstTypeIntersection |
 AstTypeSingletonBool |
 AstTypeSingletonString |
 AstTypeGroup |
-AstTypeError
+AstTypeError |
+AstTypeOptional
 
 -- Expression Implementations
-export type AstExprGroup = { kind: "ExprGroup", location: Location, expr: AstExpr }
-export type AstExprConstantNil = { kind: "ExprConstantNil", location: Location }
-export type AstExprConstantBool = { kind: "ExprConstantBool", location: Location, value: boolean }
-export type AstExprConstantNumber = { kind: "ExprConstantNumber", location: Location, value: number, parseResult: string }
-export type AstExprConstantString = { kind: "ExprConstantString", location: Location, value: string, quoteStyle: number }
-export type AstExprLocal = { kind: "ExprLocal", location: Location, ['local']: AstLocal, upvalue: boolean }
-export type AstExprGlobal = { kind: "ExprGlobal", location: Location, name: string }
-export type AstExprVarargs = { kind: "ExprVarargs", location: Location }
+export type AstExprGroup = {
+	kind: "ExprGroup",
+	location: Location,
+	expr: AstExpr
+}
+
+export type AstExprConstantNil = {
+	kind: "ExprConstantNil",
+	location: Location
+}
+
+export type AstExprConstantBool = {
+	kind: "ExprConstantBool",
+	location: Location,
+	value: boolean
+}
+
+export type AstExprConstantNumber = {
+	kind: "ExprConstantNumber",
+	location: Location,
+	value: number,
+	parseResult: string
+}
+
+export type AstExprConstantString = {
+	kind: "ExprConstantString",
+	location: Location,
+	value: string,
+	quoteStyle: number
+}
+
+export type AstExprLocal = {
+	kind: "ExprLocal",
+	location: Location,
+	['local']: AstLocal,
+	upvalue: boolean
+}
+
+export type AstExprGlobal = {
+	kind: "ExprGlobal",
+	location: Location,
+	name: string
+}
+
+export type AstExprVarargs = {
+	kind: "ExprVarargs",
+	location: Location
+}
 
 export type AstExprCall = { 
 	kind: "ExprCall", 
@@ -345,6 +386,8 @@ export type AstStatDeclareGlobal = {
 	hasSemicolon: boolean?
 }
 
+-- already removed this becauses it kinda useless for real-world uses
+-- this is just a placeholder
 export type AstStatDeclareFunction = { 
 	kind: "StatDeclareFunction", 
 	location: Location, 
@@ -361,6 +404,8 @@ export type AstStatDeclareFunction = {
 	hasSemicolon: boolean?
 }
 
+-- already removed this becauses it kinda useless for real-world uses
+-- this is just a placeholder
 export type AstStatDeclareExternType = { 
 	kind: "StatDeclareExternType", 
 	location: Location, 
@@ -452,6 +497,11 @@ export type AstTypeError = {
 	types: {AstType}, 
 	isMissing: boolean, 
 	messageIndex: number 
+}
+
+export type AstTypeOptional = {
+	kind: "TypeOptional",
+	location: Location
 }
 
 -- Type Pack Implementations
@@ -585,8 +635,12 @@ CstTypeIntersection |
 CstTypeTable |
 CstGenericType |
 CstGenericTypePack |
+CstExprCall |
+CstExprIndexExpr |
+CstExprTypeAssertion |
+CstExprExplicitTypeInstantiation |
+CstTypeSingletonString |
 { kind: string, [any]: any }
-
 export type CstStatBlock = {
 	kind: "CstStatBlock",
 	bodyCommaPositions: {Position}
@@ -713,6 +767,40 @@ export type CstExprConstantString = {
 	blockDepth: number
 }
 
+export type CstTypeInstantiation = {
+	kind: "CstTypeInstantiation",
+	leftArrow1Position: Position,
+	leftArrow2Position: Position,
+
+	rightArrow1Position: Position,
+	rightArrow2Position: Position,
+	commaPositions: {Position}
+}
+
+export type CstExprCall = {
+	kind: "CstExprCall",
+	openParens: Position?,
+	closeParens: Position?,
+	commaPositions: {Position},
+	explicitTypes: CstTypeInstantiation?
+}
+
+export type CstExprIndexExpr = {
+	kind: "CstExprIndexExpr",
+	openBracketPosition: Position,
+	closeBracketPosition: Position
+}
+
+export type CstExprTypeAssertion = {
+	kind: "CstExprTypeAssertion",
+	opPosition: Position
+}
+
+export type CstExprExplicitTypeInstantiation = {
+	kind: "CstExprExplicitTypeInstantiation",
+	instantiation: CstTypeInstantiation
+}
+
 export type CstExprConstantNumber = {
 	kind: "CstExprConstantNumber",
 	value: string
@@ -802,6 +890,13 @@ export type CstGenericTypePack = {
 	defaultEqualsPosition: Position?,
 }
 
+export type CstTypeSingletonString = {
+	kind: "CstTypeSingletonString",
+	sourceString: {string},
+	quoteStyle: number,
+	blockDepth: number
+}
+
 -- Parser Result
 export type ParseError = {
 	location: Location,
@@ -812,6 +907,22 @@ export type Options = {
 	captureComments: boolean,
 	storeCstData: boolean
 }
+
+export type Lexeme = {type: number, location: Location}
+
+export type Attrs = {AstAttr}
+
+export type AstNode = 
+	AstStat | 
+AstExpr | 
+AstType | 
+AstLocal | 
+AstArgumentName | 
+AstGenericType | 
+AstGenericTypePack | 
+AstTypePack |
+AstTypeOrPack |
+AstAttr
 
 export type Comment = {
 	type: number,
@@ -833,7 +944,7 @@ export type Result = {
 	root: AstStatBlock,
 	commentLocations: {Comment},
 	hotcomments: {HotComment},
-	cstNodeMap: {[any]: CstNode},
+	cstNodeMap: {[AstNode]: CstNode},
 	errors: {ParseError}
 }
 
