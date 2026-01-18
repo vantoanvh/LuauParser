@@ -23,64 +23,111 @@ export type AstLocal = {
 	annotation: AstType?,
 }
 
--- Base node categories
-export type AstExpr = 
-	AstExprGroup |
-AstExprConstantNil |
-AstExprConstantBool |
-AstExprConstantNumber |
-AstExprConstantString |
-AstExprLocal |
-AstExprGlobal |
-AstExprVarargs |
-AstExprCall |
-AstExprIndexName |
-AstExprIndexExpr |
-AstExprFunction |
-AstExprTable |
-AstExprUnary |
-AstExprBinary |
-AstExprTypeAssertion |
-AstExprIfElse |
-AstExprInterpString |
-AstExprInstantiate |
-AstExprError
+export type AstExpr = AstExprGroup
+| AstExprConstantNil
+| AstExprConstantBool
+| AstExprConstantNumber
+| AstExprConstantString
+| AstExprLocal
+| AstExprGlobal
+| AstExprVarargs
+| AstExprCall
+| AstExprIndexName
+| AstExprIndexExpr
+| AstExprFunction
+| AstExprTable
+| AstExprUnary
+| AstExprBinary
+| AstExprTypeAssertion
+| AstExprIfElse
+| AstExprInterpString
+| AstExprInstantiate
+| AstExprError
 
-export type AstStat = 
-	AstStatBlock |
-AstStatIf |
-AstStatWhile |
-AstStatRepeat |
-AstStatBreak |
-AstStatContinue |
-AstStatReturn |
-AstStatExpr |
-AstStatLocal |
-AstStatFor |
-AstStatForIn |
-AstStatAssign |
-AstStatCompoundAssign |
-AstStatFunction |
-AstStatLocalFunction |
-AstStatTypeAlias |
-AstStatTypeFunction |
-AstStatDeclareGlobal |
-AstStatDeclareFunction |
-AstStatDeclareExternType |
-AstStatError
+export type AstStat = AstStatBlock
+| AstStatIf
+| AstStatWhile
+| AstStatRepeat
+| AstStatBreak
+| AstStatContinue
+| AstStatReturn
+| AstStatExpr
+| AstStatLocal
+| AstStatFor
+| AstStatForIn
+| AstStatAssign
+| AstStatCompoundAssign
+| AstStatFunction
+| AstStatLocalFunction
+| AstStatTypeAlias
+| AstStatTypeFunction
+| AstStatDeclareGlobal
+| AstStatDeclareFunction
+| AstStatDeclareExternType
+| AstStatError
 
-export type AstType = 
-	AstTypeReference |
-AstTypeTable |
-AstTypeFunction |
-AstTypeTypeof |
-AstTypeUnion |
-AstTypeIntersection |
-AstTypeSingletonBool |
-AstTypeSingletonString |
-AstTypeGroup |
-AstTypeError |
-AstTypeOptional
+export type AstTypePack = AstTypePackExplicit
+| AstTypePackVariadic
+| AstTypePackGeneric
+
+export type AstType = AstTypeReference
+| AstTypeTable
+| AstTypeFunction
+| AstTypeTypeof
+| AstTypeUnion
+| AstTypeIntersection
+| AstTypeSingletonBool
+| AstTypeSingletonString
+| AstTypeGroup
+| AstTypeError
+| AstTypeOptional
+
+export type CstNode = CstStatBlock
+| CstStatRepeat
+| CstStatDo
+| CstStatFor
+| CstStatForIn
+| CstStatFunction
+| CstStatLocalFunction
+| CstStatLocal
+| CstStatAssign
+| CstStatCompoundAssign
+| CstStatReturn
+| CstStatTypeAlias
+| CstStatTypeFunction
+| CstExprFunction
+| CstExprTable
+| CstExprIfElse
+| CstExprInterpString
+| CstExprConstantString
+| CstExprConstantNumber
+| CstExprOp
+| CstTypeTypeof
+| CstTypeReference
+| CstTypePackGeneric
+| CstTypePackExplicit
+| CstTypeFunction
+| CstTypeUnion
+| CstTypeIntersection
+| CstTypeTable
+| CstGenericType
+| CstGenericTypePack
+| CstExprCall
+| CstExprIndexExpr
+| CstExprTypeAssertion
+| CstExprExplicitTypeInstantiation
+| CstTypeSingletonString
+
+export type AstNode = AstStat
+| AstExpr
+| AstType
+| AstLocal
+| AstArgumentName
+| AstGenericType
+| AstGenericTypePack
+| AstTypePack
+| AstTypeOrPack
+| AstAttr
 
 -- Expression Implementations
 export type AstExprGroup = {
@@ -504,12 +551,6 @@ export type AstTypeOptional = {
 	location: Location
 }
 
--- Type Pack Implementations
-export type AstTypePack = 
-	AstTypePackExplicit |
-AstTypePackVariadic |
-AstTypePackGeneric
-
 export type AstTypePackExplicit = { 
 	kind: "TypePackExplicit", 
 	location: Location, 
@@ -604,43 +645,7 @@ export type Binding = {
 }
 
 -- CST Nodes (Concrete Syntax Tree)
-export type CstNode = 
-	CstStatBlock |
-CstStatRepeat |
-CstStatDo |
-CstStatFor |
-CstStatForIn |
-CstStatFunction |
-CstStatLocalFunction |
-CstStatLocal |
-CstStatAssign |
-CstStatCompoundAssign |
-CstStatReturn |
-CstStatTypeAlias |
-CstStatTypeFunction |
-CstExprFunction |
-CstExprTable |
-CstExprIfElse |
-CstExprInterpString |
-CstExprConstantString |
-CstExprConstantNumber |
-CstExprOp |
-CstTypeTypeof |
-CstTypeReference |
-CstTypePackGeneric |
-CstTypePackExplicit |
-CstTypeFunction |
-CstTypeUnion |
-CstTypeIntersection |
-CstTypeTable |
-CstGenericType |
-CstGenericTypePack |
-CstExprCall |
-CstExprIndexExpr |
-CstExprTypeAssertion |
-CstExprExplicitTypeInstantiation |
-CstTypeSingletonString |
-{ kind: string, [any]: any }
+
 export type CstStatBlock = {
 	kind: "CstStatBlock",
 	bodyCommaPositions: {Position}
@@ -911,18 +916,6 @@ export type Options = {
 export type Lexeme = {type: number, location: Location}
 
 export type Attrs = {AstAttr}
-
-export type AstNode = 
-	AstStat | 
-AstExpr | 
-AstType | 
-AstLocal | 
-AstArgumentName | 
-AstGenericType | 
-AstGenericTypePack | 
-AstTypePack |
-AstTypeOrPack |
-AstAttr
 
 export type Comment = {
 	type: number,
