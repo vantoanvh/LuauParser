@@ -34,28 +34,40 @@
             <main class="main-content">
                 <header class="page-header">
                     <h1>Expressions</h1>
-                    <p>AST nodes that evaluate to a value, including literals, variables, and function calls.</p>
+                    <p>Abstract Syntax Tree nodes representing constructs that evaluate to a value.</p>
                 </header>
 
-                <div class="type-entry" id="AstExpr">
+                <div class="type-entry" id="AstExprGroup">
                     <div class="type-header">
-                        <span class="type-name">AstExpr</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="badge expr">EXPR</span>
+                        <span class="type-name">AstExprGroup</span>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
+                    </div>
+                    <p class="type-description">A parenthesized expression: <code>(expr)</code>. Used to override
+                        operator precedence or for clarity.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"ExprGroup"</span></div>
+                            <div class="field-desc">The specific expression kind.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location of the parenthesized expression.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">expr</span><span class="field-type"><a
+                                        href="#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The inner expression wrapped in parentheses.</div>
                         </div>
                     </div>
-                    <p class="type-description">Union type representing all possible expression nodes in the AST.
-                        Expressions are constructs that evaluate to a value.</p>
-                </div>
-
-                <div class="category-header">
-                    <h2>Literal Constants</h2>
                 </div>
 
                 <div class="type-entry" id="AstExprConstantNil">
                     <div class="type-header">
                         <span class="type-name">AstExprConstantNil</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="badge expr">EXPR</span>
-                        </div>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
                     </div>
                     <p class="type-description">The <code>nil</code> literal constant. Represents the absence of a value
                         in Luau.</p>
@@ -64,12 +76,12 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">kind</span><span
                                     class="field-type">"ExprConstantNil"</span></div>
-                            <div class="field-desc">The expression kind identifier.</div>
+                            <div class="field-desc">The specific expression kind.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
-                            <div class="field-desc">The source location of the <code>nil</code> token.</div>
+                            <div class="field-desc">Source location of the nil literal.</div>
                         </div>
                     </div>
                 </div>
@@ -77,8 +89,7 @@
                 <div class="type-entry" id="AstExprConstantBool">
                     <div class="type-header">
                         <span class="type-name">AstExprConstantBool</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="badge expr">EXPR</span>
-                        </div>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
                     </div>
                     <p class="type-description">A boolean literal constant: <code>true</code> or <code>false</code>.</p>
                     <div class="section-label">Fields</div>
@@ -86,12 +97,12 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">kind</span><span
                                     class="field-type">"ExprConstantBool"</span></div>
-                            <div class="field-desc">The expression kind identifier.</div>
+                            <div class="field-desc">The specific expression kind.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
-                            <div class="field-desc">The source location of the boolean token.</div>
+                            <div class="field-desc">Source location of the boolean literal.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">value</span><span
@@ -104,22 +115,20 @@
                 <div class="type-entry" id="AstExprConstantNumber">
                     <div class="type-header">
                         <span class="type-name">AstExprConstantNumber</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="badge expr">EXPR</span>
-                        </div>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
                     </div>
-                    <p class="type-description">A numeric literal constant (integer or floating-point). The original
-                        source text is stored in the CST node.</p>
+                    <p class="type-description">A numeric literal constant (integer or floating-point).</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">kind</span><span
                                     class="field-type">"ExprConstantNumber"</span></div>
-                            <div class="field-desc">The expression kind identifier.</div>
+                            <div class="field-desc">The specific expression kind.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
-                            <div class="field-desc">The source location of the number literal.</div>
+                            <div class="field-desc">Source location of the numeric literal.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">value</span><span
@@ -129,9 +138,8 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">parseResult</span><span
                                     class="field-type">string</span></div>
-                            <div class="field-desc">Parsing status: "Ok" = success, "Imprecise" = exceeds 2^53,
-                                "HexOverflow" = hex > 64 bits, "BinOverflow" = binary > 64 bits, "Malformed" = parse
-                                failure.</div>
+                            <div class="field-desc">Parsing status: "Ok", "Imprecise", "HexOverflow", "BinOverflow", or
+                                "Malformed".</div>
                         </div>
                     </div>
                 </div>
@@ -139,8 +147,7 @@
                 <div class="type-entry" id="AstExprConstantString">
                     <div class="type-header">
                         <span class="type-name">AstExprConstantString</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="badge expr">EXPR</span>
-                        </div>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
                     </div>
                     <p class="type-description">A string literal constant (single-quoted, double-quoted, or long bracket
                         string).</p>
@@ -149,12 +156,12 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">kind</span><span
                                     class="field-type">"ExprConstantString"</span></div>
-                            <div class="field-desc">The expression kind identifier.</div>
+                            <div class="field-desc">The specific expression kind.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
-                            <div class="field-desc">The source location of the string literal.</div>
+                            <div class="field-desc">Source location of the string literal.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">value</span><span
@@ -164,21 +171,16 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">quoteStyle</span><span
                                     class="field-type">number</span></div>
-                            <div class="field-desc">The style of quotes: 0=Double/Interp, 1=Single, 2=Raw Brackets,
-                                3=Unquoted (table keys).</div>
+                            <div class="field-desc">The quote style: 0=Simple, 1=Single, 2=Raw, 3=Unquoted identifier
+                                key.</div>
                         </div>
                     </div>
-                </div>
-
-                <div class="category-header">
-                    <h2>Variables & Scope</h2>
                 </div>
 
                 <div class="type-entry" id="AstExprLocal">
                     <div class="type-header">
                         <span class="type-name">AstExprLocal</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="badge expr">EXPR</span>
-                        </div>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
                     </div>
                     <p class="type-description">A reference to a local variable.</p>
                     <div class="section-label">Fields</div>
@@ -186,24 +188,23 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">kind</span><span
                                     class="field-type">"ExprLocal"</span></div>
-                            <div class="field-desc">The expression kind identifier.</div>
+                            <div class="field-desc">The specific expression kind.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
-                            <div class="field-desc">The location of the variable name in this expression.</div>
+                            <div class="field-desc">Source location of the reference.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">local</span><span class="field-type"><a
                                         href="core.html#AstLocal">AstLocal</a></span></div>
-                            <div class="field-desc">The <code>AstLocal</code> object representing the referenced
-                                variable definition.</div>
+                            <div class="field-desc">The <code>AstLocal</code> representing the referenced variable.
+                            </div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">upvalue</span><span
                                     class="field-type">boolean</span></div>
-                            <div class="field-desc">True if this is an upvalue (captured from an outer function scope).
-                            </div>
+                            <div class="field-desc">True if this is an upvalue (captured from an outer scope).</div>
                         </div>
                     </div>
                 </div>
@@ -211,8 +212,7 @@
                 <div class="type-entry" id="AstExprGlobal">
                     <div class="type-header">
                         <span class="type-name">AstExprGlobal</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="badge expr">EXPR</span>
-                        </div>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
                     </div>
                     <p class="type-description">A reference to a global variable.</p>
                     <div class="section-label">Fields</div>
@@ -220,12 +220,12 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">kind</span><span
                                     class="field-type">"ExprGlobal"</span></div>
-                            <div class="field-desc">The expression kind identifier.</div>
+                            <div class="field-desc">The specific expression kind.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
-                            <div class="field-desc">The source location of the global name.</div>
+                            <div class="field-desc">Source location of the reference.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">name</span><span
@@ -235,15 +235,31 @@
                     </div>
                 </div>
 
-                <div class="category-header">
-                    <h2>Indexing & Calls</h2>
+                <div class="type-entry" id="AstExprVarargs">
+                    <div class="type-header">
+                        <span class="type-name">AstExprVarargs</span>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
+                    </div>
+                    <p class="type-description">A reference to the varargs <code>...</code> in a vararg function.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"ExprVarargs"</span></div>
+                            <div class="field-desc">The specific expression kind.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location of the <code>...</code> token.</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="type-entry" id="AstExprCall">
                     <div class="type-header">
                         <span class="type-name">AstExprCall</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="badge expr">EXPR</span>
-                        </div>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
                     </div>
                     <p class="type-description">A function call expression: <code>func(args)</code> or
                         <code>obj:method(args)</code>.</p>
@@ -252,17 +268,17 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">kind</span><span
                                     class="field-type">"ExprCall"</span></div>
-                            <div class="field-desc">The expression kind identifier.</div>
+                            <div class="field-desc">The specific expression kind.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
-                            <div class="field-desc">The location spanning the entire call expression.</div>
+                            <div class="field-desc">Full location of the call expression.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">func</span><span class="field-type"><a
                                         href="#AstExpr">AstExpr</a></span></div>
-                            <div class="field-desc">The expression being called (function or callable object).</div>
+                            <div class="field-desc">The expression being called.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">args</span><span class="field-type">{<a
@@ -277,8 +293,14 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">argLocation</span><span
                                     class="field-type"><a href="core.html#Location">Location</a></span></div>
-                            <div class="field-desc">The location spanning the argument list (including parentheses).
-                            </div>
+                            <div class="field-desc">The location spanning the argument list.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">typeArguments</span><span
+                                    class="field-type">{<a
+                                        href="types.html#AstTypeOrPack">AstTypeOrPack</a>}?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Optional explicit type arguments for generic functions.</div>
                         </div>
                     </div>
                 </div>
@@ -286,8 +308,7 @@
                 <div class="type-entry" id="AstExprIndexName">
                     <div class="type-header">
                         <span class="type-name">AstExprIndexName</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="badge expr">EXPR</span>
-                        </div>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
                     </div>
                     <p class="type-description">A named field access expression: <code>expr.name</code> or
                         <code>expr:name</code>.</p>
@@ -296,12 +317,12 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">kind</span><span
                                     class="field-type">"ExprIndexName"</span></div>
-                            <div class="field-desc">The expression kind identifier.</div>
+                            <div class="field-desc">The specific expression kind.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
-                            <div class="field-desc">The entire indexed expression range.</div>
+                            <div class="field-desc">Full location of the index expression.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">expr</span><span class="field-type"><a
@@ -321,8 +342,7 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">opPosition</span><span class="field-type"><a
                                         href="core.html#Position">Position</a></span></div>
-                            <div class="field-desc">The source position of the <code>.</code> or <code>:</code>
-                                operator.</div>
+                            <div class="field-desc">The position of the <code>.</code> or <code>:</code> operator.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">op</span><span
@@ -333,15 +353,182 @@
                     </div>
                 </div>
 
-                <div class="category-header">
-                    <h2>Operators</h2>
+                <div class="type-entry" id="AstExprIndexExpr">
+                    <div class="type-header">
+                        <span class="type-name">AstExprIndexExpr</span>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
+                    </div>
+                    <p class="type-description">A bracketed index expression: <code>expr[index]</code>.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"ExprIndexExpr"</span></div>
+                            <div class="field-desc">The specific expression kind.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Full location of the index expression.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">expr</span><span class="field-type"><a
+                                        href="#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The expression being indexed.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">index</span><span class="field-type"><a
+                                        href="#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The expression used as the index/key.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="AstExprFunction">
+                    <div class="type-header">
+                        <span class="type-name">AstExprFunction</span>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
+                    </div>
+                    <p class="type-description">A function expression (anonymous function or lambda):
+                        <code>function(...) ... end</code>.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"ExprFunction"</span></div>
+                            <div class="field-desc">The specific expression kind.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">The full source range of the function.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">attributes</span><span
+                                    class="field-type">{<a href="helpers.html#AstAttr">AstAttr</a>}</span></div>
+                            <div class="field-desc">Function attributes like @native, @checked, @deprecated.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">generics</span><span class="field-type">{<a
+                                        href="types.html#AstGenericType">AstGenericType</a>}</span></div>
+                            <div class="field-desc">Generic type parameters (e.g., <code>&lt;T, U&gt;</code>).</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">genericPacks</span><span
+                                    class="field-type">{<a
+                                        href="types.html#AstGenericTypePack">AstGenericTypePack</a>}</span></div>
+                            <div class="field-desc">Generic type pack parameters (e.g., <code>&lt;T...&gt;</code>).
+                            </div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">self</span><span class="field-type"><a
+                                        href="core.html#AstLocal">AstLocal</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">The implicit <code>self</code> parameter for methods (nil for
+                                regular functions).</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">args</span><span class="field-type">{<a
+                                        href="core.html#AstLocal">AstLocal</a>}</span></div>
+                            <div class="field-desc">The list of function parameters.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">returnAnnotation</span><span
+                                    class="field-type"><a href="types.html#AstTypePack">AstTypePack</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Optional return type annotation.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">vararg</span><span
+                                    class="field-type">boolean</span></div>
+                            <div class="field-desc">True if the function accepts varargs <code>...</code>.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">varargLocation</span><span
+                                    class="field-type"><a href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the <code>...</code> token.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">varargAnnotation</span><span
+                                    class="field-type"><a href="types.html#AstTypePack">AstTypePack</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Optional type annotation for varargs.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">body</span><span class="field-type"><a
+                                        href="statements.html#AstStatBlock">AstStatBlock</a></span></div>
+                            <div class="field-desc">The function body (block of statements).</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">functionDepth</span><span
+                                    class="field-type">number</span></div>
+                            <div class="field-desc">Nesting depth of this function.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">debugname</span><span
+                                    class="field-type">string</span></div>
+                            <div class="field-desc">Debug name for the function (inferred from context).</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="AstExprTable">
+                    <div class="type-header">
+                        <span class="type-name">AstExprTable</span>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
+                    </div>
+                    <p class="type-description">A table constructor expression: <code>{ items }</code>.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"ExprTable"</span></div>
+                            <div class="field-desc">The specific expression kind.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Full range of the table constructor.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">items</span><span class="field-type">{<a
+                                        href="#AstExprTableItem">AstExprTableItem</a>}</span></div>
+                            <div class="field-desc">The list of table items (key-value pairs or list elements).</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="AstExprTableItem">
+                    <div class="type-header">
+                        <span class="type-name">AstExprTableItem</span>
+                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                    </div>
+                    <p class="type-description">Represents a single item in a table constructor.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span class="field-type">"List" |
+                                    "Record" | "General"</span></div>
+                            <div class="field-desc">The item kind: "List" (array element), "Record" (named key), or
+                                "General" (bracketed key).</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">key</span><span class="field-type"><a
+                                        href="#AstExpr">AstExpr</a>?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">The key expression (nil for List items).</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">value</span><span class="field-type"><a
+                                        href="#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The value expression.</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="type-entry" id="AstExprUnary">
                     <div class="type-header">
                         <span class="type-name">AstExprUnary</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="badge expr">EXPR</span>
-                        </div>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
                     </div>
                     <p class="type-description">A unary operator expression: <code>-expr</code>, <code>not expr</code>,
                         or <code>#expr</code>.</p>
@@ -350,17 +537,17 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">kind</span><span
                                     class="field-type">"ExprUnary"</span></div>
-                            <div class="field-desc">The expression kind identifier.</div>
+                            <div class="field-desc">The specific expression kind.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
-                            <div class="field-desc">The range spanning the operator and its operand.</div>
+                            <div class="field-desc">Source location of the operation.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">op</span><span
                                     class="field-type">number</span></div>
-                            <div class="field-desc">The unary operator code: 0=not, 1=minus, 2=length.</div>
+                            <div class="field-desc">The unary operator: 0=not, 1=minus, 2=length.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">expr</span><span class="field-type"><a
@@ -373,8 +560,7 @@
                 <div class="type-entry" id="AstExprBinary">
                     <div class="type-header">
                         <span class="type-name">AstExprBinary</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="badge expr">EXPR</span>
-                        </div>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
                     </div>
                     <p class="type-description">A binary operator expression: <code>left op right</code>.</p>
                     <div class="section-label">Fields</div>
@@ -382,18 +568,17 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">kind</span><span
                                     class="field-type">"ExprBinary"</span></div>
-                            <div class="field-desc">The expression kind identifier.</div>
+                            <div class="field-desc">The specific expression kind.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
-                            <div class="field-desc">The range spanning both operands and the operator.</div>
+                            <div class="field-desc">Full source location of the binary expression.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">op</span><span
                                     class="field-type">number</span></div>
-                            <div class="field-desc">The binary operator code (Add, Sub, Mul, comparison, logical, etc.).
-                            </div>
+                            <div class="field-desc">The binary operator code (Add, Sub, Mul, etc.).</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">left</span><span class="field-type"><a
@@ -408,80 +593,176 @@
                     </div>
                 </div>
 
-                <div class="category-header">
-                    <h2>Advanced Expressions</h2>
-                </div>
-
-                <div class="type-entry" id="AstExprTable">
+                <div class="type-entry" id="AstExprTypeAssertion">
                     <div class="type-header">
-                        <span class="type-name">AstExprTable</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="badge expr">EXPR</span>
-                        </div>
+                        <span class="type-name">AstExprTypeAssertion</span>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
                     </div>
-                    <p class="type-description">A table constructor expression: <code>{ items }</code>.</p>
+                    <p class="type-description">A type assertion expression: <code>expr :: Type</code>.</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">kind</span><span
-                                    class="field-type">"ExprTable"</span></div>
-                            <div class="field-desc">The expression kind identifier.</div>
+                                    class="field-type">"ExprTypeAssertion"</span></div>
+                            <div class="field-desc">The specific expression kind.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
-                            <div class="field-desc">The location spanning the entire table constructor.</div>
+                            <div class="field-desc">Full source location.</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">items</span><span
-                                    class="field-type">{AstExprTableItem}</span></div>
-                            <div class="field-desc">The list of table items (key-value pairs or list elements).</div>
+                            <div class="field-sig"><span class="field-name">expr</span><span class="field-type"><a
+                                        href="#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The expression being asserted.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">annotation</span><span class="field-type"><a
+                                        href="types.html#AstType">AstType</a></span></div>
+                            <div class="field-desc">The type being asserted.</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="type-entry" id="AstExprFunction">
+                <div class="type-entry" id="AstExprInstantiate">
                     <div class="type-header">
-                        <span class="type-name">AstExprFunction</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="badge expr">EXPR</span>
-                        </div>
+                        <span class="type-name">AstExprInstantiate</span>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
                     </div>
-                    <p class="type-description">A function expression (anonymous function or lambda):
-                        <code>function(...) ... end</code>.</p>
+                    <p class="type-description">An explicit type instantiation expression:
+                        <code>expr&lt;T, U&gt;</code>.</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">kind</span><span
-                                    class="field-type">"ExprFunction"</span></div>
-                            <div class="field-desc">The expression kind identifier.</div>
+                                    class="field-type">"ExprInstantiate"</span></div>
+                            <div class="field-desc">The specific expression kind.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
-                            <div class="field-desc">The entire range from <code>function</code> to <code>end</code>.
+                            <div class="field-desc">Full source location.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">expr</span><span class="field-type"><a
+                                        href="#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The expression being instantiated.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">typeArguments</span><span
+                                    class="field-type">{<a href="types.html#AstTypeOrPack">AstTypeOrPack</a>}</span>
+                            </div>
+                            <div class="field-desc">The type arguments provided.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="AstExprIfElse">
+                    <div class="type-header">
+                        <span class="type-name">AstExprIfElse</span>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
+                    </div>
+                    <p class="type-description">An if-else expression:
+                        <code>if condition then trueExpr else falseExpr</code>.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"ExprIfElse"</span></div>
+                            <div class="field-desc">The specific expression kind.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Full range of the if-else expression.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">condition</span><span class="field-type"><a
+                                        href="#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The condition expression.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasThen</span><span
+                                    class="field-type">boolean</span></div>
+                            <div class="field-desc">True if the <code>then</code> keyword is present.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">trueExpr</span><span class="field-type"><a
+                                        href="#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">Evaluated when condition is truthy.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasElse</span><span
+                                    class="field-type">boolean</span></div>
+                            <div class="field-desc">True if the <code>else</code> keyword is present.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">falseExpr</span><span class="field-type"><a
+                                        href="#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">Evaluated when condition is falsy.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="AstExprInterpString">
+                    <div class="type-header">
+                        <span class="type-name">AstExprInterpString</span>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
+                    </div>
+                    <p class="type-description">An interpolated string expression: <code>`text {expr} text`</code>.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"ExprInterpString"</span></div>
+                            <div class="field-desc">The specific expression kind.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source range.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">strings</span><span
+                                    class="field-type">{string}</span></div>
+                            <div class="field-desc">Literal segments between expressions.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">expressions</span><span
+                                    class="field-type">{<a href="#AstExpr">AstExpr</a>}</span></div>
+                            <div class="field-desc">The embedded expressions.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="AstExprError">
+                    <div class="type-header">
+                        <span class="type-name">AstExprError</span>
+                        <div class="type-badges"><span class="badge expr">EXPR</span></div>
+                    </div>
+                    <p class="type-description">An error expression node, created when parsing fails.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"ExprError"</span></div>
+                            <div class="field-desc">The specific expression kind.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the malformed expression.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">expressions</span><span
+                                    class="field-type">{<a href="#AstExpr">AstExpr</a>}</span></div>
+                            <div class="field-desc">Any expressions that were successfully parsed before the error.
                             </div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">body</span><span
-                                    class="field-type">AstStatBlock</span></div>
-                            <div class="field-desc">The block of statements forming the function body.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">args</span><span class="field-type">{<a
-                                        href="core.html#AstLocal">AstLocal</a>}</span></div>
-                            <div class="field-desc">The list of function parameters.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">vararg</span><span
-                                    class="field-type">boolean</span></div>
-                            <div class="field-desc">True if the function accepts a variable number of arguments
-                                (<code>...</code>).</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">self</span><span class="field-type"><a
-                                        href="core.html#AstLocal">AstLocal</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">The implicit <code>self</code> parameter (present for method
-                                definitions).</div>
+                            <div class="field-sig"><span class="field-name">messageIndex</span><span
+                                    class="field-type">number</span></div>
+                            <div class="field-desc">Index into the parser message table.</div>
                         </div>
                     </div>
                 </div>
@@ -491,12 +772,27 @@
             <aside class="sidebar-right">
                 <div class="nav-section">
                     <div class="nav-section-title">On This Page</div>
-                    <a href="#AstExpr" class="nav-link">AstExpr</a>
-                    <a href="#AstExprConstantNil" class="nav-link">Literals</a>
-                    <a href="#AstExprLocal" class="nav-link">Variables</a>
-                    <a href="#AstExprCall" class="nav-link">Calls</a>
-                    <a href="#AstExprUnary" class="nav-link">Operators</a>
-                    <a href="#AstExprTable" class="nav-link">Advanced</a>
+                    <a href="#AstExprGroup" class="nav-link">AstExprGroup</a>
+                    <a href="#AstExprConstantNil" class="nav-link">AstExprConstantNil</a>
+                    <a href="#AstExprConstantBool" class="nav-link">AstExprConstantBool</a>
+                    <a href="#AstExprConstantNumber" class="nav-link">AstExprConstantNumber</a>
+                    <a href="#AstExprConstantString" class="nav-link">AstExprConstantString</a>
+                    <a href="#AstExprLocal" class="nav-link">AstExprLocal</a>
+                    <a href="#AstExprGlobal" class="nav-link">AstExprGlobal</a>
+                    <a href="#AstExprVarargs" class="nav-link">AstExprVarargs</a>
+                    <a href="#AstExprCall" class="nav-link">AstExprCall</a>
+                    <a href="#AstExprIndexName" class="nav-link">AstExprIndexName</a>
+                    <a href="#AstExprIndexExpr" class="nav-link">AstExprIndexExpr</a>
+                    <a href="#AstExprFunction" class="nav-link">AstExprFunction</a>
+                    <a href="#AstExprTable" class="nav-link">AstExprTable</a>
+                    <a href="#AstExprTableItem" class="nav-link">AstExprTableItem</a>
+                    <a href="#AstExprUnary" class="nav-link">AstExprUnary</a>
+                    <a href="#AstExprBinary" class="nav-link">AstExprBinary</a>
+                    <a href="#AstExprTypeAssertion" class="nav-link">AstExprTypeAssertion</a>
+                    <a href="#AstExprInstantiate" class="nav-link">AstExprInstantiate</a>
+                    <a href="#AstExprIfElse" class="nav-link">AstExprIfElse</a>
+                    <a href="#AstExprInterpString" class="nav-link">AstExprInterpString</a>
+                    <a href="#AstExprError" class="nav-link">AstExprError</a>
                 </div>
             </aside>
         </div>

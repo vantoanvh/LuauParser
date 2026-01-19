@@ -34,11 +34,11 @@
             <main class="main-content">
                 <header class="page-header">
                     <h1>Helpers & Result</h1>
-                    <p>Supporting structures, function attributes, and the final parser result type.</p>
+                    <p>Miscellaneous structures used throughout the parser and the final output format.</p>
                 </header>
 
                 <div class="category-header">
-                    <h2>AST Support</h2>
+                    <h2>AST Helpers</h2>
                 </div>
 
                 <div class="type-entry" id="AstAttr">
@@ -46,30 +46,146 @@
                         <span class="type-name">AstAttr</span>
                         <div class="type-badges"><span class="badge helper">HELPER</span></div>
                     </div>
-                    <p class="type-description">A function attribute: <code>@native</code>, <code>@checked</code>,
-                        <code>@deprecated</code>, etc.</p>
+                    <p class="type-description">Attributes applied to functions or type definitions (e.g.,
+                        <code>@native</code>, <code>@checked</code>).</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">type</span><span
-                                    class="field-type">string</span></div>
-                            <div class="field-desc">The attribute kind (e.g., "Native", "Checked", "Deprecated").</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">args</span><span class="field-type">{<a
-                                        href="expressions.html#AstExpr">AstExpr</a>}</span></div>
-                            <div class="field-desc">The list of arguments passed to the attribute.</div>
-                        </div>
-                        <div class="field-item">
                             <div class="field-sig"><span class="field-name">name</span><span
-                                    class="field-type">string?</span><span class="field-opt">optional</span></div>
-                            <div class="field-desc">The raw attribute name as it appeared in the source.</div>
+                                    class="field-type">string</span></div>
+                            <div class="field-desc">The attribute name.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location of the attribute.</div>
                         </div>
                     </div>
                 </div>
 
+                <div class="type-entry" id="AstTableProp">
+                    <div class="type-header">
+                        <span class="type-name">AstTableProp</span>
+                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                    </div>
+                    <p class="type-description">A property definition in a table type.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">name</span><span
+                                    class="field-type">string</span></div>
+                            <div class="field-desc">The property name.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the property name.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">type</span><span class="field-type"><a
+                                        href="types.html#AstType">AstType</a></span></div>
+                            <div class="field-desc">The type of the property.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">accessPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Position of the <code>read</code> or <code>write</code> keyword.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="AstTableIndexer">
+                    <div class="type-header">
+                        <span class="type-name">AstTableIndexer</span>
+                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                    </div>
+                    <p class="type-description">An indexer definition in a table type:
+                        <code>[KeyType]: ValueType</code>.</p>
+                </div>
+
+                <div class="type-entry" id="AstArgumentName">
+                    <div class="type-header">
+                        <span class="type-name">AstArgumentName</span>
+                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                    </div>
+                    <p class="type-description">A named argument in a function type declaration.</p>
+                </div>
+
                 <div class="category-header">
-                    <h2>Parser Result</h2>
+                    <h2>CST Helpers</h2>
+                </div>
+
+                <div class="type-entry" id="CstQuotes">
+                    <div class="type-header">
+                        <span class="type-name">CstQuotes</span>
+                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                    </div>
+                    <p class="type-description">Enum for string quoting styles: 0=Single, 1=Double, 2=Raw,
+                        3=Interpolated.</p>
+                </div>
+
+                <div class="category-header">
+                    <h2>Parser Metadata</h2>
+                </div>
+
+                <div class="type-entry" id="Comment">
+                    <div class="type-header">
+                        <span class="type-name">Comment</span>
+                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                    </div>
+                    <p class="type-description">A comment found in the source text.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Range of the comment.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="HotComment">
+                    <div class="type-header">
+                        <span class="type-name">HotComment</span>
+                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                    </div>
+                    <p class="type-description">A "hot comment" (e.g., <code>--!strict</code>) that affects parsing or
+                        analysis.</p>
+                </div>
+
+                <div class="type-entry" id="Error">
+                    <div class="type-header">
+                        <span class="type-name">Error</span>
+                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                    </div>
+                    <p class="type-description">A parse error entry.</p>
+                </div>
+
+                <div class="category-header">
+                    <h2>Configuration & Result</h2>
+                </div>
+
+                <div class="type-entry" id="ParseOptions">
+                    <div class="type-header">
+                        <span class="type-name">ParseOptions</span>
+                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                    </div>
+                    <p class="type-description">Options passed to the parser to control behavior.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">showComments</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True to include comments in the result.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">captureCST</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True to build and return the CST.</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="type-entry" id="Result">
@@ -77,52 +193,34 @@
                         <span class="type-name">Result</span>
                         <div class="type-badges"><span class="badge helper">HELPER</span></div>
                     </div>
-                    <p class="type-description">The final result of parsing a Luau source file. Contains the AST root,
-                        comments, and metadata.</p>
+                    <p class="type-description">The final output structure returned by the parser.</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">root</span><span class="field-type"><a
                                         href="statements.html#AstStatBlock">AstStatBlock</a></span></div>
-                            <div class="field-desc">The root AST node, representing the top-level block of the script.
-                            </div>
+                            <div class="field-desc">The top-level AST node (block of statements).</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">cstNodes</span><span class="field-type">{
+                                    [AstNode]: CstNode }?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">Mapping from AST nodes to their corresponding CST data.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">errors</span><span class="field-type">{<a
-                                        href="#ParseError">ParseError</a>}</span></div>
-                            <div class="field-desc">A list of all parse errors encountered during execution.</div>
+                                        href="#Error">Error</a>}</span></div>
+                            <div class="field-desc">List of all parse errors found.</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">hotcomments</span><span
-                                    class="field-type">{<a href="#HotComment">HotComment</a>}</span></div>
-                            <div class="field-desc">Directives like <code>--!strict</code> or <code>--!nonstrict</code>.
+                            <div class="field-sig"><span class="field-name">comments</span><span class="field-type">{<a
+                                        href="#Comment">Comment</a>}?</span><span class="field-opt">optional</span>
                             </div>
+                            <div class="field-desc">List of comments found in the source.</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">cstNodeMap</span><span
-                                    class="field-type">Map</span></div>
-                            <div class="field-desc">A map linking AST nodes to their corresponding CST data nodes.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="ParseError">
-                    <div class="type-header">
-                        <span class="type-name">ParseError</span>
-                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
-                    </div>
-                    <p class="type-description">Represents a parse error with location and descriptive message.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
-                                        href="core.html#Location">Location</a></span></div>
-                            <div class="field-desc">The source location where the error occurred.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">message</span><span
-                                    class="field-type">string</span></div>
-                            <div class="field-desc">The human-readable error message.</div>
+                            <div class="field-sig"><span class="field-name">hotComments</span><span
+                                    class="field-type">{<a href="#HotComment">HotComment</a>}</span></div>
+                            <div class="field-desc">List of hot comments found.</div>
                         </div>
                     </div>
                 </div>
@@ -132,9 +230,16 @@
             <aside class="sidebar-right">
                 <div class="nav-section">
                     <div class="nav-section-title">On This Page</div>
-                    <a href="#AstAttr" class="nav-link">AST Support</a>
-                    <a href="#Result" class="nav-link">Parser Result</a>
-                    <a href="#ParseError" class="nav-link">Errors</a>
+                    <a href="#AstAttr" class="nav-link">AstAttr</a>
+                    <a href="#AstTableProp" class="nav-link">AstTableProp</a>
+                    <a href="#AstTableIndexer" class="nav-link">AstTableIndexer</a>
+                    <a href="#AstArgumentName" class="nav-link">AstArgumentName</a>
+                    <a href="#CstQuotes" class="nav-link">CstQuotes</a>
+                    <a href="#Comment" class="nav-link">Comment</a>
+                    <a href="#HotComment" class="nav-link">HotComment</a>
+                    <a href="#Error" class="nav-link">Error</a>
+                    <a href="#ParseOptions" class="nav-link">ParseOptions</a>
+                    <a href="#Result" class="nav-link">Result</a>
                 </div>
             </aside>
         </div>

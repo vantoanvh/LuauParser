@@ -80,7 +80,7 @@
                             <div class="field-desc">The starting position of the range (inclusive).</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">end</span><span class="field-type"><a
+                            <div class="field-sig"><span class="field-name">end_</span><span class="field-type"><a
                                         href="#Position">Position</a></span></div>
                             <div class="field-desc">The ending position of the range (exclusive).</div>
                         </div>
@@ -153,6 +153,53 @@
                     </div>
                 </div>
 
+                <div class="category-header">
+                    <h2>Bindings</h2>
+                </div>
+
+                <div class="type-entry" id="Binding">
+                    <div class="type-header">
+                        <span class="type-name">Binding</span>
+                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                    </div>
+                    <p class="type-description">A binding in a local declaration or function parameter, combining a name
+                        and an optional type annotation.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">name</span><span class="field-type"><a
+                                        href="#AstName">AstName</a></span></div>
+                            <div class="field-desc">The variable name.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the binding.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">annotation</span><span class="field-type"><a
+                                        href="types.html#AstType">AstType</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Optional type annotation.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">colonPosition</span><span
+                                    class="field-type"><a href="#Position">Position</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Position of the <code>:</code> before type annotation.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="BindingList">
+                    <div class="type-header">
+                        <span class="type-name">BindingList</span>
+                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                    </div>
+                    <p class="type-description">An array/list of <code>Binding</code> objects. Used in local
+                        declarations and function signatures.</p>
+                </div>
+
             </main>
 
             <aside class="sidebar-right">
@@ -162,6 +209,8 @@
                     <a href="#Location" class="nav-link">Location</a>
                     <a href="#AstName" class="nav-link">AstName</a>
                     <a href="#AstLocal" class="nav-link">AstLocal</a>
+                    <a href="#Binding" class="nav-link">Binding</a>
+                    <a href="#BindingList" class="nav-link">BindingList</a>
                 </div>
             </aside>
         </div>

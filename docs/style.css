@@ -14,9 +14,9 @@
     --badge-pack: #79c0ff;
     --badge-helper: #8b949e;
 
-    --sidebar-width: 280px;
-    --toc-width: 240px;
-    --content-max-width: 960px;
+    --sidebar-width: 260px;
+    --toc-width: 220px;
+    --content-max-width: 860px;
 }
 
 * {
@@ -29,8 +29,9 @@ body {
     background-color: var(--bg-color);
     color: var(--text-primary);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    line-height: 1.6;
+    line-height: 1.5;
     overflow-x: hidden;
+    font-size: 14px;
 }
 
 /* Layout */
@@ -44,14 +45,14 @@ body {
     display: grid;
     grid-template-columns: var(--sidebar-width) 1fr var(--toc-width);
     width: 100%;
-    max-width: 1600px;
+    max-width: 1440px;
     min-height: 100vh;
 }
 
 .sidebar-left {
     background-color: var(--sidebar-bg);
     border-right: 1px solid var(--border-color);
-    padding: 40px 24px;
+    padding: 32px 20px;
     height: 100vh;
     position: sticky;
     top: 0;
@@ -59,7 +60,7 @@ body {
 }
 
 .sidebar-right {
-    padding: 40px 24px;
+    padding: 32px 20px;
     height: 100vh;
     position: sticky;
     top: 0;
@@ -71,69 +72,74 @@ body {
     max-width: var(--content-max-width);
     width: 100%;
     margin: 0 auto;
-    padding: 64px 80px;
+    padding: 48px 40px;
 }
 
 /* Typography */
 h1 {
-    font-size: 2.2rem;
+    font-size: 1.5rem;
     margin-top: 0;
     font-weight: 700;
     color: #ffffff;
+    margin-bottom: 24px;
 }
 
 h2 {
-    font-size: 1.5rem;
-    margin: 48px 0 24px;
+    font-size: 1.2rem;
+    margin: 40px 0 20px;
     font-weight: 600;
     border-bottom: 1px solid var(--border-color);
-    padding-bottom: 12px;
+    padding-bottom: 8px;
     color: #ffffff;
 }
 
 h3 {
-    font-size: 1.2rem;
-    margin: 24px 0 16px;
+    font-size: 1.05rem;
+    margin: 24px 0 12px;
     font-weight: 600;
 }
 
 p {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     color: var(--text-secondary);
+    line-height: 1.6;
 }
 
 /* Navigation */
 .sidebar-header h1 {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     margin-bottom: 4px;
 }
 
 .sidebar-header p {
-    font-size: 0.85rem;
-    margin-bottom: 32px;
+    font-size: 0.8rem;
+    margin-bottom: 24px;
     color: var(--text-secondary);
 }
 
 .nav-section {
-    margin-bottom: 32px;
+    margin-bottom: 24px;
 }
 
 .nav-section-title {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--text-secondary);
     letter-spacing: 0.05em;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .nav-link {
     display: block;
-    padding: 8px 0;
+    padding: 6px 0;
     color: var(--text-secondary);
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     transition: color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .nav-link:hover {
@@ -147,35 +153,35 @@ p {
 
 /* Type Entry */
 .type-entry {
-    margin-bottom: 100px;
-    scroll-margin-top: 48px;
+    margin-bottom: 64px;
+    scroll-margin-top: 32px;
 }
 
 .type-header {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 12px;
 }
 
 .type-name {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 1.5rem;
+    font-size: 1.1rem;
     font-weight: 600;
     color: #ffffff;
 }
 
 .type-description {
-    font-size: 1rem;
-    margin-bottom: 24px;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
     color: var(--text-primary);
 }
 
 /* Badges */
 .badge {
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
     color: #000;
@@ -211,12 +217,12 @@ p {
 
 /* Fields */
 .section-label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
     color: var(--text-secondary);
     text-transform: uppercase;
-    margin-bottom: 12px;
-    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
 }
 
 .field-list {
@@ -226,14 +232,14 @@ p {
 }
 
 .field-item {
-    padding: 20px 0;
+    padding: 12px 0;
     border-bottom: 1px solid var(--border-color);
 }
 
 .field-sig {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.95rem;
-    margin-bottom: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
 }
 
 .field-name {
@@ -243,7 +249,7 @@ p {
 
 .field-type {
     color: var(--accent-color);
-    margin-left: 8px;
+    margin-left: 6px;
 }
 
 .field-type a {
@@ -257,47 +263,63 @@ p {
 
 .field-opt {
     color: var(--text-secondary);
-    font-size: 0.8rem;
-    margin-left: 8px;
+    font-size: 0.75rem;
+    margin-left: 6px;
     font-style: italic;
 }
 
 .field-desc {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--text-secondary);
     padding-left: 0;
 }
 
-/* Helpers */
+/* Info & Code */
 .info-section {
     background-color: var(--code-bg);
     border-left: 4px solid var(--accent-color);
-    padding: 16px 24px;
-    margin-bottom: 32px;
+    padding: 12px 20px;
+    margin-bottom: 24px;
     border-radius: 0 4px 4px 0;
+    font-size: 0.9rem;
 }
 
 code {
     font-family: 'JetBrains Mono', monospace;
     background-color: var(--code-bg);
     padding: 2px 4px;
-    border-radius: 4px;
-    font-size: 0.9em;
+    border-radius: 3px;
+    font-size: 0.85em;
+}
+
+pre {
+    background-color: var(--code-bg);
+    padding: 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    margin-bottom: 24px;
+}
+
+pre code {
+    background-color: transparent;
+    padding: 0;
+    font-size: 0.85rem;
 }
 
 /* Overview Cards */
 .overview-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 24px;
-    margin: 32px 0;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
 }
 
 .overview-card {
     background-color: var(--sidebar-bg);
     border: 1px solid var(--border-color);
-    padding: 24px;
-    border-radius: 8px;
+    padding: 16px;
+    border-radius: 6px;
     text-decoration: none;
     color: inherit;
     transition: border-color 0.2s, transform 0.2s;
@@ -309,17 +331,18 @@ code {
 }
 
 .overview-card h3 {
-    margin-top: 0;
+    margin: 0 0 8px;
+    font-size: 1rem;
     color: #ffffff;
 }
 
 .overview-card p {
-    font-size: 0.9rem;
-    margin-bottom: 16px;
+    font-size: 0.8rem;
+    margin-bottom: 12px;
 }
 
 .overview-card .overview-count {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
     color: var(--accent-color);
 }
@@ -342,10 +365,9 @@ code {
 
     .sidebar-left {
         display: none;
-        /* In a real app we'd add a drawer */
     }
 
     .main-content {
-        padding: 40px 24px;
+        padding: 32px 20px;
     }
 }

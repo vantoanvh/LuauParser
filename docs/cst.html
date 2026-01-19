@@ -34,32 +34,441 @@
             <main class="main-content">
                 <header class="page-header">
                     <h1>CST Nodes</h1>
-                    <p>Concrete Syntax Tree data for preserving source-accurate formatting and positions.</p>
+                    <p>Concrete Syntax Tree nodes that preserve exact source positioning for tokens, including
+                        delimiters and keywords.</p>
                 </header>
 
-                <div class="info-section">
-                    <p>CST nodes store positional information for syntactic elements that are not semantically
-                        significant (like keywords, commas, and parentheses) but are required for lossless source
-                        transforms.</p>
+                <!-- Expressions -->
+                <div class="category-header">
+                    <h2>CST Expressions</h2>
                 </div>
 
+                <div class="type-entry" id="CstExprGroup">
+                    <div class="type-header">
+                        <span class="type-name">CstExprGroup</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Parenthesized expression with exact positioning of the parentheses.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">openParenPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the opening <code>(</code>.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">closeParenPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the closing <code>)</code>.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprConstantNil">
+                    <div class="type-header">
+                        <span class="type-name">CstExprConstantNil</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">The <code>nil</code> literal with its exact location.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the <code>nil</code> token.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprConstantBool">
+                    <div class="type-header">
+                        <span class="type-name">CstExprConstantBool</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">A boolean literal with its exact location.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the <code>true</code> or <code>false</code> token.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprConstantNumber">
+                    <div class="type-header">
+                        <span class="type-name">CstExprConstantNumber</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">A numeric literal with its original source string.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Full range.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">sourceString</span><span
+                                    class="field-type">string?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">The exact text of the number literal.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprConstantString">
+                    <div class="type-header">
+                        <span class="type-name">CstExprConstantString</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">A string literal with its original source string and quoting detail.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">sourceString</span><span
+                                    class="field-type">string?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">The raw string text (including quotes or brackets).</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">quoteStyle</span><span
+                                    class="field-type">number</span></div>
+                            <div class="field-desc">Quote style: 0=Single, 1=Double, 2=Raw, 3=Interpolated.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">blockDepth</span><span
+                                    class="field-type">number</span></div>
+                            <div class="field-desc">Nesting depth for raw strings (e.g., 2 for <code>[==[</code>).</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprLocal">
+                    <div class="type-header">
+                        <span class="type-name">CstExprLocal</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Local reference with its location.</p>
+                </div>
+
+                <div class="type-entry" id="CstExprGlobal">
+                    <div class="type-header">
+                        <span class="type-name">CstExprGlobal</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Global reference with its location.</p>
+                </div>
+
+                <div class="type-entry" id="CstExprVarargs">
+                    <div class="type-header">
+                        <span class="type-name">CstExprVarargs</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Varargs token <code>...</code> with its location.</p>
+                </div>
+
+                <div class="type-entry" id="CstExprCall">
+                    <div class="type-header">
+                        <span class="type-name">CstExprCall</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Function call with positioning for parentheses and commas.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">openParenPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Position of the <code>(</code> token.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">closeParenPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Position of the <code>)</code> token.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">commaPositions</span><span
+                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
+                            <div class="field-desc">Positions of commas between arguments.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprIndexName">
+                    <div class="type-header">
+                        <span class="type-name">CstExprIndexName</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Named index with exact operator position.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">dotOrColonPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the <code>.</code> or <code>:</code> token.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprIndexExpr">
+                    <div class="type-header">
+                        <span class="type-name">CstExprIndexExpr</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Bracketed index with bracket positions.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">openBracketPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the opening <code>[</code>.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">closeBracketPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the closing <code>]</code>.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprFunction">
+                    <div class="type-header">
+                        <span class="type-name">CstExprFunction</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Function expression with keyword and delimiter positions.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">functionPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the <code>function</code> keyword.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">openParenPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the opening <code>(</code>.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">closeParenPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the closing <code>)</code>.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">endPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the <code>end</code> keyword.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">commaPositions</span><span
+                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
+                            <div class="field-desc">Positions of commas between parameters.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprTable">
+                    <div class="type-header">
+                        <span class="type-name">CstExprTable</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Table constructor with brace and comma positions.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">openBracePosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the opening <code>{</code>.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">closeBracePosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the closing <code>}</code>.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">commaPositions</span><span
+                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
+                            <div class="field-desc">Positions of commas or semicolons between table items.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprTableItem">
+                    <div class="type-header">
+                        <span class="type-name">CstExprTableItem</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Table item with delimiter positions.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">openBracketPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Position of the <code>[</code> for general keys.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">closeBracketPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Position of the <code>]</code> for general keys.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">equalsPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Position of the <code>=</code> sign.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprUnary">
+                    <div class="type-header">
+                        <span class="type-name">CstExprUnary</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Unary operation with operator position.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">opPosition</span><span class="field-type"><a
+                                        href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the operator token.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprBinary">
+                    <div class="type-header">
+                        <span class="type-name">CstExprBinary</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Binary operation with operator position.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">opPosition</span><span class="field-type"><a
+                                        href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the operator token.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprTypeAssertion">
+                    <div class="type-header">
+                        <span class="type-name">CstExprTypeAssertion</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Type assertion with <code>::</code> position.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">assertionPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the <code>::</code> token.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprInstantiate">
+                    <div class="type-header">
+                        <span class="type-name">CstExprInstantiate</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Type instantiation with angle bracket and comma positions.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">openBracketPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the opening <code>&lt;</code>.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">closeBracketPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the closing <code>&gt;</code>.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">commaPositions</span><span
+                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
+                            <div class="field-desc">Positions of commas between type arguments.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprIfElse">
+                    <div class="type-header">
+                        <span class="type-name">CstExprIfElse</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">If-else expression with keyword positions.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">ifPosition</span><span class="field-type"><a
+                                        href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the <code>if</code> keyword.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">thenPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the <code>then</code> keyword.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">elsePosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the <code>else</code> keyword.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprInterpString">
+                    <div class="type-header">
+                        <span class="type-name">CstExprInterpString</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Interpolated string with brace positions.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">openBracePositions</span><span
+                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
+                            <div class="field-desc">Positions of opening <code>{</code> braces.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">closeBracePositions</span><span
+                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
+                            <div class="field-desc">Positions of closing <code>}</code> braces.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstExprError">
+                    <div class="type-header">
+                        <span class="type-name">CstExprError</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Error expression with its location.</p>
+                </div>
+
+                <!-- Statements -->
                 <div class="category-header">
-                    <h2>Statement CSTs</h2>
+                    <h2>CST Statements</h2>
                 </div>
 
                 <div class="type-entry" id="CstStatBlock">
                     <div class="type-header">
                         <span class="type-name">CstStatBlock</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="badge stat">STAT</span>
-                        </div>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
                     </div>
-                    <p class="type-description">CST data for a block statement.</p>
+                    <p class="type-description">Statement block with semicolon positions.</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">bodyCommaPositions</span><span
                                     class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                            <div class="field-desc">Positions of semicolons between statements in the block.</div>
+                            <div class="field-desc">Positions of optional semicolons between statements.</div>
                         </div>
                     </div>
                 </div>
@@ -67,18 +476,16 @@
                 <div class="type-entry" id="CstStatFor">
                     <div class="type-header">
                         <span class="type-name">CstStatFor</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="badge stat">STAT</span>
-                        </div>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
                     </div>
-                    <p class="type-description">CST data for a numeric for loop.</p>
+                    <p class="type-description">Numeric for loop with delimiter positions.</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">annotationColonPosition</span><span
                                     class="field-type"><a href="core.html#Position">Position</a>?</span><span
                                     class="field-opt">optional</span></div>
-                            <div class="field-desc">Position of <code>:</code> before loop variable type annotation.
-                            </div>
+                            <div class="field-desc">Position of the <code>:</code> before type annotation.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">equalsPosition</span><span
@@ -88,145 +495,89 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">endCommaPosition</span><span
                                     class="field-type"><a href="core.html#Position">Position</a></span></div>
-                            <div class="field-desc">Position of the comma between the <code>to</code> and
-                                <code>step</code> expressions.</div>
+                            <div class="field-desc">Position of the final delimiter before <code>do</code>.</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="category-header">
-                    <h2>Expression CSTs</h2>
-                </div>
-
-                <div class="type-entry" id="CstExprFunction">
+                <div class="type-entry" id="CstStatForIn">
                     <div class="type-header">
-                        <span class="type-name">CstExprFunction</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="badge expr">EXPR</span>
-                        </div>
+                        <span class="type-name">CstStatForIn</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
                     </div>
-                    <p class="type-description">CST data for a function expression.</p>
+                    <p class="type-description">Generic for loop with delimiter positions.</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">functionKeywordPosition</span><span
+                            <div class="field-sig"><span class="field-name">forPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the <code>for</code> keyword.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">inPosition</span><span class="field-type"><a
+                                        href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the <code>in</code> keyword.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstStatFunction">
+                    <div class="type-header">
+                        <span class="type-name">CstStatFunction</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Function statement with its location.</p>
+                </div>
+
+                <div class="type-entry" id="CstStatLocalFunction">
+                    <div class="type-header">
+                        <span class="type-name">CstStatLocalFunction</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Local function statement with keyword position.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">localKeywordPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the <code>local</code> keyword.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstStatTypeAlias">
+                    <div class="type-header">
+                        <span class="type-name">CstStatTypeAlias</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Type alias with assignment position.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">equalsPosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the <code>=</code> sign.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="CstStatDeclareFunction">
+                    <div class="type-header">
+                        <span class="type-name">CstStatDeclareFunction</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">Function declaration with keyword positions.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">declarePosition</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of the <code>declare</code> keyword.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">functionPosition</span><span
                                     class="field-type"><a href="core.html#Position">Position</a></span></div>
                             <div class="field-desc">Position of the <code>function</code> keyword.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">openGenericsPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Position of the <code>&lt;</code> starting the generic parameter
-                                list.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">argsCommaPositions</span><span
-                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                            <div class="field-desc">Positions of commas between parameters in the argument list.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstExprConstantString">
-                    <div class="type-header">
-                        <span class="type-name">CstExprConstantString</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="badge expr">EXPR</span>
-                        </div>
-                    </div>
-                    <p class="type-description">CST data for a string constant expression.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">sourceString</span><span
-                                    class="field-type">string?</span><span class="field-opt">optional</span></div>
-                            <div class="field-desc">The raw source text of the string literal (including
-                                quotes/brackets).</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">quoteStyle</span><span
-                                    class="field-type">number</span></div>
-                            <div class="field-desc">The CST quote style: 0=Single(''), 1=Double(""), 2=Raw([[]]),
-                                3=Interp(``).</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">blockDepth</span><span
-                                    class="field-type">number</span></div>
-                            <div class="field-desc">The bracket depth for long strings (e.g., 2 for
-                                <code>[==[]==]</code>).</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstExprConstantNumber">
-                    <div class="type-header">
-                        <span class="type-name">CstExprConstantNumber</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="badge expr">EXPR</span>
-                        </div>
-                    </div>
-                    <p class="type-description">CST data for a numeric constant expression.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">value</span><span
-                                    class="field-type">string</span></div>
-                            <div class="field-desc">The raw source text of the number literal (e.g., "0x123",
-                                "1.5e-10").</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="category-header">
-                    <h2>Type CSTs</h2>
-                </div>
-
-                <div class="type-entry" id="CstTypeTable">
-                    <div class="type-header">
-                        <span class="type-name">CstTypeTable</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="badge type">TYPE</span>
-                        </div>
-                    </div>
-                    <p class="type-description">CST data for a table type.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">items</span><span class="field-type">{<a
-                                        href="#CstTypeTableItem">CstTypeTableItem</a>}</span></div>
-                            <div class="field-desc">CST metadata for each item in the table type.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">isArray</span><span
-                                    class="field-type">boolean</span></div>
-                            <div class="field-desc">True if this is the array shorthand type <code>{T}</code>.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstTypeTableItem">
-                    <div class="type-header">
-                        <span class="type-name">CstTypeTableItem</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="badge type">TYPE</span>
-                        </div>
-                    </div>
-                    <p class="type-description">CST data for an item within a table type definition.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">kind</span><span
-                                    class="field-type">"Property" | "StringProperty" | "Indexer"</span></div>
-                            <div class="field-desc">The kind of table item.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">colonPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Position of the <code>:</code> separating the key and the type.
-                            </div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">stringInfo</span><span class="field-type"><a
-                                        href="#CstExprConstantString">CstExprConstantString</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Metadata for string-indexed properties.</div>
                         </div>
                     </div>
                 </div>
@@ -236,9 +587,34 @@
             <aside class="sidebar-right">
                 <div class="nav-section">
                     <div class="nav-section-title">On This Page</div>
-                    <a href="#CstStatBlock" class="nav-link">Statements</a>
-                    <a href="#CstExprFunction" class="nav-link">Expressions</a>
-                    <a href="#CstTypeTable" class="nav-link">Type Annotation CSTs</a>
+                    <a href="#CstExprGroup" class="nav-link">CstExprGroup</a>
+                    <a href="#CstExprConstantNil" class="nav-link">CstExprConstantNil</a>
+                    <a href="#CstExprConstantBool" class="nav-link">CstExprConstantBool</a>
+                    <a href="#CstExprConstantNumber" class="nav-link">CstExprConstantNumber</a>
+                    <a href="#CstExprConstantString" class="nav-link">CstExprConstantString</a>
+                    <a href="#CstExprLocal" class="nav-link">CstExprLocal</a>
+                    <a href="#CstExprGlobal" class="nav-link">CstExprGlobal</a>
+                    <a href="#CstExprVarargs" class="nav-link">CstExprVarargs</a>
+                    <a href="#CstExprCall" class="nav-link">CstExprCall</a>
+                    <a href="#CstExprIndexName" class="nav-link">CstExprIndexName</a>
+                    <a href="#CstExprIndexExpr" class="nav-link">CstExprIndexExpr</a>
+                    <a href="#CstExprFunction" class="nav-link">CstExprFunction</a>
+                    <a href="#CstExprTable" class="nav-link">CstExprTable</a>
+                    <a href="#CstExprTableItem" class="nav-link">CstExprTableItem</a>
+                    <a href="#CstExprUnary" class="nav-link">CstExprUnary</a>
+                    <a href="#CstExprBinary" class="nav-link">CstExprBinary</a>
+                    <a href="#CstExprTypeAssertion" class="nav-link">CstExprTypeAssertion</a>
+                    <a href="#CstExprInstantiate" class="nav-link">CstExprInstantiate</a>
+                    <a href="#CstExprIfElse" class="nav-link">CstExprIfElse</a>
+                    <a href="#CstExprInterpString" class="nav-link">CstExprInterpString</a>
+                    <a href="#CstExprError" class="nav-link">CstExprError</a>
+                    <a href="#CstStatBlock" class="nav-link">CstStatBlock</a>
+                    <a href="#CstStatFor" class="nav-link">CstStatFor</a>
+                    <a href="#CstStatForIn" class="nav-link">CstStatForIn</a>
+                    <a href="#CstStatFunction" class="nav-link">CstStatFunction</a>
+                    <a href="#CstStatLocalFunction" class="nav-link">CstStatLocalFunction</a>
+                    <a href="#CstStatTypeAlias" class="nav-link">CstStatTypeAlias</a>
+                    <a href="#CstStatDeclareFunction" class="nav-link">CstStatDeclareFunction</a>
                 </div>
             </aside>
         </div>
