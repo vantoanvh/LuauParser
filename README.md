@@ -12,8 +12,39 @@ Lua*u* Parser only useful when building plugins or creating Lua*u* compilers.
 -- Parsing source code into: success, result
 Parser.parse(source: string, options: Options): boolean, result
 
--- Contains Single ' or Double ", get string quotes from "ExprConstantString" nodes
-QuoteStyle: {Single, Double}
+-- Contains Alot of quote styles
+QuoteStyle: {
+--[=[
+		A string created using double quotes or an interpolated string,
+		as in:
+	
+			"foo", `My name is {protagonist}! / And I'm {antagonist}!`
+	]=]
+	QuotedSimple = 0,
+	
+	--[=[
+		A string created using single quotes, as in:
+    
+    		'bar'
+	]=]
+	QuotedSingle = 1,
+	
+	--[=[
+		A string created using `[[ ... ]]` as in:
+		as in:
+	
+			[[ Gee, this sure is a long string.
+			it even has a new line in it! ]]
+	]=]
+	QuotedRaw = 2,
+	
+	--[=[
+		A "string" in the context of a table literal, as in:
+	
+			{ foo = 42 } -- `foo` here is a "constant string"
+	]=]
+	Unquoted = 3,
+}
 
 -- Contains things that define node is a normal string or an interpolated string
 BraceType: {Normal, InterpolatedString}
