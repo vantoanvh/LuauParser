@@ -71,6 +71,14 @@ BinaryOp: {
 	And, -- `and`
 	Or -- `or`
 }
+
+-- Contains what a CstExprConstantString's style
+CstQuotes = {
+	QuotedSingle = 0, -- ''
+	QuotedDouble = 1, -- ""
+	QuotedRaw = 2, -- [[]]
+	QuotedInterp = 3, -- ``
+}
 ```
 
 
