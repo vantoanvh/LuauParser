@@ -57,14 +57,14 @@
                         <span class="type-name">Position</span>
                         <div class="type-badges"><span class="badge helper">HELPER</span></div>
                     </div>
-                    <p class="type-description">Represents a position in the source code (1-indexed line and column).
+                    <p class="type-description">Represents a position in the source code (0-indexed line and column).
                         Used to pinpoint exact locations for error reporting and CST data.</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">line</span><span
                                     class="field-type">number</span></div>
-                            <div class="field-desc">The 1-indexed line number in the source file.</div>
+                            <div class="field-desc">The 0-indexed line number in the source file.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">column</span><span
@@ -242,5 +242,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/lua.min.js"></script>
     <script src="docs.js"></script>
 </body>
+
 
 </html>
