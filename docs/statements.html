@@ -44,14 +44,15 @@
             <main class="main-content">
                 <header class="page-header">
                     <h1>Statements</h1>
-                    <p>Abstract Syntax Tree nodes representing executable actions and control flow.</p>
+                    <p>Abstract Syntax Tree nodes representing constructs that perform actions but don't produce values.
+                    </p>
                 </header>
 
                 <!-- AstStat Union Type -->
                 <div class="union-section" id="AstStat">
                     <h3>AstStat <span class="badge ast">AST</span> <span class="tag">Union Type</span></h3>
-                    <p class="type-description">Union type representing all statement nodes. These are the building
-                        blocks of program logic.</p>
+                    <p class="type-description">Union type representing all possible statement nodes in the AST.
+                        Statements are constructs that perform actions but don't produce values.</p>
                     <div class="union-members">
                         <a href="#AstStatBlock" class="union-member">AstStatBlock</a>
                         <a href="#AstStatIf" class="union-member">AstStatIf</a>
@@ -80,14 +81,15 @@
                         <div class="type-badges"><span class="badge ast">AST</span><span class="tag">Statement</span>
                         </div>
                     </div>
-                    <p class="type-description">A block of statements representing a scope. Used for function bodies,
-                        control structures, and top-level chunk.</p>
+                    <p class="type-description">A block of statements, representing a scope boundary. Used for function
+                        bodies, control structure bodies, and the top-level chunk.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
                         <pre><code class="language-lua">do
     local x = 1
-    print(x)
-end  -- StatBlock contains 2 statements</code></pre>
+    local y = 2
+    print(x + y)
+end</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
@@ -98,6 +100,7 @@ end  -- StatBlock contains 2 statements</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire block.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">body</span><span class="field-type">{<a
@@ -107,6 +110,12 @@ end  -- StatBlock contains 2 statements</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">hasEnd</span><span
                                     class="field-type">boolean</span></div>
+                            <div class="field-desc">True if the block is terminated by <code>end</code> keyword.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -117,15 +126,16 @@ end  -- StatBlock contains 2 statements</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span
                                 class="tag">Statement</span><span class="tag">Control Flow</span></div>
                     </div>
-                    <p class="type-description">An if statement with optional elseif chains and else block.</p>
+                    <p class="type-description">An if statement:
+                        <code>if condition then ... elseif ... else ... end</code>.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
-                        <pre><code class="language-lua">if x > 0 then
-    print("positive")
-elseif x < 0 then
-    print("negative")
+                        <pre><code class="language-lua">if score >= 90 then
+    grade = "A"
+elseif score >= 80 then
+    grade = "B"
 else
-    print("zero")
+    grade = "C"
 end</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
@@ -137,27 +147,41 @@ end</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire if statement.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">condition</span><span class="field-type"><a
                                         href="expressions.html#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The condition expression.</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">thenBody</span><span class="field-type"><a
+                            <div class="field-sig"><span class="field-name">thenbody</span><span class="field-type"><a
                                         href="#AstStatBlock">AstStatBlock</a></span></div>
+                            <div class="field-desc">The block executed when condition is truthy.</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">elseBody</span><span class="field-type"><a
+                            <div class="field-sig"><span class="field-name">elsebody</span><span class="field-type"><a
                                         href="#AstStat">AstStat</a>?</span><span class="field-opt">optional</span></div>
-                            <div class="field-desc">Either StatBlock or StatIf (for elseif chains).</div>
+                            <div class="field-desc">Optional else/elseif branch (can be another AstStatIf or
+                                AstStatBlock).</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">hasThen</span><span
-                                    class="field-type">boolean</span></div>
+                            <div class="field-sig"><span class="field-name">thenLocation</span><span
+                                    class="field-type"><a href="core.html#Location">Location</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Location of the <code>then</code> keyword.</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">hasEnd</span><span
-                                    class="field-type">boolean</span></div>
+                            <div class="field-sig"><span class="field-name">elseLocation</span><span
+                                    class="field-type"><a href="core.html#Location">Location</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Location of the <code>else</code>/<code>elseif</code> keyword (if
+                                present).</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -168,11 +192,12 @@ end</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span
                                 class="tag">Statement</span><span class="tag">Loop</span></div>
                     </div>
-                    <p class="type-description">A while loop.</p>
+                    <p class="type-description">A while loop: <code>while condition do ... end</code>.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
-                        <pre><code class="language-lua">while running do
-    step()
+                        <pre><code class="language-lua">while #queue > 0 do
+    local item = table.remove(queue, 1)
+    process(item)
 end</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
@@ -184,18 +209,32 @@ end</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire while loop.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">condition</span><span class="field-type"><a
                                         href="expressions.html#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The loop condition expression.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">body</span><span class="field-type"><a
                                         href="#AstStatBlock">AstStatBlock</a></span></div>
+                            <div class="field-desc">The loop body block.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">hasDo</span><span
                                     class="field-type">boolean</span></div>
+                            <div class="field-desc">True if the <code>do</code> keyword is present.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">doLocation</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the <code>do</code> keyword.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -206,12 +245,13 @@ end</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span
                                 class="tag">Statement</span><span class="tag">Loop</span></div>
                     </div>
-                    <p class="type-description">A repeat-until loop.</p>
+                    <p class="type-description">A repeat-until loop: <code>repeat ... until condition</code>. Executes
+                        the body at least once, then continues while condition is falsy.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
                         <pre><code class="language-lua">repeat
-    tryAgain()
-until success</code></pre>
+    local input = getInput()
+until input == "quit"</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
@@ -222,14 +262,27 @@ until success</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire repeat-until loop.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">condition</span><span class="field-type"><a
                                         href="expressions.html#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The loop termination condition.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">body</span><span class="field-type"><a
                                         href="#AstStatBlock">AstStatBlock</a></span></div>
+                            <div class="field-desc">The loop body block.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasUntil</span><span
+                                    class="field-type">boolean</span></div>
+                            <div class="field-desc">True if the <code>until</code> keyword is present.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -240,7 +293,16 @@ until success</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span
                                 class="tag">Statement</span><span class="tag">Control Flow</span></div>
                     </div>
-                    <p class="type-description">A break statement to exit a loop.</p>
+                    <p class="type-description">A break statement: <code>break</code>. Exits the innermost loop
+                        immediately.</p>
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">for i = 1, 100 do
+    if found then
+        break
+    end
+end</code></pre>
+                    </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
@@ -250,6 +312,12 @@ until success</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location of the <code>break</code> keyword.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -260,7 +328,17 @@ until success</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span
                                 class="tag">Statement</span><span class="tag">Control Flow</span></div>
                     </div>
-                    <p class="type-description">A continue statement to skip to the next loop iteration.</p>
+                    <p class="type-description">A continue statement: <code>continue</code> (Luau extension). Skips to
+                        the next iteration of the innermost loop.</p>
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">for i, item in ipairs(items) do
+    if item.skip then
+        continue
+    end
+    process(item)
+end</code></pre>
+                    </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
@@ -270,6 +348,12 @@ until success</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location of the <code>continue</code> keyword.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -280,10 +364,16 @@ until success</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span
                                 class="tag">Statement</span><span class="tag">Control Flow</span></div>
                     </div>
-                    <p class="type-description">A return statement.</p>
+                    <p class="type-description">A return statement: <code>return expr1, expr2, ...</code>. Returns
+                        values from the current function. Must be the last statement in a block.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
-                        <pre><code class="language-lua">return a, b, c</code></pre>
+                        <pre><code class="language-lua">local function divide(a, b)
+    if b == 0 then
+        return nil, "division by zero"
+    end
+    return a / b
+end</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
@@ -294,10 +384,17 @@ until success</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire return statement.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">list</span><span class="field-type">{<a
                                         href="expressions.html#AstExpr">AstExpr</a>}</span></div>
+                            <div class="field-desc">The list of expressions to return.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -308,10 +405,13 @@ until success</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span class="tag">Statement</span>
                         </div>
                     </div>
-                    <p class="type-description">An expression used as a statement (typically a function call).</p>
+                    <p class="type-description">An expression statement: evaluates an expression for its side effects.
+                        Typically function calls like <code>print("hello")</code>.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
-                        <pre><code class="language-lua">print("hello")  -- Call expression as statement</code></pre>
+                        <pre><code class="language-lua">print("Hello, World!")
+table.insert(array, value)
+object:Method()</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
@@ -322,10 +422,17 @@ until success</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location of the expression.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">expr</span><span class="field-type"><a
                                         href="expressions.html#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The expression to evaluate.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -336,12 +443,14 @@ until success</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span
                                 class="tag">Statement</span><span class="tag">Declaration</span></div>
                     </div>
-                    <p class="type-description">A local variable declaration.</p>
+                    <p class="type-description">A local variable declaration: <code>local a, b = expr1, expr2</code>.
+                    </p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
-                        <pre><code class="language-lua">local x = 1
+                        <pre><code class="language-lua">local x = 10
 local a, b, c = 1, 2, 3
-local name: string = "foo"</code></pre>
+local name: string = "Alice"
+local value  -- uninitialized</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
@@ -352,14 +461,28 @@ local name: string = "foo"</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire declaration.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">vars</span><span class="field-type">{<a
                                         href="core.html#AstLocal">AstLocal</a>}</span></div>
+                            <div class="field-desc">The list of local variables being declared.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">values</span><span class="field-type">{<a
                                         href="expressions.html#AstExpr">AstExpr</a>}</span></div>
+                            <div class="field-desc">The list of initializer expressions.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">equalsSignLocation</span><span
+                                    class="field-type"><a href="core.html#Location">Location</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Location of the <code>=</code> sign (if values are provided).</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -370,7 +493,8 @@ local name: string = "foo"</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span
                                 class="tag">Statement</span><span class="tag">Loop</span></div>
                     </div>
-                    <p class="type-description">A numeric for loop.</p>
+                    <p class="type-description">A numeric for loop: <code>for var = from, to, step do ... end</code>.
+                    </p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
                         <pre><code class="language-lua">for i = 1, 10 do
@@ -378,7 +502,7 @@ local name: string = "foo"</code></pre>
 end
 
 for i = 10, 1, -1 do
-    print(i)
+    print("countdown:", i)
 end</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
@@ -390,31 +514,48 @@ end</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire for loop.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">var</span><span class="field-type"><a
                                         href="core.html#AstLocal">AstLocal</a></span></div>
+                            <div class="field-desc">The loop variable.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">from</span><span class="field-type"><a
                                         href="expressions.html#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The starting value expression.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">to</span><span class="field-type"><a
                                         href="expressions.html#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The ending value expression.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">step</span><span class="field-type"><a
                                         href="expressions.html#AstExpr">AstExpr</a>?</span><span
                                     class="field-opt">optional</span></div>
+                            <div class="field-desc">Optional step value expression (defaults to 1).</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">body</span><span class="field-type"><a
                                         href="#AstStatBlock">AstStatBlock</a></span></div>
+                            <div class="field-desc">The loop body block.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">hasDo</span><span
                                     class="field-type">boolean</span></div>
+                            <div class="field-desc">True if the <code>do</code> keyword is present.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">doLocation</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the <code>do</code> keyword.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -425,15 +566,17 @@ end</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span
                                 class="tag">Statement</span><span class="tag">Loop</span></div>
                     </div>
-                    <p class="type-description">A generic for-in loop over an iterator.</p>
+                    <p class="type-description">A generic for loop:
+                        <code>for var1, var2 in expr1, expr2 do ... end</code>. Uses iterators to loop over collections.
+                    </p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
-                        <pre><code class="language-lua">for key, value in pairs(t) do
+                        <pre><code class="language-lua">for key, value in pairs(dictionary) do
     print(key, value)
 end
 
-for i, v in ipairs(array) do
-    print(i, v)
+for index, item in ipairs(array) do
+    print(index, item)
 end</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
@@ -445,26 +588,47 @@ end</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire for-in loop.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">vars</span><span class="field-type">{<a
                                         href="core.html#AstLocal">AstLocal</a>}</span></div>
+                            <div class="field-desc">The loop variables.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">values</span><span class="field-type">{<a
                                         href="expressions.html#AstExpr">AstExpr</a>}</span></div>
+                            <div class="field-desc">The iterator expressions.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">body</span><span class="field-type"><a
                                         href="#AstStatBlock">AstStatBlock</a></span></div>
+                            <div class="field-desc">The loop body block.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">hasIn</span><span
                                     class="field-type">boolean</span></div>
+                            <div class="field-desc">True if the <code>in</code> keyword is present.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">inLocation</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the <code>in</code> keyword.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">hasDo</span><span
                                     class="field-type">boolean</span></div>
+                            <div class="field-desc">True if the <code>do</code> keyword is present.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">doLocation</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the <code>do</code> keyword.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -475,11 +639,12 @@ end</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span class="tag">Statement</span>
                         </div>
                     </div>
-                    <p class="type-description">An assignment statement.</p>
+                    <p class="type-description">An assignment statement: <code>var1, var2 = expr1, expr2</code>.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
                         <pre><code class="language-lua">x = 10
-a, b = b, a  -- swap</code></pre>
+a, b = b, a  -- swap
+table.key = value</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
@@ -490,14 +655,22 @@ a, b = b, a  -- swap</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire assignment.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">vars</span><span class="field-type">{<a
                                         href="expressions.html#AstExpr">AstExpr</a>}</span></div>
+                            <div class="field-desc">The list of l-value expressions being assigned to.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">values</span><span class="field-type">{<a
                                         href="expressions.html#AstExpr">AstExpr</a>}</span></div>
+                            <div class="field-desc">The list of expressions being assigned.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -508,11 +681,13 @@ a, b = b, a  -- swap</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span class="tag">Statement</span>
                         </div>
                     </div>
-                    <p class="type-description">A compound assignment: <code>+=</code>, <code>-=</code>, etc.</p>
+                    <p class="type-description">A compound assignment statement: <code>var += expr</code>,
+                        <code>var -= expr</code>, etc.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
-                        <pre><code class="language-lua">x += 1
-str ..= "suffix"</code></pre>
+                        <pre><code class="language-lua">counter += 1
+total -= discount
+message ..= " (updated)"</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
@@ -523,19 +698,27 @@ str ..= "suffix"</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire compound assignment.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">op</span><span
                                     class="field-type">number</span></div>
-                            <div class="field-desc">Binary operator code (Add, Sub, etc.).</div>
+                            <div class="field-desc">The binary operator code (Add, Sub, Mul, etc.).</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">var</span><span class="field-type"><a
                                         href="expressions.html#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The l-value expression being modified.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">value</span><span class="field-type"><a
                                         href="expressions.html#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The expression to apply with the operator.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -546,14 +729,15 @@ str ..= "suffix"</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span
                                 class="tag">Statement</span><span class="tag">Declaration</span></div>
                     </div>
-                    <p class="type-description">A named function declaration (global).</p>
+                    <p class="type-description">A function declaration statement:
+                        <code>function a.b.c:name(...) ... end</code>.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
-                        <pre><code class="language-lua">function myFunc(a, b)
+                        <pre><code class="language-lua">function globalFunc(a, b)
     return a + b
 end
 
-function Module.method(self, x)
+function Module.subModule:method(x)
     return self.value + x
 end</code></pre>
                     </div>
@@ -566,14 +750,22 @@ end</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire function declaration.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">name</span><span class="field-type"><a
                                         href="expressions.html#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The l-value expression where the function is stored.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">func</span><span class="field-type"><a
                                         href="expressions.html#AstExprFunction">AstExprFunction</a></span></div>
+                            <div class="field-desc">The function expression.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -584,11 +776,14 @@ end</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span
                                 class="tag">Statement</span><span class="tag">Declaration</span></div>
                     </div>
-                    <p class="type-description">A local function declaration.</p>
+                    <p class="type-description">A local function declaration:
+                        <code>local function name(...) ... end</code>. The function is available within its own body
+                        (allows recursion).</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
-                        <pre><code class="language-lua">local function helper(x)
-    return x * 2
+                        <pre><code class="language-lua">local function factorial(n)
+    if n <= 1 then return 1 end
+    return n * factorial(n - 1)
 end</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
@@ -600,14 +795,23 @@ end</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire local function declaration.
+                            </div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">name</span><span class="field-type"><a
                                         href="core.html#AstLocal">AstLocal</a></span></div>
+                            <div class="field-desc">The local variable holding the function.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">func</span><span class="field-type"><a
                                         href="expressions.html#AstExprFunction">AstExprFunction</a></span></div>
+                            <div class="field-desc">The function expression.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -618,12 +822,13 @@ end</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span
                                 class="tag">Statement</span><span class="tag">Type</span></div>
                     </div>
-                    <p class="type-description">A type alias declaration.</p>
+                    <p class="type-description">A type alias declaration: <code>type Name&lt;T&gt; = Type</code> or
+                        <code>export type Name = Type</code>.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
                         <pre><code class="language-lua">type Point = { x: number, y: number }
 type Callback<T> = (T) -> ()
-export type Id = number</code></pre>
+export type PublicType = string | number</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
@@ -634,31 +839,43 @@ export type Id = number</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire type alias declaration.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">name</span><span
                                     class="field-type">string</span></div>
+                            <div class="field-desc">The name of the type alias.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">nameLocation</span><span
                                     class="field-type"><a href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the type name.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">generics</span><span class="field-type">{<a
                                         href="types.html#AstGenericType">AstGenericType</a>}</span></div>
+                            <div class="field-desc">Generic type parameters.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">genericPacks</span><span
                                     class="field-type">{<a
                                         href="types.html#AstGenericTypePack">AstGenericTypePack</a>}</span></div>
+                            <div class="field-desc">Generic type pack parameters.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">type</span><span class="field-type"><a
                                         href="types.html#AstType">AstType</a></span></div>
+                            <div class="field-desc">The type being aliased.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">exported</span><span
                                     class="field-type">boolean</span></div>
+                            <div class="field-desc">True if this is an <code>export type</code> declaration.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -669,7 +886,8 @@ export type Id = number</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span
                                 class="tag">Statement</span><span class="tag">Type</span></div>
                     </div>
-                    <p class="type-description">A type function definition (advanced feature).</p>
+                    <p class="type-description">A type function declaration (Luau extension):
+                        <code>type function Name(...) ... end</code>. Defines a compile-time type-level function.</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
@@ -679,22 +897,38 @@ export type Id = number</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire type function declaration.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">name</span><span
                                     class="field-type">string</span></div>
+                            <div class="field-desc">The name of the type function.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">nameLocation</span><span
                                     class="field-type"><a href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the type function name.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">body</span><span class="field-type"><a
                                         href="expressions.html#AstExprFunction">AstExprFunction</a></span></div>
+                            <div class="field-desc">The function body (as an AstExprFunction).</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">exported</span><span
                                     class="field-type">boolean</span></div>
+                            <div class="field-desc">True if this is an <code>export type function</code> declaration.
+                            </div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasErrors</span><span
+                                    class="field-type">boolean</span></div>
+                            <div class="field-desc">True if parsing encountered errors.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -705,7 +939,8 @@ export type Id = number</code></pre>
                         <div class="type-badges"><span class="badge ast">AST</span><span
                                 class="tag">Statement</span><span class="tag">Error</span></div>
                     </div>
-                    <p class="type-description">An error statement created when parsing fails.</p>
+                    <p class="type-description">An error statement node, created when parsing fails. Used to allow
+                        partial parsing to continue after errors.</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
@@ -715,18 +950,27 @@ export type Id = number</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location of the error.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">expressions</span><span
                                     class="field-type">{<a href="expressions.html#AstExpr">AstExpr</a>}</span></div>
+                            <div class="field-desc">Any expressions that were successfully parsed.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">statements</span><span
                                     class="field-type">{<a href="#AstStat">AstStat</a>}</span></div>
+                            <div class="field-desc">Any statements that were successfully parsed.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">messageIndex</span><span
                                     class="field-type">number</span></div>
+                            <div class="field-desc">Index into the error messages table.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -740,24 +984,39 @@ export type Id = number</code></pre>
                     <a href="#AstStat" class="nav-link">AstStat</a>
                 </div>
                 <div class="nav-section">
-                    <div class="nav-section-title">Types</div>
-                    <a href="#AstStatBlock" class="nav-link">AstStatBlock</a>
+                    <div class="nav-section-title">Control Flow</div>
                     <a href="#AstStatIf" class="nav-link">AstStatIf</a>
-                    <a href="#AstStatWhile" class="nav-link">AstStatWhile</a>
-                    <a href="#AstStatRepeat" class="nav-link">AstStatRepeat</a>
                     <a href="#AstStatBreak" class="nav-link">AstStatBreak</a>
                     <a href="#AstStatContinue" class="nav-link">AstStatContinue</a>
                     <a href="#AstStatReturn" class="nav-link">AstStatReturn</a>
-                    <a href="#AstStatExpr" class="nav-link">AstStatExpr</a>
-                    <a href="#AstStatLocal" class="nav-link">AstStatLocal</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Loops</div>
+                    <a href="#AstStatWhile" class="nav-link">AstStatWhile</a>
+                    <a href="#AstStatRepeat" class="nav-link">AstStatRepeat</a>
                     <a href="#AstStatFor" class="nav-link">AstStatFor</a>
                     <a href="#AstStatForIn" class="nav-link">AstStatForIn</a>
-                    <a href="#AstStatAssign" class="nav-link">AstStatAssign</a>
-                    <a href="#AstStatCompoundAssign" class="nav-link">AstStatCompoundAssign</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Declarations</div>
+                    <a href="#AstStatLocal" class="nav-link">AstStatLocal</a>
                     <a href="#AstStatFunction" class="nav-link">AstStatFunction</a>
                     <a href="#AstStatLocalFunction" class="nav-link">AstStatLocalFunction</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Assignment</div>
+                    <a href="#AstStatAssign" class="nav-link">AstStatAssign</a>
+                    <a href="#AstStatCompoundAssign" class="nav-link">AstStatCompoundAssign</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Types</div>
                     <a href="#AstStatTypeAlias" class="nav-link">AstStatTypeAlias</a>
                     <a href="#AstStatTypeFunction" class="nav-link">AstStatTypeFunction</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Other</div>
+                    <a href="#AstStatBlock" class="nav-link">AstStatBlock</a>
+                    <a href="#AstStatExpr" class="nav-link">AstStatExpr</a>
                     <a href="#AstStatError" class="nav-link">AstStatError</a>
                 </div>
             </aside>

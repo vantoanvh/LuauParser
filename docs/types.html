@@ -44,13 +44,14 @@
             <main class="main-content">
                 <header class="page-header">
                     <h1>Type Annotations</h1>
-                    <p>Abstract Syntax Tree nodes representing Luau's gradual typing system constructs.</p>
+                    <p>AST nodes representing Luau's type annotation syntax for static type checking.</p>
                 </header>
 
                 <!-- AstType Union Type -->
                 <div class="union-section" id="AstType">
-                    <h3>AstType <span class="badge ast">AST</span> <span class="tag">Union Type</span></h3>
-                    <p class="type-description">Union type representing all type annotation nodes.</p>
+                    <h3>AstType <span class="badge type">TYPE</span> <span class="tag">Union Type</span></h3>
+                    <p class="type-description">Union type representing all possible type annotation nodes. Type
+                        annotations specify the expected types of values in Luau's type system.</p>
                     <div class="union-members">
                         <a href="#AstTypeReference" class="union-member">AstTypeReference</a>
                         <a href="#AstTypeTable" class="union-member">AstTypeTable</a>
@@ -68,9 +69,9 @@
 
                 <!-- AstTypePack Union Type -->
                 <div class="union-section" id="AstTypePack">
-                    <h3>AstTypePack <span class="badge ast">AST</span> <span class="tag">Union Type</span></h3>
-                    <p class="type-description">Union type representing type pack annotations (for variadics and return
-                        types).</p>
+                    <h3>AstTypePack <span class="badge pack">PACK</span> <span class="tag">Union Type</span></h3>
+                    <p class="type-description">Union type representing all possible type pack nodes. Type packs
+                        represent multiple types, used for function return types and variadic arguments.</p>
                     <div class="union-members">
                         <a href="#AstTypePackExplicit" class="union-member">AstTypePackExplicit</a>
                         <a href="#AstTypePackVariadic" class="union-member">AstTypePackVariadic</a>
@@ -78,18 +79,23 @@
                     </div>
                 </div>
 
+                <div class="category-header">
+                    <h2>Type Annotations</h2>
+                </div>
+
                 <div class="type-entry" id="AstTypeReference">
                     <div class="type-header">
                         <span class="type-name">AstTypeReference</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="tag">Type</span></div>
+                        <div class="type-badges"><span class="badge type">TYPE</span></div>
                     </div>
-                    <p class="type-description">A named type reference: <code>TypeName</code> or
+                    <p class="type-description">A type reference: <code>TypeName</code> or
                         <code>Module.TypeName&lt;Params&gt;</code>.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
-                        <pre><code class="language-lua">local x: number               -- simple reference
-local y: Array&lt;string&gt;        -- generic reference
-local z: Module.Type          -- prefixed reference</code></pre>
+                        <pre><code class="language-lua">local x: number
+local y: string
+local z: MyModule.CustomType
+local list: Array<number></code></pre>
                     </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
@@ -100,6 +106,12 @@ local z: Module.Type          -- prefixed reference</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire type reference.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasParameterList</span><span
+                                    class="field-type">boolean</span></div>
+                            <div class="field-desc">True if type parameters are provided (even if empty).</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">prefix</span><span
@@ -107,14 +119,20 @@ local z: Module.Type          -- prefixed reference</code></pre>
                             <div class="field-desc">Optional module/namespace prefix.</div>
                         </div>
                         <div class="field-item">
+                            <div class="field-sig"><span class="field-name">prefixLocation</span><span
+                                    class="field-type"><a href="core.html#Location">Location</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Location of the prefix.</div>
+                        </div>
+                        <div class="field-item">
                             <div class="field-sig"><span class="field-name">name</span><span
                                     class="field-type">string</span></div>
                             <div class="field-desc">The type name.</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">hasParameterList</span><span
-                                    class="field-type">boolean</span></div>
-                            <div class="field-desc">True if type parameters are provided (even if empty).</div>
+                            <div class="field-sig"><span class="field-name">nameLocation</span><span
+                                    class="field-type"><a href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the type name.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">parameters</span><span
@@ -127,13 +145,13 @@ local z: Module.Type          -- prefixed reference</code></pre>
                 <div class="type-entry" id="AstTypeTable">
                     <div class="type-header">
                         <span class="type-name">AstTypeTable</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="tag">Type</span></div>
+                        <div class="type-badges"><span class="badge type">TYPE</span></div>
                     </div>
                     <p class="type-description">A table type: <code>{ prop: Type, [Key]: Value }</code>.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
                         <pre><code class="language-lua">type Point = { x: number, y: number }
-type Dict = { [string]: any }
+type Dictionary = { [string]: number }
 type Mixed = { name: string, [number]: boolean }</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
@@ -145,15 +163,16 @@ type Mixed = { name: string, [number]: boolean }</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire table type.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">props</span><span class="field-type">{<a
-                                        href="helpers.html#AstTableProp">AstTableProp</a>}</span></div>
+                                        href="#AstTableProp">AstTableProp</a>}</span></div>
                             <div class="field-desc">The named properties of the table type.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">indexer</span><span class="field-type"><a
-                                        href="helpers.html#AstTableIndexer">AstTableIndexer</a>?</span><span
+                                        href="#AstTableIndexer">AstTableIndexer</a>?</span><span
                                     class="field-opt">optional</span></div>
                             <div class="field-desc">Optional indexer signature <code>[KeyType]: ValueType</code>.</div>
                         </div>
@@ -163,14 +182,14 @@ type Mixed = { name: string, [number]: boolean }</code></pre>
                 <div class="type-entry" id="AstTypeFunction">
                     <div class="type-header">
                         <span class="type-name">AstTypeFunction</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="tag">Type</span></div>
+                        <div class="type-badges"><span class="badge type">TYPE</span></div>
                     </div>
                     <p class="type-description">A function type: <code>(Arg1, Arg2) -&gt; (Ret1, Ret2)</code>.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
-                        <pre><code class="language-lua">type Callback = (number, string) -> ()
-type Mapper&lt;T, U&gt; = (T) -> U
-type Variadic = (...any) -> ...any</code></pre>
+                        <pre><code class="language-lua">type Callback = (number, string) -> boolean
+type Transform<T, U> = (T) -> U
+type Predicate = (value: any) -> boolean</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
@@ -181,19 +200,33 @@ type Variadic = (...any) -> ...any</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire function type.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">attributes</span><span
                                     class="field-type">{<a href="helpers.html#AstAttr">AstAttr</a>}</span></div>
+                            <div class="field-desc">Function type attributes.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">generics</span><span class="field-type">{<a
                                         href="#AstGenericType">AstGenericType</a>}</span></div>
+                            <div class="field-desc">Generic type parameters.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">genericPacks</span><span
+                                    class="field-type">{<a href="#AstGenericTypePack">AstGenericTypePack</a>}</span>
+                            </div>
+                            <div class="field-desc">Generic type pack parameters.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">argTypes</span><span class="field-type"><a
                                         href="#AstTypeList">AstTypeList</a></span></div>
                             <div class="field-desc">The parameter types.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">argNames</span><span class="field-type">{<a
+                                        href="#AstArgumentName">AstArgumentName</a>?}</span></div>
+                            <div class="field-desc">Optional parameter names (for documentation).</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">returnTypes</span><span
@@ -206,14 +239,19 @@ type Variadic = (...any) -> ...any</code></pre>
                 <div class="type-entry" id="AstTypeTypeof">
                     <div class="type-header">
                         <span class="type-name">AstTypeTypeof</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="tag">Type</span></div>
+                        <div class="type-badges"><span class="badge type">TYPE</span></div>
                     </div>
                     <p class="type-description">A typeof type: <code>typeof(expr)</code>. Infers the type from the given
-                        expression.</p>
+                        expression at compile time.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
-                        <pre><code class="language-lua">local original = {x = 1, y = 2}
-local copy: typeof(original) = {x = 3, y = 4}</code></pre>
+                        <pre><code class="language-lua">local x = {a = 1, b = "hello"}
+type MyType = typeof(x)
+
+local function getValue()
+    return 42
+end
+type RetType = typeof(getValue())</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
@@ -224,6 +262,7 @@ local copy: typeof(original) = {x = 3, y = 4}</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire typeof type.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">expr</span><span class="field-type"><a
@@ -236,13 +275,15 @@ local copy: typeof(original) = {x = 3, y = 4}</code></pre>
                 <div class="type-entry" id="AstTypeUnion">
                     <div class="type-header">
                         <span class="type-name">AstTypeUnion</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="tag">Type</span></div>
+                        <div class="type-badges"><span class="badge type">TYPE</span></div>
                     </div>
-                    <p class="type-description">A union type: <code>Type1 | Type2 | Type3</code>.</p>
+                    <p class="type-description">A union type: <code>Type1 | Type2 | Type3</code>. Represents a value
+                        that can be any one of the constituent types.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
                         <pre><code class="language-lua">type StringOrNumber = string | number
-type Optional&lt;T&gt; = T | nil</code></pre>
+type Result<T> = T | nil
+type Status = "pending" | "success" | "error"</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
@@ -253,6 +294,7 @@ type Optional&lt;T&gt; = T | nil</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire union type.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">types</span><span class="field-type">{<a
@@ -265,14 +307,15 @@ type Optional&lt;T&gt; = T | nil</code></pre>
                 <div class="type-entry" id="AstTypeIntersection">
                     <div class="type-header">
                         <span class="type-name">AstTypeIntersection</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="tag">Type</span></div>
+                        <div class="type-badges"><span class="badge type">TYPE</span></div>
                     </div>
-                    <p class="type-description">An intersection type: <code>Type1 &amp; Type2</code>.</p>
+                    <p class="type-description">An intersection type: <code>Type1 &amp; Type2 &amp; Type3</code>.
+                        Represents a value that is all of the constituent types simultaneously.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
                         <pre><code class="language-lua">type Named = { name: string }
 type Aged = { age: number }
-type Person = Named & Aged</code></pre>
+type Person = Named & Aged  -- has both name and age</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
@@ -283,6 +326,7 @@ type Person = Named & Aged</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire intersection type.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">types</span><span class="field-type">{<a
@@ -295,11 +339,16 @@ type Person = Named & Aged</code></pre>
                 <div class="type-entry" id="AstTypeSingletonBool">
                     <div class="type-header">
                         <span class="type-name">AstTypeSingletonBool</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="tag">Type</span><span
-                                class="tag">Literal</span></div>
+                        <div class="type-badges"><span class="badge type">TYPE</span><span class="tag">Singleton</span>
+                        </div>
                     </div>
                     <p class="type-description">A boolean singleton type: <code>true</code> or <code>false</code> as a
-                        type.</p>
+                        type. Represents a type that can only be one specific boolean value.</p>
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">type AlwaysTrue = true
+type SuccessFlag = true | false</code></pre>
+                    </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
@@ -309,10 +358,12 @@ type Person = Named & Aged</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location of the boolean singleton.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">value</span><span
                                     class="field-type">boolean</span></div>
+                            <div class="field-desc">The boolean value (true or false).</div>
                         </div>
                     </div>
                 </div>
@@ -320,13 +371,15 @@ type Person = Named & Aged</code></pre>
                 <div class="type-entry" id="AstTypeSingletonString">
                     <div class="type-header">
                         <span class="type-name">AstTypeSingletonString</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="tag">Type</span><span
-                                class="tag">Literal</span></div>
+                        <div class="type-badges"><span class="badge type">TYPE</span><span class="tag">Singleton</span>
+                        </div>
                     </div>
-                    <p class="type-description">A string singleton type: <code>"literal"</code> as a type.</p>
+                    <p class="type-description">A string singleton type: <code>"literal"</code> as a type. Represents a
+                        type that can only be one specific string value.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
-                        <pre><code class="language-lua">type Event = "click" | "hover" | "focus"</code></pre>
+                        <pre><code class="language-lua">type Direction = "north" | "south" | "east" | "west"
+type HttpMethod = "GET" | "POST" | "PUT" | "DELETE"</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
@@ -337,10 +390,12 @@ type Person = Named & Aged</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location of the string singleton.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">value</span><span
                                     class="field-type">string</span></div>
+                            <div class="field-desc">The string value.</div>
                         </div>
                     </div>
                 </div>
@@ -348,9 +403,10 @@ type Person = Named & Aged</code></pre>
                 <div class="type-entry" id="AstTypeGroup">
                     <div class="type-header">
                         <span class="type-name">AstTypeGroup</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="tag">Type</span></div>
+                        <div class="type-badges"><span class="badge type">TYPE</span></div>
                     </div>
-                    <p class="type-description">A parenthesized type: <code>(Type)</code>. Used for grouping.</p>
+                    <p class="type-description">A parenthesized type: <code>(Type)</code>. Used for grouping in complex
+                        type expressions.</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
@@ -360,10 +416,12 @@ type Person = Named & Aged</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the parenthesized type.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">type</span><span class="field-type"><a
                                         href="#AstType">AstType</a></span></div>
+                            <div class="field-desc">The inner type.</div>
                         </div>
                     </div>
                 </div>
@@ -371,23 +429,32 @@ type Person = Named & Aged</code></pre>
                 <div class="type-entry" id="AstTypeOptional">
                     <div class="type-header">
                         <span class="type-name">AstTypeOptional</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="tag">Type</span></div>
+                        <div class="type-badges"><span class="badge type">TYPE</span></div>
                     </div>
-                    <p class="type-description">Represents the <code>?</code> suffix in optional types like
-                        <code>Type?</code>.</p>
-                    <div class="code-example">
-                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
-                        <pre><code class="language-lua">local x: string? = nil  -- equivalent to string | nil</code></pre>
+                    <p class="type-description">A special optional type marker used internally. Represents the
+                        <code>?</code> suffix in optional types like <code>Type?</code>.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"TypeOptional"</span></div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location of the optional marker.</div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="type-entry" id="AstTypeError">
                     <div class="type-header">
                         <span class="type-name">AstTypeError</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="tag">Type</span><span
-                                class="tag">Error</span></div>
+                        <div class="type-badges"><span class="badge type">TYPE</span><span class="tag">Error</span>
+                        </div>
                     </div>
-                    <p class="type-description">An error type node, created when parsing fails.</p>
+                    <p class="type-description">An error type node, created when parsing fails. Used to allow partial
+                        parsing to continue after errors.</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
@@ -397,11 +464,22 @@ type Person = Named & Aged</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location of the error.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">types</span><span class="field-type">{<a
+                                        href="#AstType">AstType</a>}</span></div>
+                            <div class="field-desc">Any types that were successfully parsed.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">isMissing</span><span
                                     class="field-type">boolean</span></div>
                             <div class="field-desc">True if the type was completely missing.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">messageIndex</span><span
+                                    class="field-type">number</span></div>
+                            <div class="field-desc">Index into the error messages table.</div>
                         </div>
                     </div>
                 </div>
@@ -415,7 +493,15 @@ type Person = Named & Aged</code></pre>
                         <span class="type-name">AstTypePackExplicit</span>
                         <div class="type-badges"><span class="badge pack">PACK</span></div>
                     </div>
-                    <p class="type-description">An explicit type pack: <code>(Type1, Type2, ...T)</code>.</p>
+                    <p class="type-description">An explicit type pack: <code>(Type1, Type2, ...T)</code>. Represents an
+                        explicit list of types, optionally ending with a variadic type.</p>
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">-- Return type packs
+local function multi(): (number, string)
+    return 1, "hello"
+end</code></pre>
+                    </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
@@ -425,15 +511,18 @@ type Person = Named & Aged</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the entire type pack.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">types</span><span class="field-type">{<a
                                         href="#AstType">AstType</a>}</span></div>
+                            <div class="field-desc">The list of types in the pack.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">tailType</span><span class="field-type"><a
                                         href="#AstTypePack">AstTypePack</a>?</span><span
                                     class="field-opt">optional</span></div>
+                            <div class="field-desc">Optional variadic tail type.</div>
                         </div>
                     </div>
                 </div>
@@ -443,10 +532,15 @@ type Person = Named & Aged</code></pre>
                         <span class="type-name">AstTypePackVariadic</span>
                         <div class="type-badges"><span class="badge pack">PACK</span></div>
                     </div>
-                    <p class="type-description">A variadic type pack: <code>...Type</code>.</p>
+                    <p class="type-description">A variadic type pack: <code>...Type</code>. Represents zero or more
+                        values of the specified type.</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
-                        <pre><code class="language-lua">type Variadic = (...number) -> number</code></pre>
+                        <pre><code class="language-lua">local function sum(...: number): number
+    -- ... accepts any number of number arguments
+end
+
+type VarArgs = (...string) -> ()</code></pre>
                     </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
@@ -457,10 +551,12 @@ type Person = Named & Aged</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location spanning the variadic pack.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">variadicType</span><span
                                     class="field-type"><a href="#AstType">AstType</a></span></div>
+                            <div class="field-desc">The type of each variadic element.</div>
                         </div>
                     </div>
                 </div>
@@ -470,7 +566,16 @@ type Person = Named & Aged</code></pre>
                         <span class="type-name">AstTypePackGeneric</span>
                         <div class="type-badges"><span class="badge pack">PACK</span></div>
                     </div>
-                    <p class="type-description">A generic type pack reference: <code>T...</code>.</p>
+                    <p class="type-description">A generic type pack reference: <code>T...</code>. References a generic
+                        type pack parameter.</p>
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">type Call<Args..., Ret...> = (Args...) -> Ret...
+
+local function wrap<T...>(fn: (T...) -> T...): (T...) -> T...
+    return fn
+end</code></pre>
+                    </div>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
@@ -480,16 +585,18 @@ type Person = Named & Aged</code></pre>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location of the generic pack reference.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">genericName</span><span
                                     class="field-type">string</span></div>
+                            <div class="field-desc">The name of the generic type pack.</div>
                         </div>
                     </div>
                 </div>
 
                 <div class="category-header">
-                    <h2>Generics & Helpers</h2>
+                    <h2>Type Helpers</h2>
                 </div>
 
                 <div class="type-entry" id="AstGenericType">
@@ -497,17 +604,29 @@ type Person = Named & Aged</code></pre>
                         <span class="type-name">AstGenericType</span>
                         <div class="type-badges"><span class="badge helper">HELPER</span></div>
                     </div>
-                    <p class="type-description">A generic type parameter: <code>&lt;T, U = Default&gt;</code>.</p>
+                    <p class="type-description">A generic type parameter in a generic declaration:
+                        <code>&lt;T, U = Default&gt;</code>.</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"GenericType"</span></div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location of the generic parameter.</div>
+                        </div>
+                        <div class="field-item">
                             <div class="field-sig"><span class="field-name">name</span><span
                                     class="field-type">string</span></div>
+                            <div class="field-desc">The name of the generic type parameter.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">defaultValue</span><span
                                     class="field-type"><a href="#AstType">AstType</a>?</span><span
                                     class="field-opt">optional</span></div>
+                            <div class="field-desc">Optional default type value.</div>
                         </div>
                     </div>
                 </div>
@@ -517,7 +636,31 @@ type Person = Named & Aged</code></pre>
                         <span class="type-name">AstGenericTypePack</span>
                         <div class="type-badges"><span class="badge helper">HELPER</span></div>
                     </div>
-                    <p class="type-description">A generic type pack parameter: <code>&lt;T...&gt;</code>.</p>
+                    <p class="type-description">A generic type pack parameter in a generic declaration:
+                        <code>&lt;T...&gt;</code>.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"GenericTypePack"</span></div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Source location of the generic pack parameter.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">name</span><span
+                                    class="field-type">string</span></div>
+                            <div class="field-desc">The name of the generic type pack parameter.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">defaultValue</span><span
+                                    class="field-type"><a href="#AstTypePack">AstTypePack</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Optional default type pack value.</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="type-entry" id="AstTypeList">
@@ -525,7 +668,22 @@ type Person = Named & Aged</code></pre>
                         <span class="type-name">AstTypeList</span>
                         <div class="type-badges"><span class="badge helper">HELPER</span></div>
                     </div>
-                    <p class="type-description">A list of types with an optional variadic tail.</p>
+                    <p class="type-description">A list of types with an optional variadic tail. Used for function
+                        parameter and return types.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">types</span><span class="field-type">{<a
+                                        href="#AstType">AstType</a>}</span></div>
+                            <div class="field-desc">The list of types.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">tailType</span><span class="field-type"><a
+                                        href="#AstTypePack">AstTypePack</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Optional variadic tail type pack.</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="type-entry" id="AstTypeOrPack">
@@ -533,7 +691,125 @@ type Person = Named & Aged</code></pre>
                         <span class="type-name">AstTypeOrPack</span>
                         <div class="type-badges"><span class="badge helper">HELPER</span></div>
                     </div>
-                    <p class="type-description">A wrapper for either a type or a type pack.</p>
+                    <p class="type-description">A wrapper for either a type or a type pack. Used in generic type
+                        arguments where either could be valid.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">type</span><span class="field-type"><a
+                                        href="#AstType">AstType</a>?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">The type (if this is a type argument).</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">typePack</span><span class="field-type"><a
+                                        href="#AstTypePack">AstTypePack</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">The type pack (if this is a type pack argument).</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="AstArgumentName">
+                    <div class="type-header">
+                        <span class="type-name">AstArgumentName</span>
+                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                    </div>
+                    <p class="type-description">A named function argument (for documentation purposes).</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">name</span><span
+                                    class="field-type">string</span></div>
+                            <div class="field-desc">The argument name.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the argument name.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="AstTableProp">
+                    <div class="type-header">
+                        <span class="type-name">AstTableProp</span>
+                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                    </div>
+                    <p class="type-description">A property in a table type.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"TableProp"</span></div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">name</span><span class="field-type"><a
+                                        href="core.html#AstName">AstName</a></span></div>
+                            <div class="field-desc">The property name.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the property declaration.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">type</span><span class="field-type"><a
+                                        href="#AstType">AstType</a></span></div>
+                            <div class="field-desc">The property type.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">access</span><span
+                                    class="field-type">string</span></div>
+                            <div class="field-desc">Access specifier ("read", "write", or "readwrite").</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">accessLocation</span><span
+                                    class="field-type"><a href="core.html#Location">Location</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Location of the access specifier (if present).</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-entry" id="AstTableIndexer">
+                    <div class="type-header">
+                        <span class="type-name">AstTableIndexer</span>
+                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                    </div>
+                    <p class="type-description">An indexer in a table type: <code>[KeyType]: ValueType</code>.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"TableIndexer"</span></div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">indexType</span><span class="field-type"><a
+                                        href="#AstType">AstType</a></span></div>
+                            <div class="field-desc">The key/index type.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">resultType</span><span class="field-type"><a
+                                        href="#AstType">AstType</a></span></div>
+                            <div class="field-desc">The value type.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the indexer declaration.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">access</span><span
+                                    class="field-type">string</span></div>
+                            <div class="field-desc">Access specifier ("read", "write", or "readwrite").</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">accessLocation</span><span
+                                    class="field-type"><a href="core.html#Location">Location</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Location of the access specifier (if present).</div>
+                        </div>
+                    </div>
                 </div>
 
             </main>
@@ -546,15 +822,21 @@ type Person = Named & Aged</code></pre>
                     <a href="#AstTypePack" class="nav-link">AstTypePack</a>
                 </div>
                 <div class="nav-section">
-                    <div class="nav-section-title">Types</div>
+                    <div class="nav-section-title">Type Annotations</div>
                     <a href="#AstTypeReference" class="nav-link">AstTypeReference</a>
                     <a href="#AstTypeTable" class="nav-link">AstTypeTable</a>
                     <a href="#AstTypeFunction" class="nav-link">AstTypeFunction</a>
                     <a href="#AstTypeTypeof" class="nav-link">AstTypeTypeof</a>
                     <a href="#AstTypeUnion" class="nav-link">AstTypeUnion</a>
                     <a href="#AstTypeIntersection" class="nav-link">AstTypeIntersection</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Singletons</div>
                     <a href="#AstTypeSingletonBool" class="nav-link">AstTypeSingletonBool</a>
                     <a href="#AstTypeSingletonString" class="nav-link">AstTypeSingletonString</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Other Types</div>
                     <a href="#AstTypeGroup" class="nav-link">AstTypeGroup</a>
                     <a href="#AstTypeOptional" class="nav-link">AstTypeOptional</a>
                     <a href="#AstTypeError" class="nav-link">AstTypeError</a>
@@ -571,6 +853,9 @@ type Person = Named & Aged</code></pre>
                     <a href="#AstGenericTypePack" class="nav-link">AstGenericTypePack</a>
                     <a href="#AstTypeList" class="nav-link">AstTypeList</a>
                     <a href="#AstTypeOrPack" class="nav-link">AstTypeOrPack</a>
+                    <a href="#AstArgumentName" class="nav-link">AstArgumentName</a>
+                    <a href="#AstTableProp" class="nav-link">AstTableProp</a>
+                    <a href="#AstTableIndexer" class="nav-link">AstTableIndexer</a>
                 </div>
             </aside>
         </div>

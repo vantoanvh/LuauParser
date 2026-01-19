@@ -57,7 +57,8 @@
                         <div class="type-badges"><span class="badge helper">HELPER</span></div>
                     </div>
                     <p class="type-description">Attributes applied to functions or type definitions (e.g.,
-                        <code>@native</code>, <code>@checked</code>).</p>
+                        <code>@native</code>, <code>@checked</code>).
+                    </p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
                         <pre><code class="language-lua">@native
@@ -85,27 +86,38 @@ end</code></pre>
                         <span class="type-name">AstTableProp</span>
                         <div class="type-badges"><span class="badge helper">HELPER</span></div>
                     </div>
-                    <p class="type-description">A property definition in a table type.</p>
+                    <p class="type-description">A property in a table type.</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">name</span><span
-                                    class="field-type">string</span></div>
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"TableProp"</span></div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">name</span><span class="field-type"><a
+                                        href="core.html#AstName">AstName</a></span></div>
+                            <div class="field-desc">The property name.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the property declaration.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">type</span><span class="field-type"><a
                                         href="types.html#AstType">AstType</a></span></div>
+                            <div class="field-desc">The property type.</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">accessPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
+                            <div class="field-sig"><span class="field-name">access</span><span
+                                    class="field-type">string</span></div>
+                            <div class="field-desc">Access specifier ("read", "write", or "readwrite").</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">accessLocation</span><span
+                                    class="field-type"><a href="core.html#Location">Location</a>?</span><span
                                     class="field-opt">optional</span></div>
-                            <div class="field-desc">Position of the <code>read</code> or <code>write</code> keyword.
-                            </div>
+                            <div class="field-desc">Location of the access specifier (if present).</div>
                         </div>
                     </div>
                 </div>
@@ -115,8 +127,40 @@ end</code></pre>
                         <span class="type-name">AstTableIndexer</span>
                         <div class="type-badges"><span class="badge helper">HELPER</span></div>
                     </div>
-                    <p class="type-description">An indexer definition in a table type:
-                        <code>[KeyType]: ValueType</code>.</p>
+                    <p class="type-description">An indexer in a table type: <code>[KeyType]: ValueType</code>.</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"TableIndexer"</span></div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">indexType</span><span class="field-type"><a
+                                        href="types.html#AstType">AstType</a></span></div>
+                            <div class="field-desc">The key/index type.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">resultType</span><span class="field-type"><a
+                                        href="types.html#AstType">AstType</a></span></div>
+                            <div class="field-desc">The value type.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the indexer declaration.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">access</span><span
+                                    class="field-type">string</span></div>
+                            <div class="field-desc">Access specifier ("read", "write", or "readwrite").</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">accessLocation</span><span
+                                    class="field-type"><a href="core.html#Location">Location</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Location of the access specifier (if present).</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="type-entry" id="AstArgumentName">
@@ -124,7 +168,20 @@ end</code></pre>
                         <span class="type-name">AstArgumentName</span>
                         <div class="type-badges"><span class="badge helper">HELPER</span></div>
                     </div>
-                    <p class="type-description">A named argument in a function type declaration.</p>
+                    <p class="type-description">A named function argument (for documentation purposes).</p>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">name</span><span
+                                    class="field-type">string</span></div>
+                            <div class="field-desc">The argument name.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the argument name.</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="category-header">
@@ -165,13 +222,31 @@ end</code></pre>
                         <span class="type-name">HotComment</span>
                         <div class="type-badges"><span class="badge helper">HELPER</span></div>
                     </div>
-                    <p class="type-description">A "hot comment" (e.g., <code>--!strict</code>) that affects parsing or
-                        analysis.</p>
+                    <p class="type-description">Represents a hot comment (special directive comment like
+                        <code>--!strict</code>).</p>
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
                         <pre><code class="language-lua">--!strict
 --!native
 local x: number = 10</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div>
+                    <div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">header</span><span
+                                    class="field-type">boolean</span></div>
+                            <div class="field-desc">True if this is a header comment (at the start of the file).</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">content</span><span
+                                    class="field-type">string</span></div>
+                            <div class="field-desc">The content of the hot comment (after <code>--!</code>).</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">The source location of the hot comment.</div>
+                        </div>
                     </div>
                 </div>
 

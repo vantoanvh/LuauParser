@@ -67,6 +67,7 @@ body {
 
 .sidebar-right {
     padding: 32px 20px;
+    padding-bottom: 60vh;
     height: 100vh;
     position: sticky;
     top: 0;
@@ -79,6 +80,8 @@ body {
     width: 100%;
     margin: 0 auto;
     padding: 48px 40px;
+    padding-bottom: 50vh;
+    min-height: 100vh;
 }
 
 /* Search Bar */
