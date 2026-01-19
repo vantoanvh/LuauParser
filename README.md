@@ -78,4 +78,4 @@ Finally! Type-checking added! That was long! It's not that type-check that prope
 Autocomplete when parsing now visible, so you can see what types is it, make it wayy easier to use.
 
 # Documentations
-There's no AST and CST documentation for now, but In the future, I could build a documentation for better usability for sure
+https://vantoanvh.github.io/LuauParser/
