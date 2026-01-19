@@ -62,6 +62,16 @@
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"StatBlock"</span></div>
+                            <div class="field-desc">The statement kind identifier.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">The range spanning all statements in the block.</div>
+                        </div>
+                        <div class="field-item">
                             <div class="field-sig"><span class="field-name">body</span><span class="field-type">{<a
                                         href="#AstStat">AstStat</a>}</span></div>
                             <div class="field-desc">The list of statements contained within this block.</div>
@@ -71,6 +81,11 @@
                                     class="field-type">boolean</span></div>
                             <div class="field-desc">True if the block is explicitly terminated by an <code>end</code>
                                 keyword.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasSemicolon</span><span
+                                    class="field-type">boolean?</span><span class="field-opt">optional</span></div>
+                            <div class="field-desc">True if followed by an optional semicolon.</div>
                         </div>
                     </div>
                 </div>
@@ -86,6 +101,16 @@
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"StatIf"</span></div>
+                            <div class="field-desc">The statement kind identifier.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">The entire range from <code>if</code> to <code>end</code>.</div>
+                        </div>
+                        <div class="field-item">
                             <div class="field-sig"><span class="field-name">condition</span><span class="field-type"><a
                                         href="expressions.html#AstExpr">AstExpr</a></span></div>
                             <div class="field-desc">The expression evaluated to determine which branch to execute.</div>
@@ -100,6 +125,19 @@
                                         href="#AstStat">AstStat</a>?</span><span class="field-opt">optional</span></div>
                             <div class="field-desc">Optional branch executed if the condition is falsy (can be another
                                 <code>AstStatIf</code> for <code>elseif</code>).</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">thenLocation</span><span
+                                    class="field-type"><a href="core.html#Location">Location</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Location of the <code>then</code> keyword.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">elseLocation</span><span
+                                    class="field-type"><a href="core.html#Location">Location</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Location of the <code>else</code> or <code>elseif</code> keyword.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -118,12 +156,32 @@
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"StatWhile"</span></div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                        </div>
+                        <div class="field-item">
                             <div class="field-sig"><span class="field-name">condition</span><span class="field-type"><a
                                         href="expressions.html#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The loop condition expression.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">body</span><span class="field-type"><a
                                         href="#AstStatBlock">AstStatBlock</a></span></div>
+                            <div class="field-desc">The loop body block.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hasDo</span><span
+                                    class="field-type">boolean</span></div>
+                            <div class="field-desc">True if the <code>do</code> keyword is present.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">doLocation</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the <code>do</code> keyword.</div>
                         </div>
                     </div>
                 </div>
@@ -139,42 +197,38 @@
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"StatFor"</span></div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                        </div>
+                        <div class="field-item">
                             <div class="field-sig"><span class="field-name">var</span><span class="field-type"><a
                                         href="core.html#AstLocal">AstLocal</a></span></div>
+                            <div class="field-desc">The loop variable.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">from</span><span class="field-type"><a
                                         href="expressions.html#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The starting value expression.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">to</span><span class="field-type"><a
                                         href="expressions.html#AstExpr">AstExpr</a></span></div>
+                            <div class="field-desc">The ending value expression.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">step</span><span class="field-type"><a
                                         href="expressions.html#AstExpr">AstExpr</a>?</span><span
                                     class="field-opt">optional</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="AstStatForIn">
-                    <div class="type-header">
-                        <span class="type-name">AstStatForIn</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="badge stat">STAT</span>
-                        </div>
-                    </div>
-                    <p class="type-description">A generic for loop:
-                        <code>for var1, var2 in expr1, expr2 do ... end</code>.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">vars</span><span class="field-type">{<a
-                                        href="core.html#AstLocal">AstLocal</a>}</span></div>
+                            <div class="field-desc">Optional step value expression (defaults to 1).</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">values</span><span class="field-type">{<a
-                                        href="expressions.html#AstExpr">AstExpr</a>}</span></div>
+                            <div class="field-sig"><span class="field-name">body</span><span class="field-type"><a
+                                        href="#AstStatBlock">AstStatBlock</a></span></div>
+                            <div class="field-desc">The loop body block.</div>
                         </div>
                     </div>
                 </div>
@@ -194,12 +248,28 @@
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"StatLocal"</span></div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                        </div>
+                        <div class="field-item">
                             <div class="field-sig"><span class="field-name">vars</span><span class="field-type">{<a
                                         href="core.html#AstLocal">AstLocal</a>}</span></div>
+                            <div class="field-desc">The list of local variables being declared.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">values</span><span class="field-type">{<a
                                         href="expressions.html#AstExpr">AstExpr</a>}</span></div>
+                            <div class="field-desc">The list of initializer expressions.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">equalsSignLocation</span><span
+                                    class="field-type"><a href="core.html#Location">Location</a>?</span><span
+                                    class="field-opt">optional</span></div>
+                            <div class="field-desc">Location of the <code>=</code> sign (if values are provided).</div>
                         </div>
                     </div>
                 </div>
@@ -214,60 +284,24 @@
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"StatAssign"</span></div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                        </div>
+                        <div class="field-item">
                             <div class="field-sig"><span class="field-name">vars</span><span class="field-type">{<a
                                         href="expressions.html#AstExpr">AstExpr</a>}</span></div>
+                            <div class="field-desc">The list of l-value expressions being assigned to.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">values</span><span class="field-type">{<a
                                         href="expressions.html#AstExpr">AstExpr</a>}</span></div>
+                            <div class="field-desc">The list of expressions being assigned.</div>
                         </div>
                     </div>
-                </div>
-
-                <div class="type-entry" id="AstStatFunction">
-                    <div class="type-header">
-                        <span class="type-name">AstStatFunction</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="badge stat">STAT</span>
-                        </div>
-                    </div>
-                    <p class="type-description">A global function declaration statement:
-                        <code>function a.b.c:name(...) ... end</code>.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">name</span><span class="field-type"><a
-                                        href="expressions.html#AstExpr">AstExpr</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">func</span><span class="field-type"><a
-                                        href="expressions.html#AstExprFunction">AstExprFunction</a></span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="AstStatLocalFunction">
-                    <div class="type-header">
-                        <span class="type-name">AstStatLocalFunction</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span class="badge stat">STAT</span>
-                        </div>
-                    </div>
-                    <p class="type-description">A local function declaration:
-                        <code>local function name(...) ... end</code>.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">name</span><span class="field-type"><a
-                                        href="core.html#AstLocal">AstLocal</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">func</span><span class="field-type"><a
-                                        href="expressions.html#AstExprFunction">AstExprFunction</a></span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="category-header">
-                    <h2>Type System</h2>
                 </div>
 
                 <div class="type-entry" id="AstStatTypeAlias">
@@ -281,12 +315,27 @@
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span><span
+                                    class="field-type">"StatTypeAlias"</span></div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                        href="core.html#Location">Location</a></span></div>
+                        </div>
+                        <div class="field-item">
                             <div class="field-sig"><span class="field-name">name</span><span
                                     class="field-type">string</span></div>
+                            <div class="field-desc">The name of the type alias.</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">nameLocation</span><span
+                                    class="field-type"><a href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">Location of the type name.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">type</span><span class="field-type"><a
                                         href="types.html#AstType">AstType</a></span></div>
+                            <div class="field-desc">The type being aliased.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">exported</span><span

@@ -59,7 +59,7 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">bodyCommaPositions</span><span
                                     class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                            <div class="field-desc">Positions of semicolons between statements (if any).</div>
+                            <div class="field-desc">Positions of semicolons between statements in the block.</div>
                         </div>
                     </div>
                 </div>
@@ -88,7 +88,8 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">endCommaPosition</span><span
                                     class="field-type"><a href="core.html#Position">Position</a></span></div>
-                            <div class="field-desc">Position of comma or <code>to</code> keyword alignment.</div>
+                            <div class="field-desc">Position of the comma between the <code>to</code> and
+                                <code>step</code> expressions.</div>
                         </div>
                     </div>
                 </div>
@@ -115,11 +116,13 @@
                             <div class="field-sig"><span class="field-name">openGenericsPosition</span><span
                                     class="field-type"><a href="core.html#Position">Position</a>?</span><span
                                     class="field-opt">optional</span></div>
+                            <div class="field-desc">Position of the <code>&lt;</code> starting the generic parameter
+                                list.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">argsCommaPositions</span><span
                                     class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                            <div class="field-desc">Positions of commas between parameters.</div>
+                            <div class="field-desc">Positions of commas between parameters in the argument list.</div>
                         </div>
                     </div>
                 </div>
@@ -188,6 +191,7 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">items</span><span class="field-type">{<a
                                         href="#CstTypeTableItem">CstTypeTableItem</a>}</span></div>
+                            <div class="field-desc">CST metadata for each item in the table type.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">isArray</span><span
@@ -209,16 +213,20 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">kind</span><span
                                     class="field-type">"Property" | "StringProperty" | "Indexer"</span></div>
+                            <div class="field-desc">The kind of table item.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">colonPosition</span><span
                                     class="field-type"><a href="core.html#Position">Position</a>?</span><span
                                     class="field-opt">optional</span></div>
+                            <div class="field-desc">Position of the <code>:</code> separating the key and the type.
+                            </div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">stringInfo</span><span class="field-type"><a
                                         href="#CstExprConstantString">CstExprConstantString</a>?</span><span
                                     class="field-opt">optional</span></div>
+                            <div class="field-desc">Metadata for string-indexed properties.</div>
                         </div>
                     </div>
                 </div>

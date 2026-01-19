@@ -34,8 +34,13 @@
             <main class="main-content">
                 <header class="page-header">
                     <h1>Core Types</h1>
-                    <p>Fundamental data structures for representing source locations and identifiers.</p>
+                    <p>Fundamental structures for positioning, locations, and identifiers used throughout the AST and
+                        CST.</p>
                 </header>
+
+                <div class="category-header">
+                    <h2>Positioning</h2>
+                </div>
 
                 <div class="type-entry" id="Position">
                     <div class="type-header">
@@ -54,7 +59,7 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">column</span><span
                                     class="field-type">number</span></div>
-                            <div class="field-desc">The 1-indexed column number in the source file.</div>
+                            <div class="field-desc">The 1-indexed column number on the current line.</div>
                         </div>
                     </div>
                 </div>
@@ -82,11 +87,14 @@
                     </div>
                 </div>
 
+                <div class="category-header">
+                    <h2>Identifiers</h2>
+                </div>
+
                 <div class="type-entry" id="AstName">
                     <div class="type-header">
                         <span class="type-name">AstName</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span
-                                class="badge helper">HELPER</span></div>
+                        <div class="type-badges"><span class="badge ast">AST</span></div>
                     </div>
                     <p class="type-description">Represents a simple name/identifier in the AST. Used for variable names,
                         function names, type names, etc.</p>
@@ -95,7 +103,7 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">value</span><span
                                     class="field-type">string</span></div>
-                            <div class="field-desc">The raw string value of the identifier.</div>
+                            <div class="field-desc">The string value of the identifier.</div>
                         </div>
                     </div>
                 </div>
@@ -103,11 +111,10 @@
                 <div class="type-entry" id="AstLocal">
                     <div class="type-header">
                         <span class="type-name">AstLocal</span>
-                        <div class="type-badges"><span class="badge ast">AST</span><span
-                                class="badge helper">HELPER</span></div>
+                        <div class="type-badges"><span class="badge ast">AST</span></div>
                     </div>
-                    <p class="type-description">Represents a local variable declaration in the AST. Tracks the
-                        variable's scope and shadowing information.</p>
+                    <p class="type-description">Represents a local variable declaration in the AST. Tracks shadowing
+                        information, scope depth, and type annotations.</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
@@ -124,19 +131,18 @@
                             <div class="field-sig"><span class="field-name">shadow</span><span class="field-type"><a
                                         href="#AstLocal">AstLocal</a>?</span><span class="field-opt">optional</span>
                             </div>
-                            <div class="field-desc">Reference to a shadowed local variable with the same name in an
-                                outer scope.</div>
+                            <div class="field-desc">Reference to a shadowed local variable with the same name (if any).
+                            </div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">functionDepth</span><span
                                     class="field-type">number</span></div>
-                            <div class="field-desc">The nesting depth of the function containing this local variable.
-                            </div>
+                            <div class="field-desc">The nesting depth of the function containing this local.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">loopDepth</span><span
                                     class="field-type">number</span></div>
-                            <div class="field-desc">The nesting depth of loops containing this local variable.</div>
+                            <div class="field-desc">The nesting depth of loops containing this local.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">annotation</span><span class="field-type"><a
@@ -146,6 +152,7 @@
                         </div>
                     </div>
                 </div>
+
             </main>
 
             <aside class="sidebar-right">

@@ -53,13 +53,12 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">type</span><span
                                     class="field-type">string</span></div>
-                            <div class="field-desc">The attribute type ("Native", "Checked", "Deprecated").</div>
+                            <div class="field-desc">The attribute kind (e.g., "Native", "Checked", "Deprecated").</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">args</span><span class="field-type">{<a
                                         href="expressions.html#AstExpr">AstExpr</a>}</span></div>
-                            <div class="field-desc">Arguments passed to the attribute (e.g., for
-                                <code>@deprecated</code>).</div>
+                            <div class="field-desc">The list of arguments passed to the attribute.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">name</span><span
@@ -79,7 +78,7 @@
                         <div class="type-badges"><span class="badge helper">HELPER</span></div>
                     </div>
                     <p class="type-description">The final result of parsing a Luau source file. Contains the AST root,
-                        comments, and any errors encountered.</p>
+                        comments, and metadata.</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
@@ -102,7 +101,7 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">cstNodeMap</span><span
                                     class="field-type">Map</span></div>
-                            <div class="field-desc">Map linking AST nodes to their corresponding CST data nodes.</div>
+                            <div class="field-desc">A map linking AST nodes to their corresponding CST data nodes.</div>
                         </div>
                     </div>
                 </div>
@@ -118,10 +117,12 @@
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
                                         href="core.html#Location">Location</a></span></div>
+                            <div class="field-desc">The source location where the error occurred.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">message</span><span
                                     class="field-type">string</span></div>
+                            <div class="field-desc">The human-readable error message.</div>
                         </div>
                     </div>
                 </div>

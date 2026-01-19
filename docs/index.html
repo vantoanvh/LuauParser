@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Luau Parser API Documentation</title>
+    <title>Luau Parser API Reference</title>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
@@ -34,82 +34,71 @@
             <main class="main-content">
                 <header class="page-header">
                     <h1>Luau Parser API</h1>
-                    <p>Comprehensive documentation for the Luau Abstract Syntax Tree (AST) and Concrete Syntax Tree
-                        (CST) nodes.</p>
+                    <p>A high-performance, lossless parser for the Luau programming language. This documentation covers
+                        the AST and CST structures returned by the parser.</p>
                 </header>
 
                 <div class="info-section">
-                    <p>This documentation details the internal structures used by the Luau parser to represent and
-                        process Luau source code. It is designed for developers building tools like linters, formatters,
-                        and static analyzers.</p>
+                    <p>The parser produces a rich Abstract Syntax Tree (AST) for semantic analysis and an optional
+                        Concrete Syntax Tree (CST) for source-accurate transforms. All nodes include detailed location
+                        mapping.</p>
                 </div>
 
-                <div class="category-header">
-                    <h2>Explore the API</h2>
-                </div>
-
+                <h2>Key Components</h2>
                 <div class="overview-grid">
                     <a href="core.html" class="overview-card">
-                        <div class="overview-icon">📍</div>
                         <h3>Core Types</h3>
-                        <p>Locations, positions, and identifiers used across the AST.</p>
+                        <p>Fundamental types like Position, Location, and identifiers used across all nodes.</p>
                         <span class="overview-count">4 TYPES</span>
                     </a>
                     <a href="expressions.html" class="overview-card">
-                        <div class="overview-icon">🧩</div>
                         <h3>Expressions</h3>
-                        <p>AST nodes that evaluate to a value, including literals and calls.</p>
-                        <span class="overview-count">14 TYPES</span>
+                        <p>Literals, variables, function calls, and operators that evaluate to values.</p>
+                        <span class="overview-count">18 TYPES</span>
                     </a>
                     <a href="statements.html" class="overview-card">
-                        <div class="overview-icon">📜</div>
                         <h3>Statements</h3>
-                        <p>Actions, logic, and declarations that form the script structure.</p>
-                        <span class="overview-count">11 TYPES</span>
+                        <p>The building blocks of logic: loops, assignments, and control flow.</p>
+                        <span class="overview-count">16 TYPES</span>
                     </a>
                     <a href="types.html" class="overview-card">
-                        <div class="overview-icon">🏷️</div>
                         <h3>Type Annotations</h3>
-                        <p>Construction for Luau's gradual type system and type packs.</p>
-                        <span class="overview-count">9 TYPES</span>
+                        <p>Luau's gradual typing system: unions, intersections, and packs.</p>
+                        <span class="overview-count">12 TYPES</span>
                     </a>
                     <a href="cst.html" class="overview-card">
-                        <div class="overview-icon">📐</div>
                         <h3>CST Nodes</h3>
-                        <p>Positional metadata for source-accurate transformations.</p>
-                        <span class="overview-count">30+ TYPES</span>
+                        <p>Low-level syntactic data preserving every semicolon and keyword position.</p>
+                        <span class="overview-count">14 TYPES</span>
                     </a>
                     <a href="helpers.html" class="overview-card">
-                        <div class="overview-icon">🛠️</div>
                         <h3>Helpers & Result</h3>
-                        <p>Attributes, support structures, and the final parser result.</p>
-                        <span class="overview-count">17 TYPES</span>
+                        <p>Function attributes, error reporting, and the main parser output.</p>
+                        <span class="overview-count">8 TYPES</span>
                     </a>
                 </div>
 
-                <div class="category-header">
-                    <h2>Badge Legend</h2>
-                </div>
+                <h2>Getting Started</h2>
+                <p>The parser's main entry point returns a <code>Result</code> object containing the <code>root</code>
+                    AST block and any errors encountered. You can traverse the AST to perform analysis or use the CST
+                    mapping for code formatting tools.</p>
 
-                <div class="badge-legend">
-                    <div><span class="badge ast">AST</span> Abstract Syntax Tree node</div>
-                    <div><span class="badge cst">CST</span> Concrete Syntax Tree node</div>
-                    <div><span class="badge expr">EXPR</span> Evaluates to a value</div>
-                    <div><span class="badge stat">STAT</span> Performs an action</div>
-                    <div><span class="badge type">TYPE</span> Type annotation</div>
-                    <div><span class="badge pack">PACK</span> Type pack</div>
-                    <div><span class="badge helper">HELPER</span> Supporting structure</div>
-                </div>
+                <pre><code>-- Example Usage
+local Syntax = require("Syntax")
+local result = Syntax.parse("local x: number = 10")
+
+if #result.errors == 0 then
+    print("Parsed " .. result.root.kind)
+end</code></pre>
+
             </main>
 
             <aside class="sidebar-right">
                 <div class="nav-section">
                     <div class="nav-section-title">Quick Links</div>
-                    <a href="core.html#Location" class="nav-link">Location</a>
-                    <a href="expressions.html#AstExpr" class="nav-link">AstExpr</a>
-                    <a href="statements.html#AstStat" class="nav-link">AstStat</a>
-                    <a href="types.html#AstType" class="nav-link">AstType</a>
-                    <a href="helpers.html#Result" class="nav-link">Parser Result</a>
+                    <a href="https://luau-lang.org" class="nav-link">Luau Language</a>
+                    <a href="core.html#Location" class="nav-link">Location Mapping</a>
+                    <a href="helpers.html#Result" class="nav-link">Result Object</a>
                 </div>
             </aside>
         </div>
