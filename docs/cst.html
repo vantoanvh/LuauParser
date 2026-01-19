@@ -859,7 +859,7 @@
                         <span class="type-name">CstTypeInstantiation</span>
                         <div class="type-badges"><span class="badge cst">CST</span></div>
                     </div>
-                    <p class="type-description">CST data for type instantiation syntax: <code>&lt;T, U&gt;</code>.</p>
+                    <p class="type-description">CST data for type instantiation syntax: <code>&lt;&lt;T, U&gt;&gt;</code>.</p>
                     <div class="section-label">Fields</div>
                     <div class="field-list">
                         <div class="field-item">
@@ -867,10 +867,20 @@
                                     class="field-type"><a href="core.html#Position">Position</a></span></div>
                             <div class="field-desc">Position of first <code>&lt;</code> character.</div>
                         </div>
+                         <div class="field-item">
+                            <div class="field-sig"><span class="field-name">leftArrow2Position</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of second <code>&lt;</code> character.</div>
+                        </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">rightArrow1Position</span><span
                                     class="field-type"><a href="core.html#Position">Position</a></span></div>
                             <div class="field-desc">Position of first <code>&gt;</code> character.</div>
+                        </div>
+                         <div class="field-item">
+                            <div class="field-sig"><span class="field-name">rightArrow2Position</span><span
+                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
+                            <div class="field-desc">Position of second <code>&gt;</code> character.</div>
                         </div>
                         <div class="field-item">
                             <div class="field-sig"><span class="field-name">commaPositions</span><span
@@ -939,5 +949,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/lua.min.js"></script>
     <script src="docs.js"></script>
 </body>
+
 
 </html>
