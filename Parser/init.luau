@@ -24,8 +24,43 @@ local BraceType = {
 }
 
 local QuoteStyle = {
-	Single = 0,
-	Double = 1,
+	--[=[
+		A string created using double quotes or an interpolated string,
+		as in:
+	
+			"foo", `My name is {protagonist}! / And I'm {antagonist}!`
+	]=]
+	QuotedSimple = 0,
+	
+	--[=[
+		A string created using single quotes, as in:
+    
+    		'bar'
+	]=]
+	QuotedSingle = 1,
+	
+	--[=[
+		A string created using `[[ ... ]]` as in:
+		as in:
+	
+			[[ Gee, this sure is a long string.
+			it even has a new line in it! ]]
+	]=]
+	QuotedRaw = 2,
+	
+	--[=[
+		A "string" in the context of a table literal, as in:
+	
+			{ foo = 42 } -- `foo` here is a "constant string"
+	]=]
+	Unquoted = 3,
+}
+
+local CstQuotes = {
+	QuotedSingle = 0, -- ''
+	QuotedDouble = 1, -- ""
+	QuotedRaw = 2, -- [[]]
+	QuotedInterp = 3, -- ``
 }
 
 -- // Tables from Lexer
@@ -948,7 +983,7 @@ local function lex(skip_comments: boolean)
 		else
 			next_type = Types.QuotedString
 			next_string = buffer.readstring(buff, content_start, ptr - content_start)
-			next_aux = if delim == 39 then QuoteStyle.Single else QuoteStyle.Double
+			next_aux = if delim == 39 then 0 else 1
 			ptr += 1 -- consume closing delim
 		end
 
@@ -2236,7 +2271,8 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 		local hasIn = expectAndConsume(Types.ReservedIn, "for loop")
 
 		local values = {}
-		local valuesCommaPositions = {}
+		
+		local valuesCommaPositions: {Syntax.Position} = {}
 		parseExprList(values, storeCstData and valuesCommaPositions or nil)
 
 		local Do_type = token_type
@@ -2284,7 +2320,7 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 				kind = "CstStatForIn",
 				varsAnnotationColonPositions = extractAnnotationColonPositions(names),
 				varsCommaPositions = varsCommaPosition,
-				valuesCommaPositions = valuesCommaPositions
+				valuesCommaPositions = varsCommaPosition
 			}
 		end
 
@@ -3586,11 +3622,11 @@ local function extractStringDetails()
 	local depth = 0
 
 	if token_type == Types.QuotedString then
-		style = token_aux == 1 and 1 or 0
+		style = token_aux == 1 and CstQuotes.QuotedSingle or CstQuotes.QuotedDouble
 	elseif token_type == Types.InterpStringSimple then
-		style = 3 
+		style = CstQuotes.QuotedInterp
 	elseif token_type == Types.RawString then
-		style = 2 
+		style = CstQuotes.QuotedRaw 
 		depth = token_aux or 0
 	end
 
@@ -5331,7 +5367,7 @@ function parseTableConstructor(): Syntax.AstExprTable
 				kind = "ExprConstantString",
 				location = name.location,
 				value = name.name.value,
-				quoteStyle = 3 
+				quoteStyle = QuoteStyle.Unquoted
 			}
 
 			local value = parseExpr()
@@ -5597,18 +5633,18 @@ end
 
 function parseString(): Syntax.AstExprConstantString | Syntax.AstExprError
 	local location = snapshot()
-	local quoteStyle = 0
+	local quoteStyle = QuoteStyle.QuotedSimple
 
 	if token_type == Types.QuotedString then
 		if token_aux == 0 then
-			quoteStyle = 1 
+			quoteStyle = QuoteStyle.QuotedSingle
 		else
-			quoteStyle = 0 
+			quoteStyle = QuoteStyle.QuotedSimple
 		end
 	elseif token_type == Types.InterpStringSimple then
-		quoteStyle = 0 
+		quoteStyle = QuoteStyle.QuotedSimple
 	elseif token_type == Types.RawString then
-		quoteStyle = 2
+		quoteStyle = QuoteStyle.QuotedRaw
 	end
 
 	local fullStyle = 0
@@ -5824,4 +5860,5 @@ return {
 	QuoteStyle = QuoteStyle,
 	UnaryOp = UnaryOp,
 	BinaryOp = BinaryOp,
+	CstQuotes = CstQuotes,
 }
