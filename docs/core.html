@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Types - Luau Parser API</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h1>Luau Parser</h1>
+                <p>API Reference</p>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Pages</div>
+                <a href="index.html" class="nav-link">Overview</a>
+                <a href="core.html" class="nav-link active">Core Types</a>
+                <a href="expressions.html" class="nav-link">Expressions</a>
+                <a href="statements.html" class="nav-link">Statements</a>
+                <a href="types.html" class="nav-link">Type Annotations</a>
+                <a href="cst.html" class="nav-link">CST Nodes</a>
+                <a href="helpers.html" class="nav-link">Helpers & Result</a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">On This Page</div>
+                <a href="#Position" class="nav-link">Position</a>
+                <a href="#Location" class="nav-link">Location</a>
+                <a href="#AstName" class="nav-link">AstName</a>
+                <a href="#AstLocal" class="nav-link">AstLocal</a>
+            </div>
+        </nav>
+        <main class="main">
+            <div class="page-header">
+                <h1>Core Types</h1>
+                <p>Fundamental types used throughout the parser for positions, locations, and identifiers.</p>
+            </div>
+
+            <div class="type-entry" id="Position">
+                <div class="type-header">
+                    <span class="type-name">Position</span>
+                    <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                </div>
+                <p class="type-description">Represents a position in source code with 1-indexed line and column numbers.
+                    Used for error reporting, CST node positions, and token locations.</p>
+                <div class="section-label">Fields</div>
+                <div class="field-list">
+                    <div class="field-item">
+                        <div class="field-sig"><span class="field-name">line</span><span
+                                class="field-type">number</span></div>
+                        <div class="field-desc">Line number (1-indexed)</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-sig"><span class="field-name">column</span><span
+                                class="field-type">number</span></div>
+                        <div class="field-desc">Column number (1-indexed)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="type-entry" id="Location">
+                <div class="type-header">
+                    <span class="type-name">Location</span>
+                    <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                </div>
+                <p class="type-description">Represents a range in source code spanning from a beginning position to an
+                    ending position. Every AST node has a location field indicating the source text it was parsed from.
+                </p>
+                <div class="section-label">Fields</div>
+                <div class="field-list">
+                    <div class="field-item">
+                        <div class="field-sig"><span class="field-name">begin</span><span class="field-type"><a
+                                    href="#Position">Position</a></span></div>
+                        <div class="field-desc">Starting position of the range (inclusive)</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-sig"><span class="field-name">end_</span><span class="field-type"><a
+                                    href="#Position">Position</a></span></div>
+                        <div class="field-desc">Ending position of the range (exclusive). Named <code>end_</code> to
+                            avoid Luau keyword conflict.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="type-entry" id="AstName">
+                <div class="type-header">
+                    <span class="type-name">AstName</span>
+                    <div class="type-badges"><span class="badge ast">AST</span><span class="badge helper">HELPER</span>
+                    </div>
+                </div>
+                <p class="type-description">A simple identifier name used throughout the AST for variable names,
+                    function names, type names, field names, etc.</p>
+                <div class="section-label">Fields</div>
+                <div class="field-list">
+                    <div class="field-item">
+                        <div class="field-sig"><span class="field-name">value</span><span
+                                class="field-type">string</span></div>
+                        <div class="field-desc">The identifier string</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="type-entry" id="AstLocal">
+                <div class="type-header">
+                    <span class="type-name">AstLocal</span>
+                    <div class="type-badges"><span class="badge ast">AST</span><span class="badge helper">HELPER</span>
+                    </div>
+                </div>
+                <p class="type-description">Represents a local variable declaration. Tracks the variable's name, source
+                    location, shadowing relationships, scope depths, and optional type annotation. Referenced by <a
+                        href="expressions.html#AstExprLocal">AstExprLocal</a> when the variable is used.</p>
+                <div class="section-label">Fields</div>
+                <div class="field-list">
+                    <div class="field-item">
+                        <div class="field-sig"><span class="field-name">name</span><span
+                                class="field-type">string</span></div>
+                        <div class="field-desc">The variable name</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
+                                    href="#Location">Location</a></span></div>
+                        <div class="field-desc">Source location of the variable declaration</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-sig"><span class="field-name">shadow</span><span class="field-type"><a
+                                    href="#AstLocal">AstLocal</a>?</span><span class="field-opt">optional</span></div>
+                        <div class="field-desc">Reference to another local variable with the same name that this one
+                            shadows. <code>nil</code> if no shadowing.</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-sig"><span class="field-name">functionDepth</span><span
+                                class="field-type">number</span></div>
+                        <div class="field-desc">Nesting depth of the function containing this local (0 for top-level)
+                        </div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-sig"><span class="field-name">loopDepth</span><span
+                                class="field-type">number</span></div>
+                        <div class="field-desc">Nesting depth of loops containing this local</div>
+                    </div>
+                    <div class="field-item">
+                        <div class="field-sig"><span class="field-name">annotation</span><span class="field-type"><a
+                                    href="types.html#AstType">AstType</a>?</span><span class="field-opt">optional</span>
+                        </div>
+                        <div class="field-desc">Type annotation for the local variable (e.g.,
+                            <code>local x: number</code>)</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

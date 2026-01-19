@@ -1,180 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Luau Parser API Reference</title>
-    <style>
-        :root {
-            --bg: #0d1117;
-            --sidebar-bg: #161b22;
-            --border: #30363d;
-            --text: #c9d1d9;
-            
-            /* Your Requested Colors */
-            --color-ast: #ff6b6b;      /* Red */
-            --color-expr: #ffdf6b;     /* Yellow */
-            --color-cst: #6bff84;      /* Green */
-            --color-loc: #6be4ff;      /* Location Blue */
-            --color-type: #d2a8ff;     /* Purple for others */
-        }
-
-        body { font-family: 'Segoe UI', system-ui; background: var(--bg); color: var(--text); display: flex; margin: 0; }
-        
-        /* Sidebar */
-        nav { width: 280px; height: 100vh; background: var(--sidebar-bg); border-right: 1px solid var(--border); position: fixed; padding: 20px; overflow-y: auto; }
-        nav h2 { font-size: 1rem; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        .nav-link { display: block; padding: 5px 0; color: #8b949e; text-decoration: none; font-size: 14px; }
-        .nav-link:hover { color: var(--color-loc); }
-
-        /* Main Content */
-        main { margin-left: 320px; padding: 40px; width: 100%; max-width: 900px; }
-        
-        /* Type Card Styling */
-        .card { 
-            background: #161b22; 
-            border: 1px solid var(--border); 
-            border-radius: 8px; 
-            margin-bottom: 30px; 
-            font-family: 'Cascadia Code', 'Consolas', monospace;
-        }
-        
-        .card-header {
-            padding: 15px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .type-title { font-size: 1.2rem; font-weight: bold; }
-        .category-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; color: #000; font-weight: bold; }
-        
-        /* Property List */
-        .card-body { padding: 20px; line-height: 1.6; }
-        .prop-line { margin-bottom: 5px; }
-        .prop-name { color: #79c0ff; }
-        .prop-value { color: var(--text); }
-
-        /* Dynamic Colors for values */
-        .link-ast { color: var(--color-ast) !important; font-weight: bold; }
-        .link-expr { color: var(--color-expr) !important; }
-        .link-cst { color: var(--color-cst) !important; }
-        .link-location { color: var(--color-loc) !important; }
-        
-        a { text-decoration: none; }
-        a:hover { text-decoration: underline; }
-
-        .kind-str { color: #a5d6ff; } /* For "StatLocal" strings */
-    </style>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-
-    <nav id="sidebar">
-        <h2>Types Reference</h2>
+    <div class="container">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h1>Luau Parser</h1>
+                <p>API Reference</p>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Pages</div>
+                <a href="index.html" class="nav-link active">Overview</a>
+                <a href="core.html" class="nav-link">Core Types</a>
+                <a href="expressions.html" class="nav-link">Expressions</a>
+                <a href="statements.html" class="nav-link">Statements</a>
+                <a href="types.html" class="nav-link">Type Annotations</a>
+                <a href="cst.html" class="nav-link">CST Nodes</a>
+                <a href="helpers.html" class="nav-link">Helpers & Result</a>
+            </div>
         </nav>
+        <main class="main">
+            <div class="page-header">
+                <h1>Luau Parser API</h1>
+                <p>Comprehensive reference for the Luau parser's AST and CST data structures.</p>
+            </div>
 
-    <main id="content">
+            <div class="info-section">
+                <h2>Quick Start</h2>
+                <p>The parser entry point returns a <code>Result</code> object containing the full AST, CST data, and
+                    any errors. This documentation detail every type you will encounter in that result.</p>
+            </div>
+
+            <div class="overview-grid">
+                <a href="core.html" class="overview-card">
+                    <div class="overview-icon">📍</div>
+                    <h3>Core Types</h3>
+                    <p>Positions, locations, and identifiers used everywhere.</p>
+                    <div class="overview-count">4 types</div>
+                </a>
+                <a href="expressions.html" class="overview-card">
+                    <div class="overview-icon">⚡</div>
+                    <h3>Expressions</h3>
+                    <p>Nodes that evaluate to values, from literals to function calls.</p>
+                    <div class="overview-count">20 types</div>
+                </a>
+                <a href="statements.html" class="overview-card">
+                    <div class="overview-icon">🏗️</div>
+                    <h3>Statements</h3>
+                    <p>The building blocks of Luau logic and control flow.</p>
+                    <div class="overview-count">19 types</div>
+                </a>
+                <a href="types.html" class="overview-card">
+                    <div class="overview-icon">🏷️</div>
+                    <h3>Type Annotations</h3>
+                    <p>Luau's rich type system syntax (unions, functions, etc).</p>
+                    <div class="overview-count">15 types</div>
+                </a>
+                <a href="cst.html" class="overview-card">
+                    <div class="overview-icon">🎯</div>
+                    <h3>CST Nodes</h3>
+                    <p>Precise source-mapped data for tokens and positioning.</p>
+                    <div class="overview-count">18 types</div>
+                </a>
+                <a href="helpers.html" class="overview-card">
+                    <div class="overview-icon">🔧</div>
+                    <h3>Helpers & Result</h3>
+                    <p>The final Result object and supporting helper structs.</p>
+                    <div class="overview-count">12 types</div>
+                </a>
+            </div>
+
+            <div class="info-section">
+                <h2>Badge Legend</h2>
+                <div class="badge-legend">
+                    <div><span class="badge ast">AST</span> Abstract Syntax Tree node</div>
+                    <div><span class="badge cst">CST</span> Concrete Syntax Tree node</div>
+                    <div><span class="badge expr">EXPR</span> Expression variant</div>
+                    <div><span class="badge stat">STAT</span> Statement variant</div>
+                    <div><span class="badge type">TYPE</span> Type system element</div>
+                    <div><span class="badge pack">PACK</span> Type pack variant</div>
+                    <div><span class="badge helper">HELPER</span> Supporting data structure</div>
+                </div>
+            </div>
         </main>
-
-    <script>
-        // 1. ADD YOUR DATA HERE
-        // Just add a new object for every Luau type you have.
-        const typeData = [
-            {
-                name: "Location",
-                category: "Helper",
-                props: [
-                    { name: "begin", type: "Position" },
-                    { name: "end_", type: "Position" }
-                ]
-            },
-            {
-                name: "AstStatLocal",
-                category: "AST",
-                kind: "StatLocal",
-                props: [
-                    { name: "kind", type: '"StatLocal"', isKind: true },
-                    { name: "location", type: "Location" },
-                    { name: "vars", type: "{AstLocal}" },
-                    { name: "values", type: "{AstExpr}" }
-                ]
-            },
-            {
-                name: "AstExprBinary",
-                category: "EXPR",
-                kind: "ExprBinary",
-                props: [
-                    { name: "kind", type: '"ExprBinary"', isKind: true },
-                    { name: "op", type: "number" },
-                    { name: "left", type: "AstExpr" },
-                    { name: "right", type: "AstExpr" }
-                ]
-            },
-            {
-                name: "CstStatLocal",
-                category: "CST",
-                props: [
-                    { name: "kind", type: '"CstStatLocal"', isKind: true },
-                    { name: "varsCommaPositions", type: "{Position}" },
-                    { name: "equalsPosition", type: "Position" }
-                ]
-            }
-        ];
-
-        // 2. RENDERING ENGINE
-        const content = document.getElementById('content');
-        const sidebar = document.getElementById('sidebar');
-
-        function getLinkClass(typeName) {
-            if (typeName.includes("AstStat")) return "link-ast";
-            if (typeName.includes("AstExpr") || typeName.includes("AstLocal")) return "link-expr";
-            if (typeName.includes("Cst")) return "link-cst";
-            if (typeName.includes("Location") || typeName.includes("Position")) return "link-location";
-            return "";
-        }
-
-        function formatType(typeStr) {
-            // This function looks for type names and wraps them in links and colors
-            const cleanType = typeStr.replace(/{|}/g, "");
-            const linkClass = getLinkClass(cleanType);
-            
-            // If it's a known type in our data, make it a link
-            return typeStr.replace(cleanType, `<a href="#${cleanType}" class="${linkClass}">${cleanType}</a>`);
-        }
-
-        typeData.forEach(item => {
-            // Create Sidebar Link
-            const navLink = document.createElement('a');
-            navLink.href = `#${item.name}`;
-            navLink.className = 'nav-link';
-            navLink.innerText = item.name;
-            sidebar.appendChild(navLink);
-
-            // Create Card
-            const catColor = item.category === "AST" ? "var(--color-ast)" : 
-                             item.category === "EXPR" ? "var(--color-expr)" : 
-                             item.category === "CST" ? "var(--color-cst)" : "var(--color-loc)";
-
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.id = item.name;
-            
-            let propsHtml = item.props.map(p => {
-                let valHtml = p.isKind ? `<span class="kind-str">${p.type}</span>` : formatType(p.type);
-                return `<div class="prop-line"><span class="prop-name">${p.name}</span>: <span class="prop-value">${valHtml}</span></div>`;
-            }).join('');
-
-            card.innerHTML = `
-                <div class="card-header" style="border-left: 5px solid ${catColor}">
-                    <span class="type-title" style="color: ${catColor}">${item.name}</span>
-                    <span class="category-tag" style="background: ${catColor}">${item.category}</span>
-                </div>
-                <div class="card-body">
-                    ${propsHtml}
-                </div>
-            `;
-            content.appendChild(card);
-        });
-    </script>
+    </div>
 </body>
+
 </html>
