@@ -1,18 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CST Nodes - Luau Parser API</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
     <div class="app-container">
         <div class="layout-wrapper">
@@ -23,932 +18,1099 @@
                 </div>
                 <div class="search-container">
                     <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd"
-                            d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
-                            clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
                     </svg>
                     <input type="text" class="search-input" placeholder="Search types..." id="search-input">
                 </div>
                 <nav class="nav-section">
                     <div class="nav-section-title">Pages</div>
                     <a href="index.html" class="nav-link">Overview</a>
-                    <a href="core.html" class="nav-link">Core Types</a>
-                    <a href="expressions.html" class="nav-link">Expressions</a>
-                    <a href="statements.html" class="nav-link">Statements</a>
-                    <a href="types.html" class="nav-link">Type Annotations</a>
-                    <a href="cst.html" class="nav-link active">CST Nodes</a>
-                    <a href="helpers.html" class="nav-link">Helpers & Result</a>
+<a href="core.html" class="nav-link">Core Types</a>
+<a href="expressions.html" class="nav-link">Expressions</a>
+<a href="statements.html" class="nav-link">Statements</a>
+<a href="types.html" class="nav-link">Type Annotations</a>
+<a href="cst.html" class="nav-link active">CST Nodes</a>
+<a href="helpers.html" class="nav-link">Helpers & Result</a>
+
                 </nav>
             </aside>
-
             <main class="main-content">
+
                 <header class="page-header">
                     <h1>CST Nodes</h1>
-                    <p>Concrete Syntax Tree nodes that preserve exact source formatting. Each CST node corresponds to an
-                        AST node and captures precise token positions.</p>
+                    <p>Documentation for CST Nodes</p>
                 </header>
-
-                <div class="info-section">
-                    <p>CST nodes are stored separately from AST nodes in the <code>cstNodes</code> map. Use
-                        <code>result.cstNodes[astNode]</code> to retrieve the CST data for any AST node. CST capture is
-                        enabled via <code>captureCST = true</code> in parse options.
-                    </p>
-                </div>
-
-                <!-- CstNode Union Type -->
+        
+                    <div class="category-header">
+                        <h2>CST Nodes</h2>
+                    </div>
+                  
                 <div class="union-section" id="CstNode">
-                    <h3>CstNode <span class="badge cst">CST</span> <span class="tag">Union Type</span></h3>
-                    <p class="type-description">Union of all CST node types. The specific type depends on the
-                        corresponding AST node's kind.</p>
-                </div>
+                    <h3>CstNode <span class="badge cst">CST</span> </h3>
+                    <p class="type-description">Union type representing all possible Concrete Syntax Tree nodes. CST nodes store positional data for syntactic elements (commas, keywords, etc.) that are not semantically significant but needed for source-accurate transformations.</p>
+                    <div class="union-members">
+                        <a href="cst.html#CstStatBlock" class="union-member">CstStatBlock</a>
+<a href="cst.html#CstStatRepeat" class="union-member">CstStatRepeat</a>
+<a href="cst.html#CstStatDo" class="union-member">CstStatDo</a>
+<a href="cst.html#CstStatFor" class="union-member">CstStatFor</a>
+<a href="cst.html#CstStatForIn" class="union-member">CstStatForIn</a>
+<a href="cst.html#CstStatFunction" class="union-member">CstStatFunction</a>
+<a href="cst.html#CstStatLocalFunction" class="union-member">CstStatLocalFunction</a>
+<a href="cst.html#CstStatLocal" class="union-member">CstStatLocal</a>
+<a href="cst.html#CstStatAssign" class="union-member">CstStatAssign</a>
+<a href="cst.html#CstStatCompoundAssign" class="union-member">CstStatCompoundAssign</a>
+<a href="cst.html#CstStatReturn" class="union-member">CstStatReturn</a>
+<a href="cst.html#CstStatTypeAlias" class="union-member">CstStatTypeAlias</a>
+<a href="cst.html#CstStatTypeFunction" class="union-member">CstStatTypeFunction</a>
+<a href="cst.html#CstExprFunction" class="union-member">CstExprFunction</a>
+<a href="cst.html#CstExprTable" class="union-member">CstExprTable</a>
+<a href="cst.html#CstExprIfElse" class="union-member">CstExprIfElse</a>
+<a href="cst.html#CstExprInterpString" class="union-member">CstExprInterpString</a>
+<a href="cst.html#CstExprConstantString" class="union-member">CstExprConstantString</a>
+<a href="cst.html#CstExprConstantNumber" class="union-member">CstExprConstantNumber</a>
+<a href="cst.html#CstExprOp" class="union-member">CstExprOp</a>
+<a href="cst.html#CstTypeTypeof" class="union-member">CstTypeTypeof</a>
+<a href="cst.html#CstTypeReference" class="union-member">CstTypeReference</a>
+<a href="cst.html#CstTypePackGeneric" class="union-member">CstTypePackGeneric</a>
+<a href="cst.html#CstTypePackExplicit" class="union-member">CstTypePackExplicit</a>
+<a href="cst.html#CstTypeFunction" class="union-member">CstTypeFunction</a>
+<a href="cst.html#CstTypeUnion" class="union-member">CstTypeUnion</a>
+<a href="cst.html#CstTypeIntersection" class="union-member">CstTypeIntersection</a>
+<a href="cst.html#CstTypeTable" class="union-member">CstTypeTable</a>
+<a href="cst.html#CstGenericType" class="union-member">CstGenericType</a>
+<a href="cst.html#CstGenericTypePack" class="union-member">CstGenericTypePack</a>
+<a href="cst.html#CstExprCall" class="union-member">CstExprCall</a>
+<a href="cst.html#CstExprIndexExpr" class="union-member">CstExprIndexExpr</a>
+<a href="cst.html#CstExprTypeAssertion" class="union-member">CstExprTypeAssertion</a>
+<a href="cst.html#CstExprExplicitTypeInstantiation" class="union-member">CstExprExplicitTypeInstantiation</a>
+<a href="cst.html#CstTypeSingletonString" class="union-member">CstTypeSingletonString</a>
+<span class="union-member">{ kind: string, [any]: any }</span>
 
-                <div class="category-header">
-                    <h2>Expression CST</h2>
+                    </div>
                 </div>
-
-                <div class="type-entry" id="CstExprGroup">
+    
+                    <div class="category-header">
+                        <h2>CST Nodes</h2>
+                    </div>
+                  
+                <div class="type-entry" id="CstStatBlock">
                     <div class="type-header">
-                        <span class="type-name">CstExprGroup</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Expression</span>
-                        </div>
+                        <span class="type-name">CstStatBlock</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
                     </div>
-                    <p class="type-description">Parenthesized expression with exact positions of parentheses.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">openParenPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                            <div class="field-desc">Position of the opening <code>(</code>.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">closeParenPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                            <div class="field-desc">Position of the closing <code>)</code>.</div>
-                        </div>
+                    <p class="type-description">CST data for a block statement.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">do
+    print(1); -- Capture semicolon position
+    print(2)
+end</code></pre>
                     </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">bodyCommaPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of semicolons between statements (if any)</div>
+                        </div></div>
                 </div>
-
-                <div class="type-entry" id="CstExprConstantNumber">
+    
+                <div class="type-entry" id="CstStatRepeat">
                     <div class="type-header">
-                        <span class="type-name">CstExprConstantNumber</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Expression</span>
-                        </div>
+                        <span class="type-name">CstStatRepeat</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
                     </div>
-                    <p class="type-description">Original source text for a number literal.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
+                    <p class="type-description">CST data for a repeat statement.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">repeat
+    ...
+until cond -- Capture position of &#039;until&#039;</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">value</span><span
-                                    class="field-type">string</span></div>
-                            <div class="field-desc">The exact source text (e.g., "0xFF", "1.5e10").</div>
-                        </div>
-                    </div>
+                            <div class="field-sig"><span class="field-name">untilPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the `until` keyword</div>
+                        </div></div>
                 </div>
-
-                <div class="type-entry" id="CstExprConstantString">
+    
+                <div class="type-entry" id="CstStatDo">
                     <div class="type-header">
-                        <span class="type-name">CstExprConstantString</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Expression</span>
-                        </div>
+                        <span class="type-name">CstStatDo</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
                     </div>
-                    <p class="type-description">String quote style and raw delimiter information.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">quoteStyle</span><span
-                                    class="field-type">number</span></div>
-                            <div class="field-desc">0=Single, 1=Double, 2=Raw, 3=Interpolated.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">blockDepth</span><span
-                                    class="field-type">number</span></div>
-                            <div class="field-desc">Depth of = signs for raw strings (e.g., 1 for [=[...]=]).</div>
-                        </div>
+                    <p class="type-description">CST data for a do statement.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">do
+    ...
+end -- Capture position of &#039;end&#039;</code></pre>
                     </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">endPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the `end` keyword</div>
+                        </div></div>
                 </div>
-
-                <div class="type-entry" id="CstExprCall">
+    
+                <div class="type-entry" id="CstStatFor">
                     <div class="type-header">
-                        <span class="type-name">CstExprCall</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Expression</span>
-                        </div>
+                        <span class="type-name">CstStatFor</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
                     </div>
-                    <p class="type-description">Function call with argument positions and separators.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">openParens</span><span class="field-type"><a
-                                        href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Position of <code>(</code> (nil for string/table calls).</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">closeParens</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Position of <code>)</code> (nil for string/table calls).</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">commaPositions</span><span
-                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                            <div class="field-desc">Positions of commas between arguments.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">explicitTypes</span><span
-                                    class="field-type"><a
-                                        href="#CstTypeInstantiation">CstTypeInstantiation</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">CST data for explicit type instantiation (if present).</div>
-                        </div>
+                    <p class="type-description">CST data for a numeric for loop.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">for i: number = 1, 10, 2 do end
+-- Captures positions of &#039;:&#039;, &#039;=&#039;, first &#039;,&#039;, second &#039;,&#039;</code></pre>
                     </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">annotationColonPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `:` before loop variable type annotation</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">equalsPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the `=` sign</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">endCommaPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of comma after `to` expression</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">stepCommaPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of comma before `step` expression (if present)</div>
+                        </div></div>
                 </div>
-
-                <div class="type-entry" id="CstExprIndexExpr">
+    
+                <div class="type-entry" id="CstStatForIn">
                     <div class="type-header">
-                        <span class="type-name">CstExprIndexExpr</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Expression</span>
-                        </div>
+                        <span class="type-name">CstStatForIn</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
                     </div>
-                    <p class="type-description">Bracket indexing positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">openBracketPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">closeBracketPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
+                    <p class="type-description">CST data for a generic for loop.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">for i: number, v in pairs(t) do end
+-- Captures positions of &#039;:&#039;, &#039;,&#039; and &#039;,&#039;</code></pre>
                     </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">varsAnnotationColonPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>?}</span></div> 
+                            <div class="field-desc">Positions of `:` before variable type annotations</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">varsCommaPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of commas between loop variables</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">valuesCommaPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of commas between iterator expressions</div>
+                        </div></div>
                 </div>
-
+    
+                <div class="type-entry" id="CstStatFunction">
+                    <div class="type-header">
+                        <span class="type-name">CstStatFunction</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a function declaration statement.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">function f() end -- Capture position of &#039;function&#039;</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">functionKeywordPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the `function` keyword</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstStatLocalFunction">
+                    <div class="type-header">
+                        <span class="type-name">CstStatLocalFunction</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a local function declaration.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">local function f() end
+-- Captures positions of &#039;local&#039; and &#039;function&#039;</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">localKeywordPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the `local` keyword</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">functionKeywordPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the `function` keyword</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstStatLocal">
+                    <div class="type-header">
+                        <span class="type-name">CstStatLocal</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a local variable declaration.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">local x: number, y = 1, 2
+-- Captures positions of &#039;:&#039;, &#039;,&#039; and &#039;,&#039;</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">varsAnnotationColonPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>?}</span></div> 
+                            <div class="field-desc">Positions of `:` before variable type annotations</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">varsCommaPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of commas between variable names</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">valuesCommaPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of commas between initializer expressions</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstStatAssign">
+                    <div class="type-header">
+                        <span class="type-name">CstStatAssign</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for an assignment statement.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">x, y = 1, 2
+-- Captures positions of &#039;,&#039;, &#039;=&#039; and &#039;,&#039;</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">varsCommaPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of commas between l-values</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">equalsPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the `=` sign</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">valuesCommaPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of commas between r-values</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstStatCompoundAssign">
+                    <div class="type-header">
+                        <span class="type-name">CstStatCompoundAssign</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a compound assignment statement.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">x += 1 -- Capture position of &#039;+=&#039;</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">opPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the compound operator (+=, -=, etc.)</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstStatReturn">
+                    <div class="type-header">
+                        <span class="type-name">CstStatReturn</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a return statement.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">return 1, 2 -- Capture position of &#039;,&#039;</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">commaPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of commas between return values</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstStatTypeAlias">
+                    <div class="type-header">
+                        <span class="type-name">CstStatTypeAlias</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a type alias declaration.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">type Box&lt;T&gt; = { val: T }
+-- Captures positions of &#039;type&#039;, &#039;&lt;&#039;, &#039;&gt;&#039;, &#039;=&#039;</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">typeKeywordPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the `type` keyword</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">genericsOpenPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `&lt;` for generics (if present)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">genericsCommaPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of commas between generic parameters</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">genericsClosePosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `&gt;` for generics (if present)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">equalsPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the `=` sign</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstStatTypeFunction">
+                    <div class="type-header">
+                        <span class="type-name">CstStatTypeFunction</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a type function declaration.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">type function f() end
+-- Captures positions of &#039;type&#039; and &#039;function&#039;</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">typeKeywordPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the `type` keyword</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">functionKeywordPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the `function` keyword</div>
+                        </div></div>
+                </div>
+    
                 <div class="type-entry" id="CstExprFunction">
                     <div class="type-header">
                         <span class="type-name">CstExprFunction</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Expression</span>
-                        </div>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
                     </div>
-                    <p class="type-description">Function expression keyword and delimiter positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">functionKeywordPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">openParenPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">closeParenPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">endPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">argCommaPositions</span><span
-                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                        </div>
+                    <p class="type-description">CST data for a function expression.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">function &lt;T&gt;(a: number): string end
+-- Captures positions of function, &lt;, &gt;, :, -&gt;</code></pre>
                     </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">functionKeywordPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the `function` keyword</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">openGenericsPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `&lt;` for generics (if present)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">genericsCommaPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of commas between generic parameters</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">closeGenericsPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `&gt;` for generics (if present)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">argsAnnotationColonPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>?}</span></div> 
+                            <div class="field-desc">Positions of `:` before parameter type annotations</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">argsCommaPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of commas between parameters</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">varargAnnotationColonPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `:` before vararg type annotation</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">returnSpecifierPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `:` or `-&gt;` before return type</div>
+                        </div></div>
                 </div>
-
+    
                 <div class="type-entry" id="CstExprTable">
                     <div class="type-header">
                         <span class="type-name">CstExprTable</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Expression</span>
-                        </div>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
                     </div>
-                    <p class="type-description">Table constructor brace positions and item separators.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">openBracePosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">closeBracePosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">items</span><span class="field-type">{<a
-                                        href="#CstExprTableItem">CstExprTableItem</a>}</span></div>
-                        </div>
+                    <p class="type-description">CST data for a table constructor expression.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">{ a = 1, b = 2 }</code></pre>
                     </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">items</span> <span class="field-type">{<a href="cst.html#CstExprTableItem">CstExprTableItem</a>}</span></div> 
+                            <div class="field-desc">CST data for each table item</div>
+                        </div></div>
                 </div>
-
+    
                 <div class="type-entry" id="CstExprTableItem">
                     <div class="type-header">
                         <span class="type-name">CstExprTableItem</span>
                         <div class="type-badges"><span class="badge cst">CST</span></div>
                     </div>
-                    <p class="type-description">Individual table item separator information.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
+                    <p class="type-description">CST data for a single table item.</p>
+                    
+                    <div class="section-label">Fields</div><div class="field-list">
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">separatorPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
+                            <div class="field-sig"><span class="field-name">kind</span> <span class="field-type">"Record" | "General" | "List"</span></div> 
+                            <div class="field-desc">The item kind (&quot;Record&quot;, &quot;General&quot;, or &quot;List&quot;)</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">separator</span><span
-                                    class="field-type">number</span></div>
-                            <div class="field-desc">0=None, comma or semicolon char code.</div>
+                            <div class="field-sig"><span class="field-name">equalsPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `=` for Record/General items</div>
                         </div>
-                    </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">separator</span> <span class="field-type">number?</span></div> 
+                            <div class="field-desc">The separator character code (`,` or `;`)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">separatorPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the separator</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">indexerOpenPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `[` for General items</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">indexerClosePosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `]` for General items</div>
+                        </div></div>
                 </div>
-
-                <div class="type-entry" id="CstExprUnary">
-                    <div class="type-header">
-                        <span class="type-name">CstExprUnary</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Expression</span>
-                        </div>
-                    </div>
-                    <p class="type-description">Unary operator position.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">opPosition</span><span class="field-type"><a
-                                        href="core.html#Position">Position</a></span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstExprBinary">
-                    <div class="type-header">
-                        <span class="type-name">CstExprBinary</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Expression</span>
-                        </div>
-                    </div>
-                    <p class="type-description">Binary operator position.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">opPosition</span><span class="field-type"><a
-                                        href="core.html#Position">Position</a></span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstExprTypeAssertion">
-                    <div class="type-header">
-                        <span class="type-name">CstExprTypeAssertion</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Expression</span>
-                        </div>
-                    </div>
-                    <p class="type-description">Type assertion operator position.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">opPosition</span><span class="field-type"><a
-                                        href="core.html#Position">Position</a></span></div>
-                        </div>
-                    </div>
-                </div>
-
+    
                 <div class="type-entry" id="CstExprIfElse">
                     <div class="type-header">
                         <span class="type-name">CstExprIfElse</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Expression</span>
-                        </div>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
                     </div>
-                    <p class="type-description">If-else expression keyword positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">ifPosition</span><span class="field-type"><a
-                                        href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">thenPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">elsePosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
+                    <p class="type-description">CST data for an if-else expression.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">if x then y else z
+-- Captures positions of &#039;then&#039; and &#039;else&#039;</code></pre>
                     </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">thenPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the `then` keyword</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">elsePosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the `else`/`elseif` keyword</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">isElseIf</span> <span class="field-type">boolean</span></div> 
+                            <div class="field-desc">True if this is an `elseif` branch</div>
+                        </div></div>
                 </div>
-
+    
                 <div class="type-entry" id="CstExprInterpString">
                     <div class="type-header">
                         <span class="type-name">CstExprInterpString</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Expression</span>
-                        </div>
-                    </div>
-                    <p class="type-description">Interpolated string segment positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">stringPositions</span><span
-                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="category-header">
-                    <h2>Statement CST</h2>
-                </div>
-
-                <div class="type-entry" id="CstStatBlock">
-                    <div class="type-header">
-                        <span class="type-name">CstStatBlock</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Statement</span>
-                        </div>
-                    </div>
-                    <p class="type-description">Block statement with semicolon positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">semicolonPositions</span><span
-                                    class="field-type">{<a href="core.html#Position">Position</a>?}</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstStatIf">
-                    <div class="type-header">
-                        <span class="type-name">CstStatIf</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Statement</span>
-                        </div>
-                    </div>
-                    <p class="type-description">If statement keyword positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">ifPosition</span><span class="field-type"><a
-                                        href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">thenPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">elsePosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">endPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstStatWhile">
-                    <div class="type-header">
-                        <span class="type-name">CstStatWhile</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Statement</span>
-                        </div>
-                    </div>
-                    <p class="type-description">While loop keyword positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">whilePosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">doPosition</span><span class="field-type"><a
-                                        href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">endPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstStatRepeat">
-                    <div class="type-header">
-                        <span class="type-name">CstStatRepeat</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Statement</span>
-                        </div>
-                    </div>
-                    <p class="type-description">Repeat-until loop keyword positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">repeatPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">untilPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstStatReturn">
-                    <div class="type-header">
-                        <span class="type-name">CstStatReturn</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Statement</span>
-                        </div>
-                    </div>
-                    <p class="type-description">Return statement positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">returnPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">commaPositions</span><span
-                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstStatLocal">
-                    <div class="type-header">
-                        <span class="type-name">CstStatLocal</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Statement</span>
-                        </div>
-                    </div>
-                    <p class="type-description">Local declaration positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">localPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">equalsPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">varsCommaPositions</span><span
-                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">valuesCommaPositions</span><span
-                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstStatFor">
-                    <div class="type-header">
-                        <span class="type-name">CstStatFor</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Statement</span>
-                        </div>
-                    </div>
-                    <p class="type-description">Numeric for loop positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">forPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">equalsPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">doPosition</span><span class="field-type"><a
-                                        href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">endPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstStatForIn">
-                    <div class="type-header">
-                        <span class="type-name">CstStatForIn</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Statement</span>
-                        </div>
-                    </div>
-                    <p class="type-description">Generic for-in loop positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">forPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">inPosition</span><span class="field-type"><a
-                                        href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">doPosition</span><span class="field-type"><a
-                                        href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">endPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstStatAssign">
-                    <div class="type-header">
-                        <span class="type-name">CstStatAssign</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Statement</span>
-                        </div>
-                    </div>
-                    <p class="type-description">Assignment statement positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">equalsPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">varsCommaPositions</span><span
-                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">valuesCommaPositions</span><span
-                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstStatCompoundAssign">
-                    <div class="type-header">
-                        <span class="type-name">CstStatCompoundAssign</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Statement</span>
-                        </div>
-                    </div>
-                    <p class="type-description">Compound assignment operator position.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">opPosition</span><span class="field-type"><a
-                                        href="core.html#Position">Position</a></span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstStatFunction">
-                    <div class="type-header">
-                        <span class="type-name">CstStatFunction</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Statement</span>
-                        </div>
-                    </div>
-                    <p class="type-description">Function declaration keyword position.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">functionPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstStatLocalFunction">
-                    <div class="type-header">
-                        <span class="type-name">CstStatLocalFunction</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Statement</span>
-                        </div>
-                    </div>
-                    <p class="type-description">Local function declaration keyword positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">localPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">functionPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstStatTypeAlias">
-                    <div class="type-header">
-                        <span class="type-name">CstStatTypeAlias</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Statement</span>
-                        </div>
-                    </div>
-                    <p class="type-description">Type alias declaration positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">typePosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">equalsPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">exportPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="category-header">
-                    <h2>Type CST</h2>
-                </div>
-
-                <div class="type-entry" id="CstTypeReference">
-                    <div class="type-header">
-                        <span class="type-name">CstTypeReference</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Type</span></div>
-                    </div>
-                    <p class="type-description">CST data for a type reference with optional generic parameters.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">prefixPointPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Position of <code>.</code> after prefix (if present).</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">openParametersPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Position of <code>&lt;</code> for type parameters.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">parametersCommaPositions</span><span
-                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                            <div class="field-desc">Positions of commas between type parameters.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">closeParametersPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Position of <code>&gt;</code> for type parameters.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstTypeTable">
-                    <div class="type-header">
-                        <span class="type-name">CstTypeTable</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Type</span></div>
-                    </div>
-                    <p class="type-description">CST data for a table type with property/indexer positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">items</span><span class="field-type">{<a
-                                        href="#CstTypeTableItem">CstTypeTableItem</a>}</span></div>
-                            <div class="field-desc">CST data for each table item.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">isArray</span><span
-                                    class="field-type">boolean</span></div>
-                            <div class="field-desc">True if this is an array shorthand type <code>{T}</code>.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstTypeTableItem">
-                    <div class="type-header">
-                        <span class="type-name">CstTypeTableItem</span>
                         <div class="type-badges"><span class="badge cst">CST</span></div>
                     </div>
-                    <p class="type-description">CST data for a table type item (property, string property, or indexer).
-                    </p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">kind</span><span
-                                    class="field-type">"Property" | "StringProperty" | "Indexer"</span></div>
-                            <div class="field-desc">The item kind.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">colonPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Position of <code>:</code> after property name.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">separatorPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Position of the separator.</div>
-                        </div>
+                    <p class="type-description">CST data for an interpolated string expression.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">`Value: {x}, Count: {y}`
+-- Captures each string segment position</code></pre>
                     </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">sourceStrings</span> <span class="field-type">{string}</span></div> 
+                            <div class="field-desc">The raw source strings (before escape processing)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">stringPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of each string segment</div>
+                        </div></div>
                 </div>
-
-                <div class="type-entry" id="CstTypeFunction">
+    
+                <div class="type-entry" id="CstExprConstantString">
                     <div class="type-header">
-                        <span class="type-name">CstTypeFunction</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Type</span></div>
+                        <span class="type-name">CstExprConstantString</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
                     </div>
-                    <p class="type-description">CST data for a function type with all delimiter positions.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">openGenericsPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Position of <code>&lt;</code> for generics.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">genericsCommaPositions</span><span
-                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                            <div class="field-desc">Positions of commas between generic parameters.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">closeGenericsPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Position of <code>&gt;</code> for generics.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">openArgsPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                            <div class="field-desc">Position of <code>(</code> for parameters.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">argumentsCommaPositions</span><span
-                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                            <div class="field-desc">Positions of commas between parameters.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">closeArgsPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                            <div class="field-desc">Position of <code>)</code> for parameters.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">returnArrowPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                            <div class="field-desc">Position of <code>-&gt;</code> return type separator.</div>
-                        </div>
+                    <p class="type-description">CST data for a string constant expression.                     2=QuotedRaw ([[]]), 3=QuotedInterp (``)</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">&quot;hello&quot;, &#039;world&#039;, [=[text]=]</code></pre>
                     </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">sourceString</span> <span class="field-type">string?</span></div> 
+                            <div class="field-desc">The raw source string (before escape processing)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">quoteStyle</span> <span class="field-type">number</span></div> 
+                            <div class="field-desc">The CST quote style: 0=QuotedSingle (&#039;&#039;), 1=QuotedDouble (&quot;&quot;),</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">blockDepth</span> <span class="field-type">number</span></div> 
+                            <div class="field-desc">The bracket depth for long strings (e.g., 2 for [==[]==]), 0 for quoted strings</div>
+                        </div></div>
                 </div>
-
-                <div class="type-entry" id="CstTypeUnion">
-                    <div class="type-header">
-                        <span class="type-name">CstTypeUnion</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Type</span></div>
-                    </div>
-                    <p class="type-description">CST data for a union type.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">leadingPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Position of leading <code>|</code> (if present).</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">separatorPositions</span><span
-                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                            <div class="field-desc">Positions of <code>|</code> between types.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstTypeIntersection">
-                    <div class="type-header">
-                        <span class="type-name">CstTypeIntersection</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Type</span></div>
-                    </div>
-                    <p class="type-description">CST data for an intersection type.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">leadingPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Position of leading <code>&amp;</code> (if present).</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">separatorPositions</span><span
-                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                            <div class="field-desc">Positions of <code>&amp;</code> between types.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="CstTypeTypeof">
-                    <div class="type-header">
-                        <span class="type-name">CstTypeTypeof</span>
-                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Type</span></div>
-                    </div>
-                    <p class="type-description">CST data for a typeof type.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">openPosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                            <div class="field-desc">Position of <code>(</code> after typeof.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">closePosition</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                            <div class="field-desc">Position of <code>)</code> closing typeof.</div>
-                        </div>
-                    </div>
-                </div>
-
+    
                 <div class="type-entry" id="CstTypeInstantiation">
                     <div class="type-header">
                         <span class="type-name">CstTypeInstantiation</span>
                         <div class="type-badges"><span class="badge cst">CST</span></div>
                     </div>
-                    <p class="type-description">CST data for type instantiation syntax: <code>&lt;&lt;T, U&gt;&gt;</code>.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">leftArrow1Position</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                            <div class="field-desc">Position of first <code>&lt;</code> character.</div>
-                        </div>
-                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">leftArrow2Position</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                            <div class="field-desc">Position of second <code>&lt;</code> character.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">rightArrow1Position</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                            <div class="field-desc">Position of first <code>&gt;</code> character.</div>
-                        </div>
-                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">rightArrow2Position</span><span
-                                    class="field-type"><a href="core.html#Position">Position</a></span></div>
-                            <div class="field-desc">Position of second <code>&gt;</code> character.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">commaPositions</span><span
-                                    class="field-type">{<a href="core.html#Position">Position</a>}</span></div>
-                            <div class="field-desc">Positions of commas between type arguments.</div>
-                        </div>
+                    <p class="type-description">CST data for type instantiation syntax: `&lt;&lt;T, U&gt;&gt;`.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">f&lt;&lt;T, U&gt;&gt;() -- Captures &lt;&lt;, &gt;&gt; and , positions</code></pre>
                     </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">leftArrow1Position</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of first `&lt;` character</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">leftArrow2Position</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of second `&lt;` for `&lt;&lt;`</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">rightArrow1Position</span> <span class="field-type"></span></div> 
+                            <div class="field-desc">Position of first `&gt;` character</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">rightArrow2Position</span> <span class="field-type"></span></div> 
+                            <div class="field-desc">Position of second `&gt;` for `&gt;&gt;`</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">commaPositions</span> <span class="field-type"></span></div> 
+                            <div class="field-desc">Positions of commas between type arguments</div>
+                        </div></div>
                 </div>
-
+    
+                <div class="type-entry" id="CstExprCall">
+                    <div class="type-header">
+                        <span class="type-name">CstExprCall</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a function call expression.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">f(a, b) -- Captures (, ) and ,</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">openParens</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `(` (nil for string/table calls)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">closeParens</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `)` (nil for string/table calls)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">commaPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of commas between arguments</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">explicitTypes</span> <span class="field-type"><a href="cst.html#CstTypeInstantiation">CstTypeInstantiation</a>?</span></div> 
+                            <div class="field-desc">CST data for explicit type instantiation (if present)</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstExprIndexExpr">
+                    <div class="type-header">
+                        <span class="type-name">CstExprIndexExpr</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a bracketed index expression.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">t[k] -- Captures [ and ]</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">openBracketPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of `[`</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">closeBracketPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of `]`</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstExprTypeAssertion">
+                    <div class="type-header">
+                        <span class="type-name">CstExprTypeAssertion</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a type assertion expression.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">expr :: Type -- Captures ::</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">opPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the `::` operator</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstExprExplicitTypeInstantiation">
+                    <div class="type-header">
+                        <span class="type-name">CstExprExplicitTypeInstantiation</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for explicit type instantiation expression.</p>
+                    
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">instantiation</span> <span class="field-type"><a href="cst.html#CstTypeInstantiation">CstTypeInstantiation</a></span></div> 
+                            <div class="field-desc">The type instantiation syntax data</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstExprConstantNumber">
+                    <div class="type-header">
+                        <span class="type-name">CstExprConstantNumber</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a numeric constant expression.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">123, 0xFF, 1e10</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">value</span> <span class="field-type">string</span></div> 
+                            <div class="field-desc">The raw source text of the number literal</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstExprOp">
+                    <div class="type-header">
+                        <span class="type-name">CstExprOp</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for unary/binary operator expressions.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">-x, a + b -- Captures - and +</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">opPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the operator</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstTypeTypeof">
+                    <div class="type-header">
+                        <span class="type-name">CstTypeTypeof</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a typeof type.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">typeof(expr) -- Captures ( and )</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">openPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of `(` after typeof</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">closePosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of `)` closing typeof</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstTypeReference">
+                    <div class="type-header">
+                        <span class="type-name">CstTypeReference</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a type reference.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">Mod.Type&lt;T&gt; -- Captures ., &lt;, &gt; and ,</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">prefixPointPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `.` after prefix (if present)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">openParametersPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `&lt;` for type parameters</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">parametersCommaPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of commas between type parameters</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">closeParametersPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `&gt;` for type parameters</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstTypePackGeneric">
+                    <div class="type-header">
+                        <span class="type-name">CstTypePackGeneric</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a generic type pack reference.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">T... -- Captures position of ...</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">ellipsisPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of the `...` after the name</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstTypePackExplicit">
+                    <div class="type-header">
+                        <span class="type-name">CstTypePackExplicit</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for an explicit type pack.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">(string, number) -- Captures (, ) and ,</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">openParenthesesPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `(`</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">closeParenthesesPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `)`</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">commaPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}?</span></div> 
+                            <div class="field-desc">Positions of commas between types</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstTypeFunction">
+                    <div class="type-header">
+                        <span class="type-name">CstTypeFunction</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a function type.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">&lt;T&gt;(a: number) -&gt; string -- Captures &lt;, &gt;, (, ), :, -&gt; and ,</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">openGenericsPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `&lt;` for generics</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">genericsCommaPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of commas between generic parameters</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">closeGenericsPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `&gt;` for generics</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">openArgsPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of `(` for parameters</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">argumentNameColonPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>?}</span></div> 
+                            <div class="field-desc">Positions of `:` after parameter names</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">argumentsCommaPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of commas between parameters</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">closeArgsPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of `)` for parameters</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">returnArrowPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of `-&gt;` return type separator</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstTypeUnion">
+                    <div class="type-header">
+                        <span class="type-name">CstTypeUnion</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a union type.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">A | B -- Captures |</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">leadingPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of leading `|` (if present)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">separatorPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of `|` between types</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstTypeIntersection">
+                    <div class="type-header">
+                        <span class="type-name">CstTypeIntersection</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for an intersection type.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">A &amp; B -- Captures &amp;</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">leadingPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of leading `&amp;` (if present)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">separatorPositions</span> <span class="field-type">{<a href="core.html#Position">Position</a>}</span></div> 
+                            <div class="field-desc">Positions of `&amp;` between types</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstTypeTable">
+                    <div class="type-header">
+                        <span class="type-name">CstTypeTable</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a table type.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">{ x: number } -- Captures {, }, :</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">items</span> <span class="field-type">{<a href="cst.html#CstTypeTableItem">CstTypeTableItem</a>}</span></div> 
+                            <div class="field-desc">CST data for each table item</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">isArray</span> <span class="field-type">boolean</span></div> 
+                            <div class="field-desc">True if this is an array shorthand type `{T}`</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstTypeTableItem">
+                    <div class="type-header">
+                        <span class="type-name">CstTypeTableItem</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a table type item.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">prop: Type, [Idx]: Type
+-- Captures :, ,, [, ]</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">kind</span> <span class="field-type">"Property" | "StringProperty" | "Indexer"</span></div> 
+                            <div class="field-desc">&quot;Property&quot;, &quot;StringProperty&quot; or &quot;Indexer&quot;</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">colonPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `:` after property name</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">separator</span> <span class="field-type">number?</span></div> 
+                            <div class="field-desc">The separator character code</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">separatorPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of the separator</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">indexerOpenPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `[` for indexers</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">indexerClosePosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `]` for indexers</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">stringInfo</span> <span class="field-type"><a href="cst.html#CstExprConstantString">CstExprConstantString</a>?</span></div> 
+                            <div class="field-desc">String constant info for string properties</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">stringPosition</span> <span class="field-type"><a href="core.html#Location">Location</a>?</span></div> 
+                            <div class="field-desc">Location of string key</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">equalsPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `=` for string properties</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstGenericType">
+                    <div class="type-header">
+                        <span class="type-name">CstGenericType</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a generic type parameter.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">&lt;T = Default&gt; -- Captures =</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">defaultEqualsPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `=` before default value</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstGenericTypePack">
+                    <div class="type-header">
+                        <span class="type-name">CstGenericTypePack</span>
+                        <div class="type-badges"><span class="badge cst">CST</span></div>
+                    </div>
+                    <p class="type-description">CST data for a generic type pack parameter.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">&lt;T... = Default&gt; -- Captures ... and =</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">ellipsisPosition</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Position of `...` after name</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">defaultEqualsPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of `=` before default value</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="CstTypeSingletonString">
+                    <div class="type-header">
+                        <span class="type-name">CstTypeSingletonString</span>
+                        <div class="type-badges"><span class="badge cst">CST</span><span class="tag">Singleton</span></div>
+                    </div>
+                    <p class="type-description">CST data for a string singleton type.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">&quot;foo&quot;, &#039;bar&#039;</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">sourceString</span> <span class="field-type">{string}</span></div> 
+                            <div class="field-desc">The raw source strings</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">quoteStyle</span> <span class="field-type">number</span></div> 
+                            <div class="field-desc">The quote style used</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">blockDepth</span> <span class="field-type">number</span></div> 
+                            <div class="field-desc">The bracket depth for long strings</div>
+                        </div></div>
+                </div>
+    
             </main>
-
             <aside class="sidebar-right">
-                <div class="sidebar-right-title">CST Nodes</div>
-                <div class="nav-section">
-                    <div class="nav-section-title">Supertype</div>
-                    <a href="#CstNode" class="nav-link">CstNode</a>
-                </div>
-                <div class="nav-section">
-                    <div class="nav-section-title">Expression CST</div>
-                    <a href="#CstExprGroup" class="nav-link">CstExprGroup</a>
-                    <a href="#CstExprConstantNumber" class="nav-link">CstExprConstantNumber</a>
-                    <a href="#CstExprConstantString" class="nav-link">CstExprConstantString</a>
-                    <a href="#CstExprCall" class="nav-link">CstExprCall</a>
-                    <a href="#CstExprIndexExpr" class="nav-link">CstExprIndexExpr</a>
-                    <a href="#CstExprFunction" class="nav-link">CstExprFunction</a>
-                    <a href="#CstExprTable" class="nav-link">CstExprTable</a>
-                    <a href="#CstExprTableItem" class="nav-link">CstExprTableItem</a>
-                    <a href="#CstExprUnary" class="nav-link">CstExprUnary</a>
-                    <a href="#CstExprBinary" class="nav-link">CstExprBinary</a>
-                    <a href="#CstExprTypeAssertion" class="nav-link">CstExprTypeAssertion</a>
-                    <a href="#CstExprIfElse" class="nav-link">CstExprIfElse</a>
-                    <a href="#CstExprInterpString" class="nav-link">CstExprInterpString</a>
-                </div>
-                <div class="nav-section">
-                    <div class="nav-section-title">Statement CST</div>
-                    <a href="#CstStatBlock" class="nav-link">CstStatBlock</a>
-                    <a href="#CstStatIf" class="nav-link">CstStatIf</a>
-                    <a href="#CstStatWhile" class="nav-link">CstStatWhile</a>
-                    <a href="#CstStatRepeat" class="nav-link">CstStatRepeat</a>
-                    <a href="#CstStatReturn" class="nav-link">CstStatReturn</a>
-                    <a href="#CstStatLocal" class="nav-link">CstStatLocal</a>
-                    <a href="#CstStatFor" class="nav-link">CstStatFor</a>
-                    <a href="#CstStatForIn" class="nav-link">CstStatForIn</a>
-                    <a href="#CstStatAssign" class="nav-link">CstStatAssign</a>
-                    <a href="#CstStatCompoundAssign" class="nav-link">CstStatCompoundAssign</a>
-                    <a href="#CstStatFunction" class="nav-link">CstStatFunction</a>
-                    <a href="#CstStatLocalFunction" class="nav-link">CstStatLocalFunction</a>
-                    <a href="#CstStatTypeAlias" class="nav-link">CstStatTypeAlias</a>
-                </div>
-                <div class="nav-section">
-                    <div class="nav-section-title">Type CST</div>
-                    <a href="#CstTypeReference" class="nav-link">CstTypeReference</a>
-                    <a href="#CstTypeTable" class="nav-link">CstTypeTable</a>
-                    <a href="#CstTypeTableItem" class="nav-link">CstTypeTableItem</a>
-                    <a href="#CstTypeFunction" class="nav-link">CstTypeFunction</a>
-                    <a href="#CstTypeUnion" class="nav-link">CstTypeUnion</a>
-                    <a href="#CstTypeIntersection" class="nav-link">CstTypeIntersection</a>
-                    <a href="#CstTypeTypeof" class="nav-link">CstTypeTypeof</a>
-                    <a href="#CstTypeInstantiation" class="nav-link">CstTypeInstantiation</a>
-                </div>
+                <div class="sidebar-right-title">On this page</div>
+                <nav id="toc-nav">
+                    <!-- TOC -->
+                </nav>
             </aside>
         </div>
     </div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/lua.min.js"></script>
-    <script src="docs.js"></script>
+    <script>hljs.highlightAll();</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tocNav = document.getElementById('toc-nav');
+            const headers = document.querySelectorAll('.type-entry h3, .union-section h3, .category-header h2');
+            
+            headers.forEach(header => {
+                if (header.tagName === 'H2') {
+                    const link = document.createElement('div');
+                    link.className = 'nav-section-title';
+                    link.style.marginTop = '16px';
+                    link.textContent = header.textContent;
+                    tocNav.appendChild(link);
+                } else {
+                    let id = header.parentElement.id;
+                    if (!id && header.parentElement.className.includes('type-entry')) {
+                        id = header.parentElement.id;
+                    }
+                    if (id) {
+                        const link = document.createElement('a');
+                        link.href = '#' + id;
+                        link.className = 'nav-link';
+                        const clone = header.cloneNode(true);
+                        clone.querySelectorAll('.badge, .tag').forEach(e => e.remove());
+                        link.textContent = clone.textContent.trim();
+                        tocNav.appendChild(link);
+                    }
+                }
+            });
+
+            const searchInput = document.getElementById('search-input');
+            const typeEntries = document.querySelectorAll('.type-entry, .union-section');
+
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                typeEntries.forEach(entry => {
+                    const text = entry.textContent.toLowerCase();
+                    if (text.includes(term)) {
+                        entry.classList.remove('hidden');
+                    } else {
+                        entry.classList.add('hidden');
+                    }
+                });
+            });
+        });
+    </script>
 </body>
-
-
 </html>

@@ -1,18 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Core Types - Luau Parser API</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
     <div class="app-container">
         <div class="layout-wrapper">
@@ -23,225 +18,192 @@
                 </div>
                 <div class="search-container">
                     <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd"
-                            d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
-                            clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
                     </svg>
                     <input type="text" class="search-input" placeholder="Search types..." id="search-input">
                 </div>
                 <nav class="nav-section">
                     <div class="nav-section-title">Pages</div>
                     <a href="index.html" class="nav-link">Overview</a>
-                    <a href="core.html" class="nav-link active">Core Types</a>
-                    <a href="expressions.html" class="nav-link">Expressions</a>
-                    <a href="statements.html" class="nav-link">Statements</a>
-                    <a href="types.html" class="nav-link">Type Annotations</a>
-                    <a href="cst.html" class="nav-link">CST Nodes</a>
-                    <a href="helpers.html" class="nav-link">Helpers & Result</a>
+<a href="core.html" class="nav-link active">Core Types</a>
+<a href="expressions.html" class="nav-link">Expressions</a>
+<a href="statements.html" class="nav-link">Statements</a>
+<a href="types.html" class="nav-link">Type Annotations</a>
+<a href="cst.html" class="nav-link">CST Nodes</a>
+<a href="helpers.html" class="nav-link">Helpers & Result</a>
+
                 </nav>
             </aside>
-
             <main class="main-content">
+
                 <header class="page-header">
                     <h1>Core Types</h1>
-                    <p>Fundamental structures for positioning, locations, and identifiers used throughout the AST and
-                        CST.</p>
+                    <p>Documentation for Core Types</p>
                 </header>
-
-                <div class="category-header">
-                    <h2>Positioning</h2>
-                </div>
-
+        
+                    <div class="category-header">
+                        <h2>Core Types</h2>
+                    </div>
+                  
                 <div class="type-entry" id="Position">
                     <div class="type-header">
                         <span class="type-name">Position</span>
-                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                        <div class="type-badges"><span class="badge core">CORE</span></div>
                     </div>
-                    <p class="type-description">Represents a position in the source code (0-indexed line and column).
-                        Used to pinpoint exact locations for error reporting and CST data.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">line</span><span
-                                    class="field-type">number</span></div>
-                            <div class="field-desc">The 0-indexed line number in the source file.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">column</span><span
-                                    class="field-type">number</span></div>
-                            <div class="field-desc">The 1-indexed column number on the current line.</div>
-                        </div>
-                    </div>
+                    <p class="type-description">Represents a position in the source code (1-indexed line and column). Used to pinpoint exact locations for error reporting and CST data.</p>
+                    
+                    
                 </div>
-
+    
                 <div class="type-entry" id="Location">
                     <div class="type-header">
                         <span class="type-name">Location</span>
-                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
+                        <div class="type-badges"><span class="badge core">CORE</span></div>
                     </div>
-                    <p class="type-description">Represents a range in the source code from a beginning position to an
-                        ending position. Every AST node has a location that spans the source text it was parsed from.
-                    </p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">begin</span><span class="field-type"><a
-                                        href="#Position">Position</a></span></div>
-                            <div class="field-desc">The starting position of the range (inclusive).</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">end_</span><span class="field-type"><a
-                                        href="#Position">Position</a></span></div>
-                            <div class="field-desc">The ending position of the range (exclusive).</div>
-                        </div>
+                    <p class="type-description">Represents a range in the source code from a beginning position to an ending position. Every AST node has a location that spans the source text it was parsed from.</p>
+                    
+                    
+                </div>
+    
+                    <div class="category-header">
+                        <h2>Core Types</h2>
                     </div>
-                </div>
-
-                <div class="category-header">
-                    <h2>Identifiers</h2>
-                </div>
-
+                  
                 <div class="type-entry" id="AstName">
                     <div class="type-header">
                         <span class="type-name">AstName</span>
-                        <div class="type-badges"><span class="badge ast">AST</span></div>
+                        <div class="type-badges"><span class="badge core">CORE</span></div>
                     </div>
-                    <p class="type-description">Represents a simple name/identifier in the AST. Used for variable names,
-                        function names, type names, etc.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">value</span><span
-                                    class="field-type">string</span></div>
-                            <div class="field-desc">The string value of the identifier.</div>
-                        </div>
+                    <p class="type-description">Represents a simple name/identifier in the AST. Used for variable names, function names, type names, etc.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">-- &quot;myVar&quot; in:
+local myVar = 1
+-- &quot;func&quot; in:
+function func() end</code></pre>
                     </div>
+                    
                 </div>
-
+    
                 <div class="type-entry" id="AstLocal">
                     <div class="type-header">
                         <span class="type-name">AstLocal</span>
-                        <div class="type-badges"><span class="badge ast">AST</span></div>
+                        <div class="type-badges"><span class="badge core">CORE</span></div>
                     </div>
-                    <p class="type-description">Represents a local variable declaration in the AST. Tracks shadowing
-                        information, scope depth, and type annotations.</p>
+                    <p class="type-description">Represents a local variable declaration in the AST. Tracks the variable&#039;s name, location, shadowing information, scope depth, and optional type annotation.</p>
+                    
                     <div class="code-example">
                         <div class="code-example-header"><span class="code-example-title">Example</span></div>
-                        <pre><code class="language-lua">local x: number = 10
--- Creates AstLocal with name="x", annotation=AstTypeReference("number")</code></pre>
+                        <pre><code class="language-lua">local x = 1 -- &quot;x&quot; is the AstLocal
+local y: number -- &quot;y&quot; is the AstLocal (with annotation)
+local function f(arg) end -- &quot;f&quot; and &quot;arg&quot; are AstLocals</code></pre>
                     </div>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
+                    <div class="section-label">Fields</div><div class="field-list">
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">name</span><span
-                                    class="field-type">string</span></div>
-                            <div class="field-desc">The name of the local variable.</div>
+                            <div class="field-sig"><span class="field-name">name</span> <span class="field-type">string</span></div> 
+                            <div class="field-desc">The name of the local variable</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
-                                        href="#Location">Location</a></span></div>
-                            <div class="field-desc">Source location of the variable declaration.</div>
+                            <div class="field-sig"><span class="field-name">location</span> <span class="field-type"><a href="core.html#Location">Location</a></span></div> 
+                            <div class="field-desc">Source location of the variable declaration</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">shadow</span><span class="field-type"><a
-                                        href="#AstLocal">AstLocal</a>?</span><span class="field-opt">optional</span>
-                            </div>
-                            <div class="field-desc">Reference to a shadowed local variable with the same name (if any).
-                            </div>
+                            <div class="field-sig"><span class="field-name">shadow</span> <span class="field-type"><a href="core.html#AstLocal">AstLocal</a>?</span></div> 
+                            <div class="field-desc">Reference to a shadowed local variable with the same name (if any)</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">functionDepth</span><span
-                                    class="field-type">number</span></div>
-                            <div class="field-desc">The nesting depth of the function containing this local.</div>
+                            <div class="field-sig"><span class="field-name">functionDepth</span> <span class="field-type">number</span></div> 
+                            <div class="field-desc">The nesting depth of the function containing this local</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">loopDepth</span><span
-                                    class="field-type">number</span></div>
-                            <div class="field-desc">The nesting depth of loops containing this local.</div>
+                            <div class="field-sig"><span class="field-name">loopDepth</span> <span class="field-type">number</span></div> 
+                            <div class="field-desc">The nesting depth of loops containing this local</div>
                         </div>
                         <div class="field-item">
-                            <div class="field-sig"><span class="field-name">annotation</span><span class="field-type"><a
-                                        href="types.html#AstType">AstType</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Optional type annotation for the local variable.</div>
-                        </div>
+                            <div class="field-sig"><span class="field-name">annotation</span> <span class="field-type"><a href="types.html#AstType">AstType</a>?</span></div> 
+                            <div class="field-desc">Optional type annotation for the local variable</div>
+                        </div></div>
+                </div>
+    
+                    <div class="category-header">
+                        <h2>Core Types</h2>
+                    </div>
+                  
+                <div class="union-section" id="AstNode">
+                    <h3>AstNode <span class="badge core">CORE</span> <span class="tag">Union Type</span></h3>
+                    <p class="type-description">Union type representing all possible AST nodes that can be stored in the CST map. This includes statements, expressions, types, locals, and various helper nodes.</p>
+                    <div class="union-members">
+                        <a href="statements.html#AstStat" class="union-member">AstStat</a>
+<a href="expressions.html#AstExpr" class="union-member">AstExpr</a>
+<a href="types.html#AstType" class="union-member">AstType</a>
+<a href="core.html#AstLocal" class="union-member">AstLocal</a>
+<a href="helpers.html#AstArgumentName" class="union-member">AstArgumentName</a>
+<a href="helpers.html#AstGenericType" class="union-member">AstGenericType</a>
+<a href="helpers.html#AstGenericTypePack" class="union-member">AstGenericTypePack</a>
+<a href="types.html#AstTypePack" class="union-member">AstTypePack</a>
+<a href="helpers.html#AstTypeOrPack" class="union-member">AstTypeOrPack</a>
+<a href="helpers.html#AstAttr" class="union-member">AstAttr</a>
+
                     </div>
                 </div>
-
-                <div class="category-header">
-                    <h2>Bindings</h2>
-                </div>
-
-                <div class="type-entry" id="Binding">
-                    <div class="type-header">
-                        <span class="type-name">Binding</span>
-                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
-                    </div>
-                    <p class="type-description">A binding in a local declaration or function parameter, combining a name
-                        and an optional type annotation.</p>
-                    <div class="section-label">Fields</div>
-                    <div class="field-list">
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">name</span><span class="field-type"><a
-                                        href="#AstName">AstName</a></span></div>
-                            <div class="field-desc">The variable name.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">location</span><span class="field-type"><a
-                                        href="#Location">Location</a></span></div>
-                            <div class="field-desc">Location of the binding.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">annotation</span><span class="field-type"><a
-                                        href="types.html#AstType">AstType</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Optional type annotation.</div>
-                        </div>
-                        <div class="field-item">
-                            <div class="field-sig"><span class="field-name">colonPosition</span><span
-                                    class="field-type"><a href="#Position">Position</a>?</span><span
-                                    class="field-opt">optional</span></div>
-                            <div class="field-desc">Position of the <code>:</code> before type annotation.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="type-entry" id="BindingList">
-                    <div class="type-header">
-                        <span class="type-name">BindingList</span>
-                        <div class="type-badges"><span class="badge helper">HELPER</span></div>
-                    </div>
-                    <p class="type-description">An array/list of <code>Binding</code> objects. Used in local
-                        declarations and function signatures.</p>
-                </div>
-
+    
             </main>
-
             <aside class="sidebar-right">
-                <div class="sidebar-right-title">Core Types</div>
-                <div class="nav-section">
-                    <div class="nav-section-title">Positioning</div>
-                    <a href="#Position" class="nav-link">Position</a>
-                    <a href="#Location" class="nav-link">Location</a>
-                </div>
-                <div class="nav-section">
-                    <div class="nav-section-title">Identifiers</div>
-                    <a href="#AstName" class="nav-link">AstName</a>
-                    <a href="#AstLocal" class="nav-link">AstLocal</a>
-                </div>
-                <div class="nav-section">
-                    <div class="nav-section-title">Bindings</div>
-                    <a href="#Binding" class="nav-link">Binding</a>
-                    <a href="#BindingList" class="nav-link">BindingList</a>
-                </div>
+                <div class="sidebar-right-title">On this page</div>
+                <nav id="toc-nav">
+                    <!-- TOC -->
+                </nav>
             </aside>
         </div>
     </div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/lua.min.js"></script>
-    <script src="docs.js"></script>
+    <script>hljs.highlightAll();</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tocNav = document.getElementById('toc-nav');
+            const headers = document.querySelectorAll('.type-entry h3, .union-section h3, .category-header h2');
+            
+            headers.forEach(header => {
+                if (header.tagName === 'H2') {
+                    const link = document.createElement('div');
+                    link.className = 'nav-section-title';
+                    link.style.marginTop = '16px';
+                    link.textContent = header.textContent;
+                    tocNav.appendChild(link);
+                } else {
+                    let id = header.parentElement.id;
+                    if (!id && header.parentElement.className.includes('type-entry')) {
+                        id = header.parentElement.id;
+                    }
+                    if (id) {
+                        const link = document.createElement('a');
+                        link.href = '#' + id;
+                        link.className = 'nav-link';
+                        const clone = header.cloneNode(true);
+                        clone.querySelectorAll('.badge, .tag').forEach(e => e.remove());
+                        link.textContent = clone.textContent.trim();
+                        tocNav.appendChild(link);
+                    }
+                }
+            });
+
+            const searchInput = document.getElementById('search-input');
+            const typeEntries = document.querySelectorAll('.type-entry, .union-section');
+
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                typeEntries.forEach(entry => {
+                    const text = entry.textContent.toLowerCase();
+                    if (text.includes(term)) {
+                        entry.classList.remove('hidden');
+                    } else {
+                        entry.classList.add('hidden');
+                    }
+                });
+            });
+        });
+    </script>
 </body>
-
-
 </html>

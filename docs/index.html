@@ -1,18 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Luau Parser API Reference</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <title>Overview - Luau Parser API</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
     <div class="app-container">
         <div class="layout-wrapper">
@@ -23,87 +18,98 @@
                 </div>
                 <div class="search-container">
                     <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd"
-                            d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
-                            clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
                     </svg>
                     <input type="text" class="search-input" placeholder="Search types..." id="search-input">
                 </div>
                 <nav class="nav-section">
                     <div class="nav-section-title">Pages</div>
                     <a href="index.html" class="nav-link active">Overview</a>
-                    <a href="core.html" class="nav-link">Core Types</a>
-                    <a href="expressions.html" class="nav-link">Expressions</a>
-                    <a href="statements.html" class="nav-link">Statements</a>
-                    <a href="types.html" class="nav-link">Type Annotations</a>
-                    <a href="cst.html" class="nav-link">CST Nodes</a>
-                    <a href="helpers.html" class="nav-link">Helpers & Result</a>
+<a href="core.html" class="nav-link">Core Types</a>
+<a href="expressions.html" class="nav-link">Expressions</a>
+<a href="statements.html" class="nav-link">Statements</a>
+<a href="types.html" class="nav-link">Type Annotations</a>
+<a href="cst.html" class="nav-link">CST Nodes</a>
+<a href="helpers.html" class="nav-link">Helpers & Result</a>
+
                 </nav>
             </aside>
-
             <main class="main-content">
+
                 <header class="page-header">
                     <h1>Luau Parser API</h1>
-                    <p>A high-performance, lossless parser for the Luau programming language. This documentation covers
-                        the AST and CST structures returned by the parser.</p>
+                    <p>Complete documentation for the Luau Parser AST and CST types.</p>
                 </header>
-
-                <div class="info-section">
-                    <p>The parser produces a rich Abstract Syntax Tree (AST) for semantic analysis and an optional
-                        Concrete Syntax Tree (CST) for source-accurate transforms. All nodes include detailed location
-                        mapping.</p>
+                <div class="category-header"><h2>Overview</h2></div>
+                <div class="type-entry">
+                    <p class="type-description">This documentation covers the Abstract Syntax Tree (AST), Concrete Syntax Tree (CST), and helper structures used in the Luau Parser.</p>
+                    <div class="section-label">Pages</div>
+                    <ul style="list-style: none; padding: 0; margin-top: 10px;">
+                        <li style="margin-bottom: 8px;"><a href="core.html" class="union-member" style="font-weight: 600;">Core Types</a> <span style="color: var(--text-secondary);"> - Base structures like Position, Location, and AST Unions.</span></li>
+                        <li style="margin-bottom: 8px;"><a href="expressions.html" class="union-member" style="font-weight: 600;">Expressions</a> <span style="color: var(--text-secondary);"> - AST nodes for expressions (AstExpr).</span></li>
+                        <li style="margin-bottom: 8px;"><a href="statements.html" class="union-member" style="font-weight: 600;">Statements</a> <span style="color: var(--text-secondary);"> - AST nodes for statements (AstStat).</span></li>
+                        <li style="margin-bottom: 8px;"><a href="types.html" class="union-member" style="font-weight: 600;">Type Annotations</a> <span style="color: var(--text-secondary);"> - AST nodes for type annotations (AstType).</span></li>
+                        <li style="margin-bottom: 8px;"><a href="cst.html" class="union-member" style="font-weight: 600;">CST Nodes</a> <span style="color: var(--text-secondary);"> - Concrete Syntax Tree nodes for full fidelity parsing.</span></li>
+                        <li style="margin-bottom: 8px;"><a href="helpers.html" class="union-member" style="font-weight: 600;">Helpers & Result</a> <span style="color: var(--text-secondary);"> - Helper structures and parser result types.</span></li>
+                    </ul>
                 </div>
-
-                <h2>Key Components</h2>
-                <div class="overview-grid">
-                    <a href="core.html" class="overview-card">
-                        <h3>Core Types</h3>
-                        <p>Fundamental types like Position, Location, and identifiers used across all nodes.</p>
-                        <span class="overview-count">6 TYPES</span>
-                    </a>
-                    <a href="expressions.html" class="overview-card">
-                        <h3>Expressions</h3>
-                        <p>Literals, variables, function calls, and operators that evaluate to values.</p>
-                        <span class="overview-count">18 TYPES</span>
-                    </a>
-                    <a href="statements.html" class="overview-card">
-                        <h3>Statements</h3>
-                        <p>The building blocks of logic: loops, assignments, and control flow.</p>
-                        <span class="overview-count">18 TYPES</span>
-                    </a>
-                    <a href="types.html" class="overview-card">
-                        <h3>Type Annotations</h3>
-                        <p>Luau's gradual typing system: unions, intersections, and packs.</p>
-                        <span class="overview-count">18 TYPES</span>
-                    </a>
-                    <a href="cst.html" class="overview-card">
-                        <h3>CST Nodes</h3>
-                        <p>Low-level syntactic data preserving every semicolon and keyword position.</p>
-                        <span class="overview-count">30+ TYPES</span>
-                    </a>
-                    <a href="helpers.html" class="overview-card">
-                        <h3>Helpers & Result</h3>
-                        <p>Function attributes, error reporting, and the main parser output.</p>
-                        <span class="overview-count">10 TYPES</span>
-                    </a>
-                </div>
-
+    
             </main>
-
             <aside class="sidebar-right">
-                <div class="nav-section">
-                    <div class="nav-section-title">Quick Links</div>
-                    <a href="https://luau-lang.org" class="nav-link">Luau Language</a>
-                    <a href="core.html#Location" class="nav-link">Location Mapping</a>
-                    <a href="helpers.html#Result" class="nav-link">Result Object</a>
-                </div>
+                <div class="sidebar-right-title">On this page</div>
+                <nav id="toc-nav">
+                    <!-- TOC -->
+                </nav>
             </aside>
         </div>
     </div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/lua.min.js"></script>
-    <script src="docs.js"></script>
-</body>
+    <script>hljs.highlightAll();</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tocNav = document.getElementById('toc-nav');
+            const headers = document.querySelectorAll('.type-entry h3, .union-section h3, .category-header h2');
+            
+            headers.forEach(header => {
+                if (header.tagName === 'H2') {
+                    const link = document.createElement('div');
+                    link.className = 'nav-section-title';
+                    link.style.marginTop = '16px';
+                    link.textContent = header.textContent;
+                    tocNav.appendChild(link);
+                } else {
+                    let id = header.parentElement.id;
+                    if (!id && header.parentElement.className.includes('type-entry')) {
+                        id = header.parentElement.id;
+                    }
+                    if (id) {
+                        const link = document.createElement('a');
+                        link.href = '#' + id;
+                        link.className = 'nav-link';
+                        const clone = header.cloneNode(true);
+                        clone.querySelectorAll('.badge, .tag').forEach(e => e.remove());
+                        link.textContent = clone.textContent.trim();
+                        tocNav.appendChild(link);
+                    }
+                }
+            });
 
+            const searchInput = document.getElementById('search-input');
+            const typeEntries = document.querySelectorAll('.type-entry, .union-section');
+
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                typeEntries.forEach(entry => {
+                    const text = entry.textContent.toLowerCase();
+                    if (text.includes(term)) {
+                        entry.classList.remove('hidden');
+                    } else {
+                        entry.classList.add('hidden');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
 </html>
