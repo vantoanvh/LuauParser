@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <link rel="stylesheet" href="style.css">
+    <script src="search_index.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -26,11 +27,8 @@
                     <div class="nav-section-title">Pages</div>
                     <a href="index.html" class="nav-link active">Overview</a>
 <a href="core.html" class="nav-link">Core Types</a>
-<a href="expressions.html" class="nav-link">Expressions</a>
-<a href="statements.html" class="nav-link">Statements</a>
-<a href="types.html" class="nav-link">Type Annotations</a>
+<a href="ast.html" class="nav-link">AST Nodes</a>
 <a href="cst.html" class="nav-link">CST Nodes</a>
-<a href="helpers.html" class="nav-link">Helpers & Result</a>
 
                 </nav>
             </aside>
@@ -40,25 +38,67 @@
                     <h1>Luau Parser API</h1>
                     <p>Complete documentation for the Luau Parser AST and CST types.</p>
                 </header>
-                <div class="category-header"><h2>Overview</h2></div>
+
+                <div class="category-header">
+                    <h2>Overview</h2>
+                </div>
+
                 <div class="type-entry">
-                    <p class="type-description">This documentation covers the Abstract Syntax Tree (AST), Concrete Syntax Tree (CST), and helper structures used in the Luau Parser.</p>
-                    <div class="section-label">Pages</div>
-                    <ul style="list-style: none; padding: 0; margin-top: 10px;">
-                        <li style="margin-bottom: 8px;"><a href="core.html" class="union-member" style="font-weight: 600;">Core Types</a> <span style="color: var(--text-secondary);"> - Base structures like Position, Location, and AST Unions.</span></li>
-                        <li style="margin-bottom: 8px;"><a href="expressions.html" class="union-member" style="font-weight: 600;">Expressions</a> <span style="color: var(--text-secondary);"> - AST nodes for expressions (AstExpr).</span></li>
-                        <li style="margin-bottom: 8px;"><a href="statements.html" class="union-member" style="font-weight: 600;">Statements</a> <span style="color: var(--text-secondary);"> - AST nodes for statements (AstStat).</span></li>
-                        <li style="margin-bottom: 8px;"><a href="types.html" class="union-member" style="font-weight: 600;">Type Annotations</a> <span style="color: var(--text-secondary);"> - AST nodes for type annotations (AstType).</span></li>
-                        <li style="margin-bottom: 8px;"><a href="cst.html" class="union-member" style="font-weight: 600;">CST Nodes</a> <span style="color: var(--text-secondary);"> - Concrete Syntax Tree nodes for full fidelity parsing.</span></li>
-                        <li style="margin-bottom: 8px;"><a href="helpers.html" class="union-member" style="font-weight: 600;">Helpers & Result</a> <span style="color: var(--text-secondary);"> - Helper structures and parser result types.</span></li>
-                    </ul>
+                    <p class="type-description" style="margin-bottom: 32px; font-size: 1.1rem; line-height: 1.6; color: var(--text-primary);">
+                        Welcome to the Luau Parser API documentation. This reference covers the complete data structures used to represent Luau source code, 
+                        split into the Abstract Syntax Tree (AST) for semantic structure and the Concrete Syntax Tree (CST) for full-fidelity fidelity parsing.
+                    </p>
+
+                    <div class="section-label" style="font-size: 0.9rem; margin-bottom: 16px;">Documentation Sections</div>
+                    
+                    <div class="overview-grid">
+                        
+                        <!-- Core Types -->
+                        <a href="core.html" class="overview-card">
+                            <div class="type-header">
+                                <h3>Core Types</h3>
+                                <div class="type-badges"><span class="tag tag-ast">Core</span></div>
+                            </div>
+                            <p>Fundamental types including Locations, Positions, and Parser Results.</p>
+                            <div class="overview-count">21 Types</div>
+                        </a>
+
+                        <!-- AST Nodes -->
+                        <a href="ast.html" class="overview-card">
+                            <div class="type-header">
+                                <h3>AST Nodes</h3>
+                                <div class="type-badges"><span class="tag tag-expr">AST</span></div>
+                            </div>
+                            <p>Statements, Expressions, and Types representing the semantic structure.</p>
+                            <div class="overview-count">63 Nodes</div>
+                        </a>
+
+                        <!-- CST Nodes -->
+                        <a href="cst.html" class="overview-card">
+                            <div class="type-header">
+                                <h3>CST Nodes</h3>
+                                <div class="type-badges"><span class="tag tag-cst">CST</span></div>
+                            </div>
+                            <p>Full-fidelity nodes capturing comments, whitespace, and layout.</p>
+                            <div class="overview-count">39 Nodes</div>
+                        </a>
+
+                    </div>
+                    
+                    <div class="info-section" style="margin-top: 40px;">
+                        <h4 style="margin-top: 0; color: var(--text-primary); font-size: 1.1rem;">Quick Start</h4>
+                        <p style="font-size: 0.95rem; margin-bottom: 0; color: var(--text-secondary);">
+                            Start by exploring the <a href="ast.html" style="color: var(--accent-color); font-weight: 600;">AST Nodes</a> to understand the semantic structure, 
+                            or check <a href="core.html" style="color: var(--accent-color); font-weight: 600;">Core Types</a> for fundamental types like <code>Location</code>.
+                        </p>
+                    </div>
                 </div>
     
             </main>
             <aside class="sidebar-right">
                 <div class="sidebar-right-title">On this page</div>
                 <nav id="toc-nav">
-                    <!-- TOC -->
+                    
                 </nav>
             </aside>
         </div>
@@ -66,50 +106,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/lua.min.js"></script>
     <script>hljs.highlightAll();</script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const tocNav = document.getElementById('toc-nav');
-            const headers = document.querySelectorAll('.type-entry h3, .union-section h3, .category-header h2');
-            
-            headers.forEach(header => {
-                if (header.tagName === 'H2') {
-                    const link = document.createElement('div');
-                    link.className = 'nav-section-title';
-                    link.style.marginTop = '16px';
-                    link.textContent = header.textContent;
-                    tocNav.appendChild(link);
-                } else {
-                    let id = header.parentElement.id;
-                    if (!id && header.parentElement.className.includes('type-entry')) {
-                        id = header.parentElement.id;
-                    }
-                    if (id) {
-                        const link = document.createElement('a');
-                        link.href = '#' + id;
-                        link.className = 'nav-link';
-                        const clone = header.cloneNode(true);
-                        clone.querySelectorAll('.badge, .tag').forEach(e => e.remove());
-                        link.textContent = clone.textContent.trim();
-                        tocNav.appendChild(link);
-                    }
-                }
-            });
-
-            const searchInput = document.getElementById('search-input');
-            const typeEntries = document.querySelectorAll('.type-entry, .union-section');
-
-            searchInput.addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase();
-                typeEntries.forEach(entry => {
-                    const text = entry.textContent.toLowerCase();
-                    if (text.includes(term)) {
-                        entry.classList.remove('hidden');
-                    } else {
-                        entry.classList.add('hidden');
-                    }
-                });
-            });
-        });
-    </script>
+    <script src="docs.js"></script>
 </body>
 </html>

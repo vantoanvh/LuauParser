@@ -5,11 +5,11 @@
  * - Syntax highlighting initialization
  */
 
-(function() {
+(function () {
     'use strict';
 
     // Initialize when DOM is ready
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         initSearch();
         initScrollSpy();
         initSyntaxHighlighting();
@@ -23,32 +23,55 @@
         const searchInput = document.getElementById('search-input');
         if (!searchInput) return;
 
-        const navLinks = document.querySelectorAll('.sidebar-left .nav-link');
-        const typeEntries = document.querySelectorAll('.type-entry');
+        // Create results container if it doesn't exist
+        let resultsContainer = document.getElementById('search-results');
+        if (!resultsContainer) {
+            resultsContainer = document.createElement('div');
+            resultsContainer.id = 'search-results';
+            resultsContainer.className = 'search-results-dropdown hidden';
+            searchInput.parentElement.appendChild(resultsContainer);
+        }
 
-        searchInput.addEventListener('input', function() {
+        const typeEntries = document.querySelectorAll('.type-entry');
+        const sections = document.querySelectorAll('.category-header');
+        const tocItems = document.querySelectorAll('.toc-root li');
+
+        searchInput.addEventListener('input', function () {
             const query = this.value.toLowerCase().trim();
 
             if (query === '') {
-                // Show all when empty
-                navLinks.forEach(link => link.classList.remove('hidden'));
+                resultsContainer.classList.add('hidden');
                 typeEntries.forEach(entry => entry.classList.remove('hidden'));
+                sections.forEach(s => s.classList.remove('hidden'));
+                tocItems.forEach(t => t.classList.remove('hidden'));
                 return;
             }
 
-            // Filter navigation links
-            navLinks.forEach(link => {
-                const text = link.textContent.toLowerCase();
-                if (text.includes(query)) {
-                    link.classList.remove('hidden');
-                } else {
-                    link.classList.add('hidden');
-                }
-            });
+            // Global Search using SEARCH_INDEX
+            if (window.SEARCH_INDEX) {
+                const results = window.SEARCH_INDEX.filter(item =>
+                    item.name.toLowerCase().includes(query) ||
+                    (item.desc && item.desc.toLowerCase().includes(query)) ||
+                    item.tags.some(t => t.toLowerCase().includes(query))
+                ).slice(0, 10); // Limit to 10 results
 
-            // Filter type entries on the page
+                if (results.length > 0) {
+                    resultsContainer.innerHTML = results.map(res => `
+                        <a href="${res.file}#${res.name}" class="search-result-item">
+                            <div class="result-name">${res.name}</div>
+                            <div class="result-meta">${res.file.replace('.html', '').toUpperCase()} • ${res.tags.join(', ')}</div>
+                        </a>
+                    `).join('');
+                    resultsContainer.classList.remove('hidden');
+                } else {
+                    resultsContainer.innerHTML = '<div class="search-no-results">No results found</div>';
+                    resultsContainer.classList.remove('hidden');
+                }
+            }
+
+            // Local filtering (still useful for immediate feedback on the current page)
             typeEntries.forEach(entry => {
-                const name = entry.querySelector('.type-name');
+                const name = entry.querySelector('.type-name, h3');
                 const desc = entry.querySelector('.type-description');
                 const nameText = name ? name.textContent.toLowerCase() : '';
                 const descText = desc ? desc.textContent.toLowerCase() : '';
@@ -59,10 +82,36 @@
                     entry.classList.add('hidden');
                 }
             });
+
+            // Hide sections with no visible entries
+            sections.forEach(section => {
+                let next = section.nextElementSibling;
+                let hasVisible = false;
+                while (next && !next.classList.contains('category-header')) {
+                    if (next.classList.contains('type-entry') && !next.classList.contains('hidden')) {
+                        hasVisible = true;
+                        break;
+                    }
+                    if (next.classList.contains('union-section') && !next.classList.contains('hidden')) {
+                        hasVisible = true;
+                        break;
+                    }
+                    next = next.nextElementSibling;
+                }
+                if (hasVisible) section.classList.remove('hidden');
+                else section.classList.add('hidden');
+            });
+        });
+
+        // Close results when clicking outside
+        document.addEventListener('click', function (e) {
+            if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+                resultsContainer.classList.add('hidden');
+            }
         });
 
         // Clear search on Escape
-        searchInput.addEventListener('keydown', function(e) {
+        searchInput.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
                 this.value = '';
                 this.dispatchEvent(new Event('input'));
@@ -103,7 +152,7 @@
 
         let currentActive = null;
 
-        const observer = new IntersectionObserver(function(entries) {
+        const observer = new IntersectionObserver(function (entries) {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     // Find the link for this section
@@ -116,6 +165,12 @@
                         // Set new active
                         section.link.classList.add('active-scroll');
                         currentActive = section.link;
+
+                        // Expand parent details if any
+                        let parent = section.link.closest('details');
+                        if (parent && !parent.open) {
+                            parent.open = true;
+                        }
                     }
                 }
             });
@@ -128,7 +183,7 @@
 
         // Handle click on nav links to smooth scroll
         navLinks.forEach(link => {
-            link.addEventListener('click', function(e) {
+            link.addEventListener('click', function (e) {
                 const href = this.getAttribute('href');
                 const target = document.querySelector(href);
                 if (target) {
