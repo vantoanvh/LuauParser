@@ -1,12 +1,15 @@
-# [0.705] Luau Parser in pure Luau
-Entire port of [Parser.cpp](https://github.com/luau-lang/luau/blob/master/Ast/src/Parser.cpp) (Lua*u* **[0.705]** Parser) both AST ( Abstract Syntax Tree ) & CST ( Concrete Syntax Tree ).
-Not trying to misleading but this is a "full" port, so the CST won't have things like whitespace trivia.
+# `0.705` Lua*u*Parser
 
-Currently not built for speed, but still pretty fast.
+![License](https://img.shields.io/github/license/vantoanvh/LuauParser) [![Docs](https://img.shields.io/badge/documentation-online-red)](https://vantoanvh.github.io/LuauParser/)
+
+A modern and complete **[Lua*u*](https://luau.org/)** parser implemented in pure Luau, fully type-checked with luau's NewTypeSolver, optimized for performance.
+
+## Introduction
+Entire port of **[Parser.cpp](https://github.com/luau-lang/luau/blob/master/Ast/src/Parser.cpp)** with both AST ( Abstract Syntax Tree ) & CST ( Concrete Syntax Tree ).
 
 Lua*u* Parser only useful when building plugins or creating Lua*u* compilers.
 
-# Public API
+## Public API
 
 ```luau
 -- Parsing source code into: success, result
@@ -115,6 +118,3 @@ CstQuotes = {
 # Change logs
 Finally! Type-checking added! That was long! It's not that type-check that properly but it works! stict-typing of course with luau's NewTypeSolver.
 Autocomplete when parsing now visible, so you can see what types is it, make it wayy easier to use.
-
-# Documentations
-https://vantoanvh.github.io/LuauParser/
