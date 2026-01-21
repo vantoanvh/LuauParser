@@ -1,13 +1,17 @@
-# `0.705` Lua*u*Parser
+<div align="center">
 
-![License](https://img.shields.io/github/license/vantoanvh/LuauParser) [![Docs](https://img.shields.io/badge/documentation-online-red)](https://vantoanvh.github.io/LuauParser/)
+# Lua*u*Parser
 
-A modern and complete **[Lua*u*](https://luau.org/)** parser implemented in pure Luau, fully type-checked with luau's NewTypeSolver, optimized for performance.
+![Ver](https://img.shields.io/badge/version-0.705-blue) ![License](https://img.shields.io/github/license/vantoanvh/LuauParser) [![Docs](https://img.shields.io/badge/documentation-online-red)](https://vantoanvh.github.io/LuauParser/)
+
+A modern, fully featured **[Lua*u*](https://luau.org/)** parser written entirely in Luau<br>
+Fully type-checked with the New Type Solver and optimized for high performance.
+
+</div>
 
 ## Introduction
-Entire port of **[Parser.cpp](https://github.com/luau-lang/luau/blob/master/Ast/src/Parser.cpp)** with both AST ( Abstract Syntax Tree ) & CST ( Concrete Syntax Tree ).
-
-Lua*u* Parser only useful when building plugins or creating Lua*u* compilers.
+A complete port of **[Parser.cpp](https://github.com/luau-lang/luau/blob/master/Ast/src/Parser.cpp)** providing both *AST* **(Abstract Syntax Tree)** & *CST* **(Concrete Syntax Tree)**.<br>
+This Lua*u* parser is primarily intended for plugin development and for building Luau compilers or tooling.
 
 ## Public API
 
@@ -115,6 +119,3 @@ CstQuotes = {
 	errors: {ParseError},
 }
 ```
-# Change logs
-Finally! Type-checking added! That was long! It's not that type-check that properly but it works! stict-typing of course with luau's NewTypeSolver.
-Autocomplete when parsing now visible, so you can see what types is it, make it wayy easier to use.
