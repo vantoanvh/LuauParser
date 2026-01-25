@@ -1,3 +1,6 @@
+--!optimize 2
+--!strict
+
 local Confusables = {
 	[34] = '"',
 	[48] = "O",
