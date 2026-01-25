@@ -1,9 +1,9 @@
 --!optimize 2
 --!strict
 
--- // PARSER SETTINGS // --
+-- // Parser Settings
 
-local LuauExplicitTypeInstantiationSyntax = true
+local LuauExplicitTypeInstantiationSyntax = false
 
 local TypeLengthLimit = 1000
 local RecursionLimit = 1000
@@ -24,35 +24,9 @@ local BraceType = {
 }
 
 local QuoteStyle = {
-	--[=[
-		A string created using double quotes or an interpolated string,
-		as in:
-	
-			"foo", `My name is {protagonist}! / And I'm {antagonist}!`
-	]=]
 	QuotedSimple = 0,
-	
-	--[=[
-		A string created using single quotes, as in:
-    
-    		'bar'
-	]=]
 	QuotedSingle = 1,
-	
-	--[=[
-		A string created using `[[ ... ]]` as in:
-		as in:
-	
-			[[ Gee, this sure is a long string.
-			it even has a new line in it! ]]
-	]=]
 	QuotedRaw = 2,
-	
-	--[=[
-		A "string" in the context of a table literal, as in:
-	
-			{ foo = 42 } -- `foo` here is a "constant string"
-	]=]
 	Unquoted = 3,
 }
 
@@ -332,7 +306,7 @@ for i = 48, 57  do HexVal[i] = i - 48 end -- '0'-'9'
 for i = 65, 70  do HexVal[i] = i - 55 end -- 'A'-'F'
 for i = 97, 102 do HexVal[i] = i - 87 end -- 'a'-'f'
 
--- // PARSER CONSTANTS // --
+-- // Parser Constants
 
 local nameError = "%error-id%"
 local nameNumber = "number"
@@ -628,7 +602,7 @@ local function isLiteralTable(expr: Syntax.AstExpr): boolean
 			end
 		end
 	end
-	
+
 	return true
 end
 
@@ -695,7 +669,7 @@ local kAttributeEntries = {
 	}
 }
 
--- // Main // --
+-- // Main
 
 local options = {} :: Syntax.Options
 local source = '' :: string
@@ -769,9 +743,7 @@ local parseCompoundAssignment
 local prepareFunctionArguments
 local parseFunctionBody
 local parseGenericTypeList
-local shouldParseTypePack
 local parseOptionalType
-local extractAnnotationColonPositions
 local parseTypeList
 local parseOptionalReturnType
 local parseReturnType
@@ -1027,7 +999,7 @@ local function lex(skip_comments: boolean)
 								found_end = true
 								break
 							end
-						elseif c == 10 then
+						elseif c == 10 then -- \n
 							cur_line += 1
 							lineOffset = ptr + 1
 						end
@@ -1049,7 +1021,7 @@ local function lex(skip_comments: boolean)
 				-- Line Comment
 				while ptr < size do
 					local c = buffer.readu8(buff, ptr)
-					if c == 10 or c == 13 then break end
+					if c == 10 or c == 13 then break end -- \n or \r
 					ptr += 1
 				end
 				next_type = Types.Comment
@@ -1064,12 +1036,12 @@ local function lex(skip_comments: boolean)
 
 	elseif ch == 46 then -- '.'
 		local c = if ptr < size then buffer.readu8(buff, ptr) else 0
-		if c == 46 then
+		if c == 46 then -- =.
 			ptr += 1
 			local c2 = if ptr < size then buffer.readu8(buff, ptr) else 0
-			if c2 == 46 then
+			if c2 == 46 then -- =.
 				ptr += 1; next_type = Types.Dot3
-			elseif c2 == 61 then
+			elseif c2 == 61 then -- =
 				ptr += 1; next_type = Types.ConcatAssign
 			else
 				next_type = Types.Dot2
@@ -1089,7 +1061,7 @@ local function lex(skip_comments: boolean)
 						end
 					else break end
 				end
-				
+
 				while ptr < size do
 					local tc = buffer.readu8(buff, ptr)
 					if Alpha[tc] or Digits[tc] or tc == 95 then
@@ -1302,16 +1274,16 @@ local function lex(skip_comments: boolean)
 			-- Long String
 			local ls_start = ptr
 			local found = false
-			
+
 			while ptr < size do
 				if buffer.readu8(buff, ptr) == 93 then
 					local c2 = ptr + 1
 					local cc = 0
-					
+
 					while c2 < size and buffer.readu8(buff, c2) == 61 do
 						c2 += 1; cc += 1
 					end
-					
+
 					if cc == count and c2 < size and buffer.readu8(buff, c2) == 93 then
 						next_type = Types.RawString
 						next_string = buffer.readstring(buff, ls_start, ptr - ls_start)
@@ -1449,7 +1421,7 @@ local function nextLexeme()
 	fillNext()
 end
 
--- // INIT
+-- // Parser Commons
 
 local function snapshot(): Syntax.Location
 	return {
@@ -1475,6 +1447,8 @@ local function getprev(): Syntax.Location
 	}
 end
 
+-- // Error reports
+
 local function report(loc: Syntax.Location, fmt: string, ...: any)
 	if #parseErrors > 0 and parseErrors[#parseErrors].location == loc then
 		return
@@ -1491,7 +1465,6 @@ local function report(loc: Syntax.Location, fmt: string, ...: any)
 		error(`Reached error limit ({ErrorLimit})`, 0)
 	end
 end
-
 
 local function expectAndConsumeFail(type_: number, context: string?)
 	local typeString = ToString(type_)
@@ -1611,6 +1584,8 @@ local function expectMatchEndAndConsume(type_: number, begin_type: number, line:
 	return true
 end
 
+-- // Ast reports
+
 local function reportStatError(
 	location: Syntax.Location,
 	exprs: {Syntax.AstExpr},
@@ -1680,6 +1655,8 @@ local function reportNameError(context: string?)
 	end
 end
 
+-- // Locals Helpers
+
 local function restoreLocals(offset: number)
 	for i = #localStack, offset + 1, -1 do
 		local l = localStack[i] :: Syntax.AstLocal
@@ -1719,6 +1696,8 @@ local function incrementRecursionCounter(context: string)
 		error(msg, 0)
 	end
 end
+
+-- // The core of the code
 
 local function parseBinding(): Syntax.Binding
 	local nameOpt = parseNameOpt"variable name"
@@ -2181,6 +2160,14 @@ function parseContinue(start: Syntax.Location): Syntax.AstStatContinue | Syntax.
 	}
 end
 
+local function extractAnnotationColonPositions(bindings: {Syntax.Binding}): {Syntax.Position?}
+	local positions = {}
+	for i, binding in bindings do
+		positions[i] = binding.colonPosition
+	end
+	return positions
+end
+
 -- for binding `=' exp `,' exp [`,' exp] do block end |
 -- for bindinglist in explist do block end |
 function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
@@ -2271,7 +2258,7 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 		local hasIn = expectAndConsume(Types.ReservedIn, "for loop")
 
 		local values = {}
-		
+
 		local valuesCommaPositions: {Syntax.Position} = {}
 		parseExprList(values, storeCstData and valuesCommaPositions or nil)
 
@@ -3022,6 +3009,20 @@ function prepareFunctionArguments(start: Syntax.Location, hasself: boolean, args
 	return selfLocal, vars
 end
 
+local function shouldParseTypePack()
+	local t = token_type
+
+	if t == Types.Dot3 then
+		return true
+	end
+
+	if t == Types.Name and next_type == Types.Dot3 then
+		return true
+	end
+
+	return false
+end
+
 -- funcbody ::= `(' [parlist] `)' [`:' ReturnType] block end
 -- parlist ::= bindinglist [`,' `...'] | `...'
 function parseFunctionBody(
@@ -3335,21 +3336,6 @@ function parseGenericTypeList(
 	return names, namePacks
 end
 
-
-function shouldParseTypePack()
-	local t = token_type
-
-	if t == Types.Dot3 then
-		return true
-	end
-
-	if t == Types.Name and next_type == Types.Dot3 then
-		return true
-	end
-
-	return false
-end
-
 function parseOptionalType(): Syntax.AstType?
 	if token_type == 58 then 
 		nextLexeme()
@@ -3357,14 +3343,6 @@ function parseOptionalType(): Syntax.AstType?
 	else
 		return nil
 	end
-end
-
-function extractAnnotationColonPositions(bindings: {Syntax.Binding}): {Syntax.Position?}
-	local positions = {}
-	for i, binding in bindings do
-		positions[i] = binding.colonPosition
-	end
-	return positions
 end
 
 -- TypeList ::= Type [`,' TypeList] | ...Type
@@ -3524,7 +3502,7 @@ function parseReturnType(): Syntax.AstTypePack
 	expectMatchAndConsume(41, begin_type, begin_line, begin_col, true) 
 
 	matchRecovery[Types.SkinnyArrow] -= 1
-	
+
 	if token_type ~= Types.SkinnyArrow and #resultNames == 0 then
 		-- If it turns out that it's just '(A)', it's possible that there are unions/intersections to follow, so fold over it.
 		if #result == 1 then
@@ -4508,7 +4486,7 @@ function parseTypeParams(
 ): {Syntax.AstTypeOrPack}
 
 	local params = {} :: {Syntax.AstTypeOrPack}
-	
+
 	if token_type == 60 then
 		local begin = get_lexeme()
 		if openingPosRef then
@@ -5713,7 +5691,7 @@ function parseNumber(): Syntax.AstExprConstantNumber | Syntax.AstExprError
 				parseResult = "Malformed"
 				value = 0
 			else
-				value = v :: number
+				value = v
 				if value >= 9007199254740992 then -- 2^53
 					parseResult = "Imprecise"
 				end
