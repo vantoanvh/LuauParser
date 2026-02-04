@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Types - Luau Parser API</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="search_index.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <div class="layout-wrapper">
+            <aside class="sidebar-left">
+                <div class="sidebar-header">
+                    <h1>Luau Parser</h1>
+                    <p>API Reference</p>
+                </div>
+                <div class="search-container">
+                    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+                    </svg>
+                    <input type="text" class="search-input" placeholder="Search types..." id="search-input">
+                </div>
+                <nav class="nav-section">
+                    <div class="nav-section-title">Pages</div>
+                    <a href="index.html" class="nav-link">Overview</a>
+<a href="core.html" class="nav-link active">Core Types</a>
+<a href="ast.html" class="nav-link">AST Nodes</a>
+<a href="cst.html" class="nav-link">CST Nodes</a>
+
+                </nav>
+            </aside>
+            <main class="main-content">
+
+                <header class="page-header">
+                    <h1>Core Types</h1>
+                    <p>Documentation for Core Types</p>
+                </header>
+        
+                    <div class="category-header">
+                        <h2>Core Types</h2>
+                    </div>
+                  
+                <div class="type-entry" id="Position">
+                    <div class="type-header">
+                        <h3 class="type-name">Position</h3>
+                        <div class="type-badges">
+                            
+                        </div>
+                    </div>
+                    <p class="type-description">Represents a position in the source code. Used to pinpoint exact locations for error reporting and CST data.</p>
+                    
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">line</span> <span class="field-type">number</span></div> 
+                            <div class="field-desc">0-indexed line index</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">column</span> <span class="field-type">number</span></div> 
+                            <div class="field-desc">0-indexed column index</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="Location">
+                    <div class="type-header">
+                        <h3 class="type-name">Location</h3>
+                        <div class="type-badges">
+                            
+                        </div>
+                    </div>
+                    <p class="type-description">Represents a range in the source code from a beginning position to an ending position. Every AST node has a location that spans the source text it was parsed from.</p>
+                    
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">begin</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Starting position of the range</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">end_</span> <span class="field-type"><a href="core.html#Position">Position</a></span></div> 
+                            <div class="field-desc">Ending position of the range</div>
+                        </div></div>
+                </div>
+    
+                    <div class="category-header">
+                        <h2>Helpers</h2>
+                    </div>
+                  
+                <div class="type-entry" id="AstAttr">
+                    <div class="type-header">
+                        <h3 class="type-name">AstAttr</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-helper">Helper</span><span class="tag tag-ast">AST</span>
+                        </div>
+                    </div>
+                    <p class="type-description">A function attribute: `@native`, `@checked`, `@deprecated`, etc.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">@native
+function add(a, b) return a + b end
+
+@[deprecated {
+	use = &quot;newFunc&quot;, 
+	reason = &quot;`oldFunc` is empty; `newFunc` is better.&quot;,
+}]
+function oldFunc() end</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">type</span> <span class="field-type">string</span></div> 
+                            <div class="field-desc">The attribute type (&quot;Native&quot;, &quot;Checked&quot;, &quot;Deprecated&quot;)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">args</span> <span class="field-type">{<a href="ast.html#AstExpr">AstExpr</a>}</span></div> 
+                            <div class="field-desc">Arguments passed to the attribute (for @deprecated)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">name</span> <span class="field-type">string?</span></div> 
+                            <div class="field-desc">The raw attribute name from source</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="AstGenericType">
+                    <div class="type-header">
+                        <h3 class="type-name">AstGenericType</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-type">Type</span><span class="tag tag-helper">Helper</span><span class="tag tag-ast">AST</span>
+                        </div>
+                    </div>
+                    <p class="type-description">A generic type parameter in a generic declaration: `&lt;T, U = Default&gt;`.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">type Box&lt;T&gt; = { value: T } -- &quot;T&quot; is the GenericType
+function id&lt;T&gt;(x: T): T end -- &quot;T&quot; is the GenericType</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">name</span> <span class="field-type">string</span></div> 
+                            <div class="field-desc">The name of the generic type parameter</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">defaultValue</span> <span class="field-type"><a href="ast.html#AstType">AstType</a>?</span></div> 
+                            <div class="field-desc">Optional default type value</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="AstGenericTypePack">
+                    <div class="type-header">
+                        <h3 class="type-name">AstGenericTypePack</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-pack">Pack</span><span class="tag tag-type">Type</span><span class="tag tag-helper">Helper</span><span class="tag tag-ast">AST</span>
+                        </div>
+                    </div>
+                    <p class="type-description">A generic type pack parameter in a generic declaration: `&lt;T...&gt;`.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">type Map&lt;T...&gt; = () -&gt; T... -- &quot;T...&quot; is the GenericTypePack</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">name</span> <span class="field-type">string</span></div> 
+                            <div class="field-desc">The name of the generic type pack parameter</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">defaultValue</span> <span class="field-type"><a href="ast.html#AstTypePack">AstTypePack</a>?</span></div> 
+                            <div class="field-desc">Optional default type pack value</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="AstTypeList">
+                    <div class="type-header">
+                        <h3 class="type-name">AstTypeList</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-type">Type</span><span class="tag tag-helper">Helper</span><span class="tag tag-ast">AST</span>
+                        </div>
+                    </div>
+                    <p class="type-description">A list of types with an optional variadic tail. Used for function parameter and return types.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">-- In: (number, string) -&gt; boolean
+-- &quot;number, string&quot; form the AstTypeList</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">types</span> <span class="field-type">{<a href="ast.html#AstType">AstType</a>}</span></div> 
+                            <div class="field-desc">The list of types</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">tailType</span> <span class="field-type"><a href="ast.html#AstTypePack">AstTypePack</a>?</span></div> 
+                            <div class="field-desc">Optional variadic tail type pack</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="AstTypeOrPack">
+                    <div class="type-header">
+                        <h3 class="type-name">AstTypeOrPack</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-type">Type</span><span class="tag tag-helper">Helper</span><span class="tag tag-ast">AST</span>
+                        </div>
+                    </div>
+                    <p class="type-description">A wrapper for either a type or a type pack. Used in generic type arguments where either could be valid.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">type Res&lt;T, Packs...&gt; = ...
+-- `T` fits in `type`, `Packs...` fits in `typePack`</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">type</span> <span class="field-type"><a href="ast.html#AstType">AstType</a>?</span></div> 
+                            <div class="field-desc">The type (if this is a type argument)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">typePack</span> <span class="field-type"><a href="ast.html#AstTypePack">AstTypePack</a>?</span></div> 
+                            <div class="field-desc">The type pack (if this is a type pack argument)</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="AstArgumentName">
+                    <div class="type-header">
+                        <h3 class="type-name">AstArgumentName</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-helper">Helper</span><span class="tag tag-ast">AST</span>
+                        </div>
+                    </div>
+                    <p class="type-description">A named function argument (for documentation purposes).</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">type Cb = (a: string, b: number) -&gt; ()
+-- &quot;a&quot; and &quot;b&quot; are AstArgumentName nodes</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">name</span> <span class="field-type">string</span></div> 
+                            <div class="field-desc">The argument name</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span> <span class="field-type"><a href="core.html#Location">Location</a></span></div> 
+                            <div class="field-desc">Location of the argument name</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="Binding">
+                    <div class="type-header">
+                        <h3 class="type-name">Binding</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-helper">Helper</span>
+                        </div>
+                    </div>
+                    <p class="type-description">A binding in a local declaration or function parameter.</p>
+                    
+                    <div class="code-example">
+                        <div class="code-example-header"><span class="code-example-title">Example</span></div>
+                        <pre><code class="language-lua">local x: number = 1 -- &quot;x: number&quot; is the Binding
+function f(val: string) end -- &quot;val: string&quot; is the Binding</code></pre>
+                    </div>
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">name</span> <span class="field-type"><a href="ast.html#AstName">AstName</a></span></div> 
+                            <div class="field-desc">The variable name</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span> <span class="field-type"><a href="core.html#Location">Location</a></span></div> 
+                            <div class="field-desc">Location of the binding</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">annotation</span> <span class="field-type"><a href="ast.html#AstType">AstType</a>?</span></div> 
+                            <div class="field-desc">Optional type annotation</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">colonPosition</span> <span class="field-type"><a href="core.html#Position">Position</a>?</span></div> 
+                            <div class="field-desc">Position of the `:` before type annotation</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="BindingList">
+                    <div class="type-header">
+                        <h3 class="type-name">BindingList</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-helper">Helper</span>
+                        </div>
+                    </div>
+                    <p class="type-description">A list of bindings (used in local declarations).</p>
+                    
+                    
+                </div>
+    
+                <div class="type-entry" id="AstDeclaredExternTypeProperty">
+                    <div class="type-header">
+                        <h3 class="type-name">AstDeclaredExternTypeProperty</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-type">Type</span><span class="tag tag-helper">Helper</span><span class="tag tag-ast">AST</span>
+                        </div>
+                    </div>
+                    <p class="type-description">A property declaration in an extern type.</p>
+                    
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">name</span> <span class="field-type">string</span></div> 
+                            <div class="field-desc">The property name</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">nameLocation</span> <span class="field-type"><a href="core.html#Location">Location</a></span></div> 
+                            <div class="field-desc">Location of the property name</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">ty</span> <span class="field-type"><a href="ast.html#AstType">AstType</a></span></div> 
+                            <div class="field-desc">The property type</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">isMethod</span> <span class="field-type">boolean</span></div> 
+                            <div class="field-desc">True if this is a method (has implicit self)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span> <span class="field-type"><a href="core.html#Location">Location</a></span></div> 
+                            <div class="field-desc">Location of the entire property declaration</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="AstTableProp">
+                    <div class="type-header">
+                        <h3 class="type-name">AstTableProp</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-helper">Helper</span><span class="tag tag-ast">AST</span>
+                        </div>
+                    </div>
+                    <p class="type-description">A property in a table type.</p>
+                    
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">name</span> <span class="field-type"><a href="ast.html#AstName">AstName</a></span></div> 
+                            <div class="field-desc">The property name</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span> <span class="field-type"><a href="core.html#Location">Location</a></span></div> 
+                            <div class="field-desc">Location of the property declaration</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">type</span> <span class="field-type"><a href="ast.html#AstType">AstType</a></span></div> 
+                            <div class="field-desc">The property type</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">access</span> <span class="field-type">string</span></div> 
+                            <div class="field-desc">Access specifier (&quot;read&quot;, &quot;write&quot;, or &quot;readwrite&quot;)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">accessLocation</span> <span class="field-type"><a href="core.html#Location">Location</a>?</span></div> 
+                            <div class="field-desc">Location of the access specifier (if present)</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="AstTableIndexer">
+                    <div class="type-header">
+                        <h3 class="type-name">AstTableIndexer</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-helper">Helper</span><span class="tag tag-ast">AST</span>
+                        </div>
+                    </div>
+                    <p class="type-description">An indexer in a table type: `[KeyType]: ValueType`.</p>
+                    
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">indexType</span> <span class="field-type"><a href="ast.html#AstType">AstType</a></span></div> 
+                            <div class="field-desc">The key/index type</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">resultType</span> <span class="field-type"><a href="ast.html#AstType">AstType</a></span></div> 
+                            <div class="field-desc">The value type</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span> <span class="field-type"><a href="core.html#Location">Location</a></span></div> 
+                            <div class="field-desc">Location of the indexer declaration</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">access</span> <span class="field-type">string</span></div> 
+                            <div class="field-desc">Access specifier (&quot;read&quot;, &quot;write&quot;, or &quot;readwrite&quot;)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">accessLocation</span> <span class="field-type"><a href="core.html#Location">Location</a>?</span></div> 
+                            <div class="field-desc">Location of the access specifier (if present)</div>
+                        </div></div>
+                </div>
+    
+                    <div class="category-header">
+                        <h2>Parser Result</h2>
+                    </div>
+                  
+                <div class="type-entry" id="ParseError">
+                    <div class="type-header">
+                        <h3 class="type-name">ParseError</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-error">Error</span><span class="tag tag-result">Result</span>
+                        </div>
+                    </div>
+                    <p class="type-description">Represents a parse error with location and message.</p>
+                    
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span> <span class="field-type"><a href="core.html#Location">Location</a></span></div> 
+                            <div class="field-desc">Where the error occurred</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">message</span> <span class="field-type">string</span></div> 
+                            <div class="field-desc">Human-readable error description</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="Options">
+                    <div class="type-header">
+                        <h3 class="type-name">Options</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-result">Result</span>
+                        </div>
+                    </div>
+                    <p class="type-description">Parser configuration options.</p>
+                    
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">captureComments</span> <span class="field-type">boolean</span></div> 
+                            <div class="field-desc">If true, capture comment locations in the result</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">storeCstData</span> <span class="field-type">boolean</span></div> 
+                            <div class="field-desc">If true, store CST data for source-accurate transforms</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="Lexeme">
+                    <div class="type-header">
+                        <h3 class="type-name">Lexeme</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-result">Result</span>
+                        </div>
+                    </div>
+                    <p class="type-description">Represents a lexer token with type and location.</p>
+                    
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">type</span> <span class="field-type"></span></div> 
+                            <div class="field-desc">The token type (see Types enum in parser)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span> <span class="field-type"></span></div> 
+                            <div class="field-desc">The source location of the token</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="Attrs">
+                    <div class="type-header">
+                        <h3 class="type-name">Attrs</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-result">Result</span>
+                        </div>
+                    </div>
+                    <p class="type-description">Shorthand for an array of attributes.</p>
+                    
+                    
+                </div>
+    
+                <div class="type-entry" id="Comment">
+                    <div class="type-header">
+                        <h3 class="type-name">Comment</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-result">Result</span>
+                        </div>
+                    </div>
+                    <p class="type-description">Represents a captured comment.</p>
+                    
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">type</span> <span class="field-type">number</span></div> 
+                            <div class="field-desc">The comment type (single-line or block)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span> <span class="field-type"><a href="core.html#Location">Location</a></span></div> 
+                            <div class="field-desc">The source location of the comment</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="HotComment">
+                    <div class="type-header">
+                        <h3 class="type-name">HotComment</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-result">Result</span>
+                        </div>
+                    </div>
+                    <p class="type-description">Represents a hot comment (special directive comment like --!strict).</p>
+                    
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">header</span> <span class="field-type">boolean</span></div> 
+                            <div class="field-desc">True if this is a header comment (at the start of the file)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">content</span> <span class="field-type">string</span></div> 
+                            <div class="field-desc">The content of the hot comment (after --!)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">location</span> <span class="field-type"><a href="core.html#Location">Location</a></span></div> 
+                            <div class="field-desc">The source location of the hot comment</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="FunctionState">
+                    <div class="type-header">
+                        <h3 class="type-name">FunctionState</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-stat">Statement</span><span class="tag tag-result">Result</span>
+                        </div>
+                    </div>
+                    <p class="type-description">Internal parser state for tracking function context.</p>
+                    
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">vararg</span> <span class="field-type">boolean</span></div> 
+                            <div class="field-desc">True if the current function accepts varargs</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">loopDepth</span> <span class="field-type">number</span></div> 
+                            <div class="field-desc">Current nesting depth of loops</div>
+                        </div></div>
+                </div>
+    
+                <div class="type-entry" id="Result">
+                    <div class="type-header">
+                        <h3 class="type-name">Result</h3>
+                        <div class="type-badges">
+                            <span class="tag tag-result">Result</span>
+                        </div>
+                    </div>
+                    <p class="type-description">The result of parsing a Luau source file.</p>
+                    
+                    <div class="section-label">Fields</div><div class="field-list">
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">root</span> <span class="field-type"><a href="ast.html#AstStatBlock">AstStatBlock</a></span></div> 
+                            <div class="field-desc">The root AST node (top-level block)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">commentLocations</span> <span class="field-type">{<a href="core.html#Comment">Comment</a>}</span></div> 
+                            <div class="field-desc">List of all captured comments</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">hotcomments</span> <span class="field-type">{<a href="core.html#HotComment">HotComment</a>}</span></div> 
+                            <div class="field-desc">List of all hot comments (directives)</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">cstNodeMap</span> <span class="field-type">{[<a href="ast.html#AstNode">AstNode</a>]: <a href="cst.html#CstNode">CstNode</a>}</span></div> 
+                            <div class="field-desc">Map from AST nodes to their CST data</div>
+                        </div>
+                        <div class="field-item">
+                            <div class="field-sig"><span class="field-name">errors</span> <span class="field-type">{<a href="core.html#ParseError">ParseError</a>}</span></div> 
+                            <div class="field-desc">List of all parse errors encountered</div>
+                        </div></div>
+                </div>
+    
+            </main>
+            <aside class="sidebar-right">
+                <div class="sidebar-right-title">On this page</div>
+                <nav id="toc-nav">
+                    <ul class="toc-root"><li class="toc-section">
+            <div class="toc-header">Core Types</div>
+            <ul class="toc-list"><li><a href="#Location" class="nav-link">Location</a></li><li><a href="#Position" class="nav-link">Position</a></li></ul></li><li class="toc-section">
+            <div class="toc-header">Helpers</div>
+            <ul class="toc-list"><li class="toc-subgroup">
+                <details open>
+                    <summary>Table</summary>
+                    <ul><li><a href="#AstTableIndexer" class="nav-link">AstTableIndexer</a></li><li><a href="#AstTableProp" class="nav-link">AstTableProp</a></li></ul></details></li><li class="toc-subgroup">
+                <details open>
+                    <summary>Type</summary>
+                    <ul><li><a href="#AstDeclaredExternTypeProperty" class="nav-link">AstDeclaredExternTypeProperty</a></li><li><a href="#AstGenericType" class="nav-link">AstGenericType</a></li><li><a href="#AstGenericTypePack" class="nav-link">AstGenericTypePack</a></li><li><a href="#AstTypeList" class="nav-link">AstTypeList</a></li><li><a href="#AstTypeOrPack" class="nav-link">AstTypeOrPack</a></li></ul></details></li><li><a href="#AstArgumentName" class="nav-link">AstArgumentName</a></li><li><a href="#AstAttr" class="nav-link">AstAttr</a></li><li><a href="#Binding" class="nav-link">Binding</a></li><li><a href="#BindingList" class="nav-link">BindingList</a></li></ul></li><li class="toc-section">
+            <div class="toc-header">Parser Result</div>
+            <ul class="toc-list"><li class="toc-subgroup">
+                <details open>
+                    <summary>Function</summary>
+                    <ul><li><a href="#FunctionState" class="nav-link">FunctionState</a></li></ul></details></li><li><a href="#Attrs" class="nav-link">Attrs</a></li><li><a href="#Comment" class="nav-link">Comment</a></li><li><a href="#HotComment" class="nav-link">HotComment</a></li><li><a href="#Lexeme" class="nav-link">Lexeme</a></li><li><a href="#Options" class="nav-link">Options</a></li><li><a href="#ParseError" class="nav-link">ParseError</a></li><li><a href="#Result" class="nav-link">Result</a></li></ul></li></ul>
+                </nav>
+            </aside>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/lua.min.js"></script>
+    <script>hljs.highlightAll();</script>
+    <script src="docs.js"></script>
+</body>
+</html>
