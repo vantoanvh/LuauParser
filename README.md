@@ -1,6 +1,14 @@
-# 🌳 Lua*u*Parser
- 
-![Ver](https://img.shields.io/badge/version-v0.706-blue) ![License](https://img.shields.io/github/license/vantoanvh/LuauParser) [![Docs](https://img.shields.io/badge/documentation-online-red?logo=github)](https://vantoanvh.github.io/LuauParser) [![Release](https://img.shields.io/badge/release-latest-blue?logo=lua&logoColor=white)](https://github.com/vantoanvh/LuauParser/releases/latest)
+<img align="right" width="220" height="220" alt="LuauParser" src="https://github.com/user-attachments/assets/69223bf1-05a5-4825-baa6-c9603cb768bf" />
+
+<div id="toc">
+  <ul style="list-style: none">
+    <summary>
+      <h1> LuauParser </h1>
+    </summary>
+  </ul>
+</div>
+	
+![Ver](https://img.shields.io/badge/version-v0.706-blue) ![License](https://img.shields.io/github/license/vantoanvh/LuauParser) [![Docs](https://img.shields.io/badge/documentation-online-red?logo=github)](https://vantoanvh.github.io/LuauParser) [![Release](https://img.shields.io/badge/release-latest-darkblue?logo=lua&logoColor=white)](https://github.com/vantoanvh/LuauParser/releases/latest)
 
 A modern, fully featured **[Lua*u*](https://luau.org/)** parser written entirely in Luau<br>
 Fully type-checked with the New Type Solver and optimized for high performance.
