@@ -27,7 +27,7 @@ Why this *Luau Parser* so **fast** because it doesn’t use **OOP**, **ECS**, or
 
 It also uses an inlined lexer, *table-less* position & location tracking, buffer-based byte reading, and several other low-level optimizations.
 
-Because of this, its speed is almost identical to **[luaup](https://github.com/jackdotink/luaup)**. It is slightly slower than **luaup** because each node contains way more data and supports more features, including advanced string escaping, full error recovery, detailed error reporting, modern syntax features, and ambiguous syntax handling which luaup doesn't have.
+Because of this, its speed is almost identical to **[luaup](https://github.com/jackdotink/luaup)**. It just a little bit slower than **luaup** because each node contains way more data and supports more features, including advanced string escaping, full error recovery, detailed error reporting, modern syntax features, and ambiguous syntax handling which luaup doesn't have.
 
 ## Code Examples
 ```luau
