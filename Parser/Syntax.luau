@@ -131,7 +131,7 @@ export type AstType = AstTypeReference
 -- that are not semantically significant but needed for source-accurate transformations.
 export type CstNode = CstStatBlock
 | CstStatRepeat
-| CstStatDo
+| CstStatDo | CstStatDo_DEPRECATED
 | CstStatFor
 | CstStatForIn
 | CstStatFunction
@@ -829,6 +829,12 @@ export type CstStatRepeat = {
 -- CST data for a do statement.
 export type CstStatDo = {
 	kind: "CstStatDo",
+	statsStart: Position,
+	endPosition: Position
+}
+
+export type CstStatDo_DEPRECATED = {
+	kind: "CstStatDo_DEPRECATED",
 	endPosition: Position
 }
 
