@@ -4,6 +4,8 @@
 -- // Parser Settings
 
 local LuauExplicitTypeInstantiationSyntax = false
+local DesugaredArrayTypeReferenceIsEmpty = false
+local LuauCstStatDoWithStatsStart = true
 
 local TypeLengthLimit = 1000
 local RecursionLimit = 1000
@@ -2103,24 +2105,50 @@ function parseDo(): Syntax.AstStatBlock
 
 	nextLexeme() -- do
 
-	local body = parseBlock()
-	body.location.begin = start.begin
+	if LuauCstStatDoWithStatsStart then
+		local statsStart = if storeCstData then snapshot() else nil
 
-	local endLocation = snapshot()
-	body.hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, Do_type, Do_start_line, Do_start_col)
+		local body = parseBlock()
+		body.location.begin = start.begin
 
-	if body.hasEnd then
-		body.location.end_ = endLocation.end_
+		local endLocation = snapshot()
+		body.hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, Do_type, Do_start_line, Do_start_col)
+
+		if body.hasEnd then
+			body.location.end_ = endLocation.end_
+		end
+
+		if storeCstData then
+			assert(statsStart)
+
+			cstNodes[body] = {
+				kind = "CstStatDo",
+				statsStart = statsStart.begin,
+				endPosition = endLocation.begin,
+			} :: Syntax.CstStatDo
+		end
+
+		return body
+	else
+		local body = parseBlock()
+		body.location.begin = start.begin
+
+		local endLocation = snapshot()
+		body.hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, Do_type, Do_start_line, Do_start_col)
+
+		if body.hasEnd then
+			body.location.end_ = endLocation.end_
+		end
+
+		if storeCstData then
+			cstNodes[body] = {
+				kind = "CstStatDo_DEPRECATED",
+				endPosition = endLocation.begin,
+			} :: Syntax.CstStatDo_DEPRECATED
+		end
+
+		return body
 	end
-
-	if storeCstData then
-		cstNodes[body] = {
-			kind = "CstStatDo",
-			endPosition = endLocation.begin
-		}
-	end
-
-	return body
 end
 
 -- break
@@ -3772,16 +3800,26 @@ function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
 				end
 			end
 		elseif #props == 0 and not indexer and not (token_type == Types.Name and next_type == 58) then
-			isArray = true
 			local type_ = parseType()
+			isArray = true
+
+			local indexLocation = type_.location
+			
+			-- array-like table type: {T} desugars into {[number]: T}
+			if DesugaredArrayTypeReferenceIsEmpty then
+				indexLocation = {
+					begin = start.begin,
+					end_ = start.begin,
+				}
+			end
 
 			local index = {
 				kind = "TypeReference",
-				location = type_.location,
+				location = indexLocation,
 				name = nameNumber,
-				nameLocation = type_.location,
+				nameLocation = indexLocation,
 				hasParameterList = false,
-				parameters = {}
+				parameters = {},
 			} :: Syntax.AstTypeReference
 
 			indexer = {
@@ -3790,7 +3828,7 @@ function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
 				indexType = index,
 				resultType = type_,
 				access = access,
-				accessLocation = accessLoc
+				accessLocation = accessLoc,
 			} :: Syntax.AstTableIndexer
 			break
 		else
