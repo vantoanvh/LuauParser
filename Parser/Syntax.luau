@@ -10,6 +10,7 @@ export type Location = {
 	end_: Position,
 }
 
+
 export type AstName = {
 	value: string,
 }
@@ -101,6 +102,7 @@ export type AstAttr = {
 }
 
 export type AstGenericType = {
+	cstNode: CstGenericType?,
 	kind: "GenericType",
 	location: Location,
 	name: string,
@@ -108,6 +110,7 @@ export type AstGenericType = {
 }
 
 export type AstGenericTypePack = {
+	cstNode: CstGenericTypePack?,
 	kind: "GenericTypePack",
 	location: Location,
 	name: string,
@@ -132,6 +135,7 @@ export type AstExprConstantBool = {
 }
 
 export type AstExprConstantNumber = {
+	cstNode: CstExprConstantNumber?,
 	kind: "ExprConstantNumber",
 	location: Location,
 	value: number,
@@ -139,6 +143,7 @@ export type AstExprConstantNumber = {
 }
 
 export type AstExprConstantString = {
+	cstNode: CstExprConstantString?,
 	kind: "ExprConstantString",
 	location: Location,
 	value: string,
@@ -164,6 +169,7 @@ export type AstExprVarargs = {
 }
 
 export type AstExprCall = {
+	cstNode: CstExprCall?,
 	kind: "ExprCall",
 	location: Location,
 	func: AstExpr,
@@ -184,6 +190,7 @@ export type AstExprIndexName = {
 }
 
 export type AstExprIndexExpr = {
+	cstNode: CstExprIndexExpr?,
 	kind: "ExprIndexExpr",
 	location: Location,
 	expr: AstExpr,
@@ -191,6 +198,7 @@ export type AstExprIndexExpr = {
 }
 
 export type AstExprFunction = {
+	cstNode: CstExprFunction?,
 	kind: "ExprFunction",
 	location: Location,
 	attributes: { AstAttr },
@@ -215,12 +223,14 @@ export type AstExprTableItem = {
 }
 
 export type AstExprTable = {
+	cstNode: CstExprTable?,
 	kind: "ExprTable",
 	location: Location,
 	items: { AstExprTableItem },
 }
 
 export type AstExprUnary = {
+	cstNode: CstExprOp?,
 	kind: "ExprUnary",
 	location: Location,
 	op: number,
@@ -228,6 +238,7 @@ export type AstExprUnary = {
 }
 
 export type AstExprBinary = {
+	cstNode: CstExprOp?,
 	kind: "ExprBinary",
 	location: Location,
 	op: number,
@@ -236,6 +247,7 @@ export type AstExprBinary = {
 }
 
 export type AstExprTypeAssertion = {
+	cstNode: CstExprTypeAssertion?,
 	kind: "ExprTypeAssertion",
 	location: Location,
 	expr: AstExpr,
@@ -243,6 +255,7 @@ export type AstExprTypeAssertion = {
 }
 
 export type AstExprInstantiate = {
+	cstNode: CstExprExplicitTypeInstantiation?,
 	kind: "ExprInstantiate",
 	location: Location,
 	expr: AstExpr,
@@ -250,6 +263,7 @@ export type AstExprInstantiate = {
 }
 
 export type AstExprIfElse = {
+	cstNode: CstExprIfElse?,
 	kind: "ExprIfElse",
 	location: Location,
 	condition: AstExpr,
@@ -260,6 +274,7 @@ export type AstExprIfElse = {
 }
 
 export type AstExprInterpString = {
+	cstNode: CstExprInterpString?,
 	kind: "ExprInterpString",
 	location: Location,
 	strings: { string },
@@ -274,6 +289,7 @@ export type AstExprError = {
 }
 
 export type AstStatBlock = {
+	cstNode: CstStatDo | CstStatDo_DEPRECATED | nil,
 	kind: "StatBlock",
 	location: Location,
 	body: { AstStat },
@@ -303,6 +319,7 @@ export type AstStatWhile = {
 }
 
 export type AstStatRepeat = {
+	cstNode: CstStatRepeat?,
 	kind: "StatRepeat",
 	location: Location,
 	condition: AstExpr,
@@ -311,12 +328,34 @@ export type AstStatRepeat = {
 	hasSemicolon: boolean?,
 }
 
-export type AstStatBreak = { kind: "StatBreak", location: Location, hasSemicolon: boolean? }
-export type AstStatContinue = { kind: "StatContinue", location: Location, hasSemicolon: boolean? }
-export type AstStatReturn = { kind: "StatReturn", location: Location, list: { AstExpr }, hasSemicolon: boolean? }
-export type AstStatExpr = { kind: "StatExpr", location: Location, expr: AstExpr, hasSemicolon: boolean? }
+export type AstStatBreak = {
+	kind: "StatBreak",
+	location: Location,
+	hasSemicolon: boolean?
+}
+
+export type AstStatContinue = {
+	kind: "StatContinue",
+	location: Location,
+	hasSemicolon: boolean?
+}
+
+export type AstStatReturn = {
+	cstNode: CstStatReturn?,
+	kind: "StatReturn",
+	location: Location,
+	list: { AstExpr },
+	hasSemicolon: boolean?,
+}
+export type AstStatExpr = {
+	kind: "StatExpr",
+	location: Location,
+	expr: AstExpr,
+	hasSemicolon: boolean?
+}
 
 export type AstStatLocal = {
+	cstNode: CstStatLocal?,
 	kind: "StatLocal",
 	location: Location,
 	vars: { AstLocal },
@@ -326,6 +365,7 @@ export type AstStatLocal = {
 }
 
 export type AstStatFor = {
+	cstNode: CstStatFor?,
 	kind: "StatFor",
 	location: Location,
 	var: AstLocal,
@@ -339,6 +379,7 @@ export type AstStatFor = {
 }
 
 export type AstStatForIn = {
+	cstNode: CstStatForIn?,
 	kind: "StatForIn",
 	location: Location,
 	vars: { AstLocal },
@@ -352,6 +393,7 @@ export type AstStatForIn = {
 }
 
 export type AstStatAssign = {
+	cstNode: CstStatAssign?,
 	kind: "StatAssign",
 	location: Location,
 	vars: { AstExpr },
@@ -360,6 +402,7 @@ export type AstStatAssign = {
 }
 
 export type AstStatCompoundAssign = {
+	cstNode: CstStatCompoundAssign?,
 	kind: "StatCompoundAssign",
 	location: Location,
 	op: number,
@@ -369,6 +412,7 @@ export type AstStatCompoundAssign = {
 }
 
 export type AstStatFunction = {
+	cstNode: CstStatFunction?,
 	kind: "StatFunction",
 	location: Location,
 	name: AstExpr,
@@ -377,6 +421,7 @@ export type AstStatFunction = {
 }
 
 export type AstStatLocalFunction = {
+	cstNode: CstStatLocalFunction?,
 	kind: "StatLocalFunction",
 	location: Location,
 	name: AstLocal?,
@@ -385,6 +430,7 @@ export type AstStatLocalFunction = {
 }
 
 export type AstStatTypeAlias = {
+	cstNode: CstStatTypeAlias?,
 	kind: "StatTypeAlias",
 	location: Location,
 	name: string,
@@ -397,6 +443,7 @@ export type AstStatTypeAlias = {
 }
 
 export type AstStatTypeFunction = {
+	cstNode: CstStatTypeFunction?,
 	kind: "StatTypeFunction",
 	location: Location,
 	name: string,
@@ -435,6 +482,7 @@ export type AstStatError = {
 }
 
 export type AstTypeReference = {
+	cstNode: CstTypeReference?,
 	kind: "TypeReference",
 	location: Location,
 	hasParameterList: boolean,
@@ -446,6 +494,7 @@ export type AstTypeReference = {
 }
 
 export type AstTypeTable = {
+	cstNode: CstTypeTable?,
 	kind: "TypeTable",
 	location: Location,
 	props: { AstTableProp },
@@ -453,29 +502,33 @@ export type AstTypeTable = {
 }
 
 export type AstTypeFunction = {
+	cstNode: CstTypeFunction?,
 	kind: "TypeFunction",
 	location: Location,
 	attributes: { AstAttr },
 	generics: { AstGenericType },
 	genericPacks: { AstGenericTypePack },
 	argTypes: AstTypeList,
-	argNames: { AstArgumentName? },
+	argNames: { AstArgumentName | boolean },
 	returnTypes: AstTypePack,
 }
 
 export type AstTypeTypeof = {
+	cstNode: CstTypeTypeof?,
 	kind: "TypeTypeof",
 	location: Location,
 	expr: AstExpr,
 }
 
 export type AstTypeUnion = {
+	cstNode: CstTypeUnion?,
 	kind: "TypeUnion",
 	location: Location,
 	types: { AstType },
 }
 
 export type AstTypeIntersection = {
+	cstNode: CstTypeIntersection?,
 	kind: "TypeIntersection",
 	location: Location,
 	types: { AstType },
@@ -513,6 +566,7 @@ export type AstTypeOptional = {
 }
 
 export type AstTypePackExplicit = {
+	cstNode: CstTypePackExplicit?,
 	kind: "TypePackExplicit",
 	location: Location,
 	types: { AstType },
@@ -526,6 +580,7 @@ export type AstTypePackVariadic = {
 }
 
 export type AstTypePackGeneric = {
+	cstNode: CstTypePackGeneric?,
 	kind: "TypePackGeneric",
 	location: Location,
 	genericName: string,
@@ -753,7 +808,7 @@ export type CstTypeFunction = {
 	genericsCommaPositions: { Position },
 	closeGenericsPosition: Position,
 	openArgsPosition: Position,
-	argumentNameColonPositions: { Position? },
+	argumentNameColonPositions: { Position | boolean },
 	argumentsCommaPositions: { Position },
 	closeArgsPosition: Position,
 	returnArrowPosition: Position,
@@ -788,42 +843,6 @@ export type CstTypePackGeneric = {
 	kind: "CstTypePackGeneric",
 	ellipsisPosition: Position,
 }
-
-export type CstNode = CstExprConstantNumber
-| CstExprConstantString
-| CstExprCall
-| CstExprIndexExpr
-| CstExprFunction
-| CstExprTable
-| CstExprOp
-| CstExprTypeAssertion
-| CstExprIfElse
-| CstExprInterpString
-| CstExprExplicitTypeInstantiation
-| CstStatDo
-| CstStatDo_DEPRECATED
-| CstStatRepeat
-| CstStatReturn
-| CstStatLocal
-| CstStatFor
-| CstStatForIn
-| CstStatAssign
-| CstStatCompoundAssign
-| CstStatFunction
-| CstStatLocalFunction
-| CstGenericType
-| CstGenericTypePack
-| CstStatTypeAlias
-| CstStatTypeFunction
-| CstTypeReference
-| CstTypeTable
-| CstTypeFunction
-| CstTypeTypeof
-| CstTypeUnion
-| CstTypeIntersection
-| CstTypePackExplicit
-| CstTypePackGeneric
-| { kind: string, [any]: any }
 
 export type AstNode = AstExpr
 | AstStat
@@ -875,7 +894,6 @@ export type Result = {
 	root: AstNode?,
 	commentLocations: { Comment },
 	hotcomments: { HotComment },
-	cstNodeMap: { [AstNode]: CstNode },
 	errors: { ParseError },
 }
 
