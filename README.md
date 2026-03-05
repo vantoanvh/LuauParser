@@ -8,26 +8,30 @@
   </ul>
 </div>
 
-![Ver](https://img.shields.io/badge/version-v0.708-blue) [![License](https://img.shields.io/badge/license-MIT-97ca00)](https://github.com/vantoanvh/LuauParser/blob/main/LICENSE) [![Docs](https://img.shields.io/badge/documentation-online-red?logo=github)](https://vantoanvh.github.io/LuauParser) [![Release](https://img.shields.io/badge/release-latest-darkblue?logo=lua&logoColor=white)](https://github.com/vantoanvh/LuauParser/releases/latest)
+![Ver](https://img.shields.io/badge/version-v0.710-blue?style=plastic)
+[![License](https://img.shields.io/badge/license-MIT-97ca00?style=plastic)](https://github.com/vantoanvh/LuauParser/blob/main/LICENSE)
+[![Docs](https://img.shields.io/badge/documentation-online-red?style=plastic&logo=github)](https://vantoanvh.github.io/LuauParser)
+[![Release](https://img.shields.io/badge/release-latest-darkblue?style=plastic&logo=luau&logoColor=white)](https://github.com/vantoanvh/LuauParser/releases/latest)
 
 A modern, fully featured **[Lua*u*](https://luau.org/)** parser written entirely in Luau<br>
-Fully type-checked with the New Type Solver and optimized for high performance.
+Fully strict-typing with the New Type Solver and optimized for high performance.
 
 ## Introduction
+> Only compatibles with <strong>New Type Solver</strong>.
+
 A complete port of **[Parser.cpp](https://github.com/luau-lang/luau/blob/master/Ast/src/Parser.cpp)** providing both *AST* **(Abstract Syntax Tree)** & *CST* **(Concrete Syntax Tree)**.<br>
 **To stay true to the original implementation**, the CST does not include low-level trivia such as whitespace.
 
-This Lua*u* parser is primarily intended for plugin development and for building Lua*u* compilers or tooling. It provides detailed syntax information through both **AST** and **CST** representations, making it well suited for advanced language tooling such as linters, formatters, highlighter, refactoring tools, or even a full lua*u* compiler/transpiler.
-
-This **LuauParser** only compatibles with New Type Solver.
+This Lua*u* parser is primarily intended for plugin development and for building Lua*u* compilers or tooling.<br>
+It provides detailed syntax through both **AST** and **CST**, making it well suited for advanced language tooling such as *linters, formatters, highlighter, refactoring tools,* or even a full *luau compiler/transpiler.*
 
 ## Performance
 
-Why this *Luau Parser* so **fast** because it doesn’t use **OOP**, **ECS**, or any heavy architecture. It’s built as a *simple singleton-style procedural system* that just resets its internal variables and runs. This avoids the overhead that comes with more complex designs.
+> After `0.710` updates, I do alot of optimization changes, and able to make this ( storeCstData = false ) **FASTER** than **[luaup](https://github.com/jackdotink/luaup)** itself.
 
-It also uses an inlined lexer, *table-less* position & location tracking, buffer-based byte reading, and several other low-level optimizations.
+Why this thing so **fast** because it’s built as a *simple singleton-style procedural system* that just resets its internal variables and runs. This avoids the overhead that comes with more complex designs.
 
-Because of this, its speed is almost identical to **[luaup](https://github.com/jackdotink/luaup)**. It just a little bit slower than **luaup** because each node contains way more data and supports more features, including advanced string escaping, full error recovery, detailed error reporting, modern syntax features, and ambiguous syntax handling which luaup doesn't have.
+It also uses an inlined lexer, heavy token inlining, *table-less* position & location tracking, buffer-based byte reading, and several other low-level optimizations.
 
 ## Code Examples
 ```luau
