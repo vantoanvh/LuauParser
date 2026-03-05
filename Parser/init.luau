@@ -1,5 +1,6 @@
 --!optimize 2
 --!strict
+--!native
 
 -- // Parser Settings
 
@@ -13,7 +14,7 @@ local ErrorLimit = 100
 
 -- // Requires
 
-local findConfusable = require'@self/findConfusable'
+local Confusables = require'@self/Confusables'
 local Syntax = require'@self/Syntax'
 
 local hotcommentHeader = true
@@ -37,81 +38,6 @@ local CstQuotes = {
 	QuotedDouble = 1, -- ""
 	QuotedRaw = 2, -- [[]]
 	QuotedInterp = 3, -- ``
-}
-
--- // Tables from Lexer
-
-local Types = {
-	Eof = 0,
-	Char_END = 256,
-	Equal = 257,
-
-	LessEqual = 258,
-	GreaterEqual = 259,
-	NotEqual = 260,
-
-	Dot2 = 261,
-	Dot3 = 262,
-
-	SkinnyArrow = 263,
-	DoubleColon = 264,
-	FloorDiv = 265,
-
-	InterpStringBegin = 266,
-	InterpStringMid = 267,
-	InterpStringEnd = 268,
-	InterpStringSimple = 269,
-
-	AddAssign = 270,
-	SubAssign = 271,
-	MulAssign = 272,
-	DivAssign = 273,
-	FloorDivAssign = 274,
-	ModAssign = 275,
-	PowAssign = 276,
-	ConcatAssign = 277,
-
-	RawString = 278,
-	QuotedString = 279,
-	Number = 280,
-	Name = 281,
-
-	Comment = 282,
-	BlockComment = 283,
-
-	Attribute = 284,
-	AttributeOpen = 285,
-
-	BrokenString = 286,
-	BrokenComment = 287,
-	BrokenUnicode = 288,
-	BrokenInterpDoubleBrace = 289,
-
-	Error = 290,
-
-	Reserved_BEGIN = 291,
-	ReservedAnd = 291,
-	ReservedBreak = 292,
-	ReservedDo = 293,
-	ReservedElse = 294,
-	ReservedElseif = 295,
-	ReservedEnd = 296,
-	ReservedFalse = 297,
-	ReservedFor = 298,
-	ReservedFunction = 299,
-	ReservedIf = 300,
-	ReservedIn = 301,
-	ReservedLocal = 302,
-	ReservedNil = 303,
-	ReservedNot = 304,
-	ReservedOr = 305,
-	ReservedRepeat = 306,
-	ReservedReturn = 307,
-	ReservedThen = 308,
-	ReservedTrue = 309,
-	ReservedUntil = 310,
-	ReservedWhile = 311,
-	Reserved_END = 312
 }
 
 -- // Lookup for keywords
@@ -199,14 +125,14 @@ local BinaryPriority = {
 }
 
 local CompoundLookup = {
-	[Types.FloorDivAssign] = BinaryOp.FloorDiv,
-	[Types.ConcatAssign] = BinaryOp.Concat,
-	[Types.ModAssign] = BinaryOp.Mod,
-	[Types.PowAssign] = BinaryOp.Pow,
-	[Types.AddAssign] = BinaryOp.Add,
-	[Types.SubAssign] = BinaryOp.Sub,
-	[Types.MulAssign] = BinaryOp.Mul,
-	[Types.DivAssign] = BinaryOp.Div,
+	[274] = BinaryOp.FloorDiv,
+	[277] = BinaryOp.Concat,
+	[275] = BinaryOp.Mod,
+	[276] = BinaryOp.Pow,
+	[270] = BinaryOp.Add,
+	[271] = BinaryOp.Sub,
+	[272] = BinaryOp.Mul,
+	[273] = BinaryOp.Div,
 }
 
 local BinaryOpLookup = {
@@ -215,38 +141,38 @@ local BinaryOpLookup = {
 	[42] = BinaryOp.Mul,
 	[47] = BinaryOp.Div,
 
-	[Types.FloorDiv] = BinaryOp.FloorDiv,
+	[265] = BinaryOp.FloorDiv,
 
 	[37] = BinaryOp.Mod,
 	[94] = BinaryOp.Pow,
 
-	[Types.Dot2] = BinaryOp.Concat,
-	[Types.NotEqual] = BinaryOp.CompareNe,
-	[Types.Equal] = BinaryOp.CompareEq,
+	[261] = BinaryOp.Concat,
+	[260] = BinaryOp.CompareNe,
+	[257] = BinaryOp.CompareEq,
 
 	[60] = BinaryOp.CompareLt,
 
-	[Types.LessEqual] = BinaryOp.CompareLe,
+	[258] = BinaryOp.CompareLe,
 
 	[62] = BinaryOp.CompareGt,
 
-	[Types.GreaterEqual] = BinaryOp.CompareGe,
-	[Types.ReservedAnd] = BinaryOp.And,
-	[Types.ReservedOr] = BinaryOp.Or,
+	[259] = BinaryOp.CompareGe,
+	[291] = BinaryOp.And,
+	[305] = BinaryOp.Or,
 }
 
 local UnaryOpLookup = {
-	[Types.ReservedNot] = UnaryOp.Not,
+	[304] = UnaryOp.Not,
 	[45] = UnaryOp.Minus,
 	[35] = UnaryOp.Len,
 }
 
 local BlockFollow = {
-	[Types.ReservedElseif] = true,
-	[Types.ReservedUntil] = true,
-	[Types.ReservedElse] = true,
-	[Types.ReservedEnd] = true,
-	[Types.Eof] = true,
+	[295] = true,
+	[310] = true,
+	[294] = true,
+	[296] = true,
+	[0] = true,
 }
 
 local ConstantLiteral = {
@@ -307,13 +233,6 @@ end
 for i = 48, 57  do HexVal[i] = i - 48 end -- '0'-'9'
 for i = 65, 70  do HexVal[i] = i - 55 end -- 'A'-'F'
 for i = 97, 102 do HexVal[i] = i - 87 end -- 'a'-'f'
-
--- // Parser Constants
-
-local nameError = "%error-id%"
-local nameNumber = "number"
-local nameSelf = "self"
-local nameNil = "nil"
 
 -- // Lexer helper
 
@@ -473,103 +392,103 @@ local function fixupMultilineString(data: string): string
 end
 
 local function ToString(t: number, data: string?, codepoint: number?): string
-	if t == Types.Eof then
+	if t == 0 then
 		return "<eof>"
-	elseif t == Types.Equal then
+	elseif t == 257 then
 		return "'=='"
-	elseif t == Types.LessEqual then
+	elseif t == 258 then
 		return "'<='"
-	elseif t == Types.GreaterEqual then
+	elseif t == 259 then
 		return "'>='"
-	elseif t == Types.NotEqual then
+	elseif t == 260 then
 		return "'~='"
-	elseif t == Types.Dot2 then
+	elseif t == 261 then
 		return "'..'"
-	elseif t == Types.Dot3 then
+	elseif t == 262 then
 		return "'...'"
-	elseif t == Types.SkinnyArrow then
+	elseif t == 263 then
 		return "'->'"
-	elseif t == Types.DoubleColon then
+	elseif t == 264 then
 		return "'::'"
-	elseif t == Types.FloorDiv then
+	elseif t == 265 then
 		return "'//'"
-	elseif t == Types.AddAssign then
+	elseif t == 270 then
 		return "'+='"
-	elseif t == Types.SubAssign then
+	elseif t == 271 then
 		return "'-='"
-	elseif t == Types.MulAssign then
+	elseif t == 272 then
 		return "'*='"
-	elseif t == Types.DivAssign then
+	elseif t == 273 then
 		return "'/='"
-	elseif t == Types.FloorDivAssign then
+	elseif t == 274 then
 		return "'//='"
-	elseif t == Types.ModAssign then
+	elseif t == 275 then
 		return "'%='"
-	elseif t == Types.PowAssign then
+	elseif t == 276 then
 		return "'^='"
-	elseif t == Types.ConcatAssign then
+	elseif t == 277 then
 		return "'..='"
-	elseif t == Types.RawString or t == Types.QuotedString then
+	elseif t == 278 or t == 279 then
 		if data then
 			return `"{data}"`
 		else
 			return "string"
 		end
-	elseif t == Types.InterpStringBegin then
+	elseif t == 266 then
 		if data then
 			return `\`{data}\{`
 		else
 			return "the beginning of an interpolated string"
 		end
-	elseif t == Types.InterpStringMid then
+	elseif t == 267 then
 		if data then
 			return `\}{data}\{`
 		else
 			return "the middle of an interpolated string"
 		end
-	elseif t == Types.InterpStringEnd then
+	elseif t == 268 then
 		if data then
 			return `\}{data}\``
 		else
 			return "the end of an interpolated string"
 		end
-	elseif t == Types.InterpStringSimple then
+	elseif t == 269 then
 		if data then
 			return `\`{data}\``
 		else
 			return "interpolated string"
 		end
-	elseif t == Types.Number then
+	elseif t == 280 then
 		if data then
 			return `'{data}'`
 		else
 			return "number"
 		end
-	elseif t == Types.Name then
+	elseif t == 281 then
 		if data then
 			return `'{data}'`
 		else
 			return "identifier"
 		end
-	elseif t == Types.Comment then
+	elseif t == 282 then
 		return "comment"
-	elseif t == Types.Attribute then
+	elseif t == 284 then
 		if data then
 			return `'{data}'`
 		else
 			return "attribute"
 		end
-	elseif t == Types.AttributeOpen then
+	elseif t == 285 then
 		return "'@['"
-	elseif t == Types.BrokenString then
+	elseif t == 286 then
 		return "malformed string"
-	elseif t == Types.BrokenComment then
+	elseif t == 287 then
 		return "unfinished comment"
-	elseif t == Types.BrokenInterpDoubleBrace then
+	elseif t == 289 then
 		return "'{{', which is invalid (did you mean '\\{'?)"
-	elseif t == Types.BrokenUnicode then
+	elseif t == 288 then
 		if codepoint then
-			local confusable = findConfusable(codepoint)
+			local confusable = Confusables[codepoint]
 			if confusable then
 				return `Unicode character {string.format('U+%x', codepoint)} (did you mean '{confusable}'?)`
 			end
@@ -578,7 +497,7 @@ local function ToString(t: number, data: string?, codepoint: number?): string
 			return "invalid UTF-8 sequence"
 		end
 	else
-		if t < Types.Char_END then
+		if t < 256 then
 			return string.format("'%c'", t)
 		elseif ReversedKeywords[t] then
 			return `'{ReversedKeywords[t]}'`
@@ -683,7 +602,7 @@ local storeCstData = options.storeCstData
 
 -- // Lexer State & Buffer
 
-local buff = buffer.fromstring(source)
+local buff_data = buffer.fromstring(source)
 local size = #source
 
 -- Current State
@@ -695,7 +614,7 @@ local braceStack: {number} = {}
 
 -- // Current Token State
 
-local token_type = Types.Eof
+local token_type = 0
 
 -- Locations
 local token_start_line = 0
@@ -779,7 +698,7 @@ local parseNumber
 
 -- // Suspect State
 
-local next_type = Types.Eof
+local next_type = 0
 local next_start_line = 0
 local next_end_line = 0
 
@@ -790,12 +709,12 @@ local next_codepoint: number? = nil
 local next_string: string? = nil
 local next_aux: number? = nil
 
-local suspect_type = Types.Eof
+local suspect_type = 0
 
 local suspect_line = 0
 
-local matchRecovery = table.create(Types.Reserved_END, 0)
-matchRecovery[Types.Eof] = 1
+local matchRecovery = table.create(312, 0)
+matchRecovery[0] = 1
 
 -- // Stacks
 
@@ -812,13 +731,15 @@ local function lex(skip_comments: boolean)
 	local ptr = offset
 	local cur_line = line
 
+	local buff = buff_data
+
 	while true do
 		if ptr >= size then
 			-- EOF Logic
 			offset = ptr
 			line = cur_line
 
-			next_type = Types.Eof
+			next_type = 0
 			next_end_line = cur_line
 			next_end_col = ptr - lineOffset
 
@@ -860,11 +781,15 @@ local function lex(skip_comments: boolean)
 	local start_ptr = ptr
 	ptr += 1 -- Consume current char
 
+	local _Alpha = Alpha
+	local _Digits = Digits
+	local _Keywords = Keywords
+
 	-- Identifiers / Keywords
-	if Alpha[ch] or ch == 95 then
+	if _Alpha[ch] or ch == 95 then
 		while ptr < size do
 			local c = buffer.readu8(buff, ptr)
-			if Alpha[c] or Digits[c] or c == 95 then
+			if _Alpha[c] or _Digits[c] or c == 95 then
 				ptr += 1
 			else
 				break
@@ -872,16 +797,14 @@ local function lex(skip_comments: boolean)
 		end
 
 		local text = buffer.readstring(buff, start_ptr, ptr - start_ptr)
-		local kw = Keywords[text]
 
-		next_type = kw or Types.Name
+		next_type = _Keywords[text] or 281
 		next_string = text
-
 		-- Numbers (0-9)
-	elseif Digits[ch] then
+	elseif _Digits[ch] then
 		while ptr < size do
 			local c = buffer.readu8(buff, ptr)
-			if Digits[c] or c == 46 or c == 95 then
+			if _Digits[c] or c == 46 or c == 95 then
 				ptr += 1
 			elseif c == 101 or c == 69 then -- e / E
 				ptr += 1
@@ -896,10 +819,10 @@ local function lex(skip_comments: boolean)
 
 		while ptr < size do
 			local c = buffer.readu8(buff, ptr)
-			if Alpha[c] or Digits[c] or c == 95 then ptr += 1 else break end
+			if _Alpha[c] or _Digits[c] or c == 95 then ptr += 1 else break end
 		end
 
-		next_type = Types.Number
+		next_type = 280
 		next_string = buffer.readstring(buff, start_ptr, ptr - start_ptr)
 
 		-- Strings (" or ')
@@ -942,20 +865,19 @@ local function lex(skip_comments: boolean)
 						end
 					end
 				end
-			elseif c == 10 then -- \n
-				cur_line += 1; lineOffset = ptr + 1
-				next_type = Types.BrokenString
+			elseif c == 10 or c == 13 then -- \n / \r
+				next_type = 286
 				break
 			end
 			ptr += 1
 		end
 
-		if next_type == Types.BrokenString then
+		if next_type == 286 then
 			-- handled
 		elseif ptr >= size then
-			next_type = Types.BrokenString
+			next_type = 286
 		else
-			next_type = Types.QuotedString
+			next_type = 279
 			next_string = buffer.readstring(buff, content_start, ptr - content_start)
 			next_aux = if delim == 39 then 0 else 1
 			ptr += 1 -- consume closing delim
@@ -965,9 +887,9 @@ local function lex(skip_comments: boolean)
 	elseif ch == 45 then -- '-'
 		local next_ch = if ptr < size then buffer.readu8(buff, ptr) else 0
 		if next_ch == 62 then -- ->
-			ptr += 1; next_type = Types.SkinnyArrow
+			ptr += 1; next_type = 263
 		elseif next_ch == 61 then -- -=
-			ptr += 1; next_type = Types.SubAssign
+			ptr += 1; next_type = 271
 		elseif next_ch == 45 then -- -- Comment
 			ptr += 1
 			local comment_start = ptr
@@ -1009,9 +931,9 @@ local function lex(skip_comments: boolean)
 					end
 
 					if not found_end then
-						next_type = Types.BrokenComment
+						next_type = 287
 					else
-						next_type = Types.BlockComment
+						next_type = 283
 					end
 				else
 					-- Not a block comment
@@ -1026,7 +948,7 @@ local function lex(skip_comments: boolean)
 					if c == 10 or c == 13 then break end -- \n or \r
 					ptr += 1
 				end
-				next_type = Types.Comment
+				next_type = 282
 			end
 
 			if not skip_comments then
@@ -1042,19 +964,19 @@ local function lex(skip_comments: boolean)
 			ptr += 1
 			local c2 = if ptr < size then buffer.readu8(buff, ptr) else 0
 			if c2 == 46 then -- =.
-				ptr += 1; next_type = Types.Dot3
+				ptr += 1; next_type = 262
 			elseif c2 == 61 then -- =
-				ptr += 1; next_type = Types.ConcatAssign
+				ptr += 1; next_type = 277
 			else
-				next_type = Types.Dot2
+				next_type = 261
 			end
 		else
-			if Digits[c] then
+			if _Digits[c] then
 				ptr -= 1 -- Backtrack
 				local n_start = ptr
 				while ptr < size do
 					local nc = buffer.readu8(buff, ptr)
-					if Digits[nc] or nc == 46 or nc == 95 then ptr += 1
+					if _Digits[nc] or nc == 46 or nc == 95 then ptr += 1
 					elseif nc == 101 or nc == 69 then
 						ptr += 1
 						if ptr < size then
@@ -1066,13 +988,13 @@ local function lex(skip_comments: boolean)
 
 				while ptr < size do
 					local tc = buffer.readu8(buff, ptr)
-					if Alpha[tc] or Digits[tc] or tc == 95 then
+					if _Alpha[tc] or _Digits[tc] or tc == 95 then
 						ptr += 1
 					else
 						break
 					end
 				end
-				next_type = Types.Number
+				next_type = 280
 				next_string = buffer.readstring(buff, n_start, ptr - n_start)
 			else
 				next_type = 46 -- '.'
@@ -1081,56 +1003,56 @@ local function lex(skip_comments: boolean)
 
 	elseif ch == 61 then -- '='
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then
-			ptr += 1; next_type = Types.Equal
+			ptr += 1; next_type = 257
 		else
 			next_type = 61
 		end
 	elseif ch == 60 then -- '<'
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then
 			ptr += 1
-			next_type = Types.LessEqual
+			next_type = 258
 		else
 			next_type = 60
 		end
 	elseif ch == 62 then -- '>'
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then
 			ptr += 1
-			next_type = Types.GreaterEqual
+			next_type = 259
 		else
 			next_type = 62
 		end
 	elseif ch == 126 then -- '~'
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then
 			ptr += 1
-			next_type = Types.NotEqual
+			next_type = 260
 		else
 			next_type = 126
 		end
 	elseif ch == 43 then -- '+'
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then
 			ptr += 1
-			next_type = Types.AddAssign
+			next_type = 270
 		else
 			next_type = 43
 		end
 	elseif ch == 42 then -- '*'
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then
 			ptr += 1
-			next_type = Types.MulAssign
+			next_type = 272
 		else
 			next_type = 42
 		end
 	elseif ch == 37 then -- '%'
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then
 			ptr += 1
-			next_type = Types.ModAssign
+			next_type = 275
 		else
 			next_type = 37
 		end
 	elseif ch == 94 then -- '^'
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then
 			ptr += 1
-			next_type = Types.PowAssign
+			next_type = 276
 		else
 			next_type = 94
 		end
@@ -1138,14 +1060,14 @@ local function lex(skip_comments: boolean)
 		local c = if ptr < size then buffer.readu8(buff, ptr) else 0
 		if c == 61 then
 			ptr += 1
-			next_type = Types.DivAssign
+			next_type = 273
 		elseif c == 47 then
 			ptr += 1
 			if ptr < size and buffer.readu8(buff, ptr) == 61 then
 				ptr += 1
-				next_type = Types.FloorDivAssign
+				next_type = 274
 			else
-				next_type = Types.FloorDiv
+				next_type = 265
 			end
 		else
 			next_type = 47
@@ -1153,120 +1075,201 @@ local function lex(skip_comments: boolean)
 	elseif ch == 58 then -- ':'
 		if ptr < size and buffer.readu8(buff, ptr) == 58 then
 			ptr += 1
-			next_type = Types.DoubleColon
+			next_type = 264
 		else
 			next_type = 58
 		end
 
 		-- Single Char / Interp
 	elseif ch == 40 or ch == 41 or ch == 93 or ch == 59 or ch == 44 or ch == 35 or ch == 63 or ch == 38 or ch == 124 or ch == 123 or ch == 125 then
-		local handled = false
-
 		if ch == 123 then
 			if #braceStack > 0 then table.insert(braceStack, BraceType.Normal) end
+			next_type = ch
 		elseif ch == 125 then
-			if #braceStack > 0 then
+			if #braceStack == 0 then
+				next_type = ch
+			else
 				local top = table.remove(braceStack)
-				if top == BraceType.InterpolatedString then
-					handled = true
-					-- Interp Mid
-					local istart = ptr
+				if top ~= BraceType.InterpolatedString then
+					next_type = ch
+				else
+					local sectionStart = ptr
+					local sectionDone = false
+
 					while ptr < size do
 						local c = buffer.readu8(buff, ptr)
+
 						if c == 96 then -- `
-							next_type = Types.InterpStringEnd
-							next_string = buffer.readstring(buff, istart, ptr - istart)
+							next_type = 268
+							next_string = buffer.readstring(buff, sectionStart, ptr - sectionStart)
 							ptr += 1
+							sectionDone = true
 							break
-						elseif c == 123 then -- {
-							if ptr + 1 < size and buffer.readu8(buff, ptr + 1) == 123 then
-								ptr += 2
-							else
-								next_type = Types.InterpStringMid
-								next_string = buffer.readstring(buff, istart, ptr - istart)
-								table.insert(braceStack, BraceType.InterpolatedString)
-								ptr += 1
-								break
-							end
+						elseif c == 13 or c == 10 then -- \r / \n
+							next_type = 286
+							sectionDone = true
+							break
 						elseif c == 92 then -- \
-							ptr += 1
-							if ptr < size then
-								local ec = buffer.readu8(buff, ptr)
-								if ec == 122 then -- z
-									ptr += 1
-									while ptr < size do
-										local wc = buffer.readu8(buff, ptr)
-										if wc == 32 or wc == 9 or wc == 10 or wc == 13 then
+							-- Allow \u{...} without treating '{' as interpolation start.
+							if ptr + 2 < size and buffer.readu8(buff, ptr + 1) == 117 and buffer.readu8(buff, ptr + 2) == 123 then
+								ptr += 3
+							else
+								ptr += 1 -- consume '\'
+
+								if ptr < size then
+									local esc = buffer.readu8(buff, ptr)
+
+									if esc == 13 then -- \r
+										ptr += 1
+										if ptr < size and buffer.readu8(buff, ptr) == 10 then
+											cur_line += 1
+											lineOffset = ptr + 1
+											ptr += 1
+										end
+									elseif esc == 122 then -- z
+										ptr += 1
+										while ptr < size do
+											local wc = buffer.readu8(buff, ptr)
+											if wc ~= 32 and wc ~= 9 and wc ~= 13 and wc ~= 10 and wc ~= 11 and wc ~= 12 then
+												break
+											end
+
 											if wc == 10 then
 												cur_line += 1
-												lineOffset = ptr + 1 
-											elseif wc == 13 then
+												lineOffset = ptr + 1
+											elseif wc == 13 and ptr + 1 < size and buffer.readu8(buff, ptr + 1) == 10 then
+												ptr += 1
 												cur_line += 1
-												if ptr + 1 < size and buffer.readu8(buff, ptr + 1) == 10 then
-													ptr += 1
-												end
 												lineOffset = ptr + 1
 											end
+
 											ptr += 1
-										else
-											break
 										end
+									elseif esc == 10 then -- \n
+										cur_line += 1
+										lineOffset = ptr + 1
+										ptr += 1
+									else
+										ptr += 1
 									end
-								elseif ec == 10 then
-									cur_line += 1
-									lineOffset = ptr + 1
 								end
 							end
-						elseif c == 10 then
-							cur_line += 1
-							lineOffset = ptr + 1
+						elseif c == 123 then -- {
+							table.insert(braceStack, BraceType.InterpolatedString)
+
+							if ptr + 1 < size and buffer.readu8(buff, ptr + 1) == 123 then
+								next_type = 289
+								next_string = buffer.readstring(buff, sectionStart, ptr - sectionStart)
+								ptr += 2
+								sectionDone = true
+								break
+							end
+
+							next_type = 267
+							next_string = buffer.readstring(buff, sectionStart, ptr - sectionStart)
+							ptr += 1
+							sectionDone = true
+							break
+						else
+							ptr += 1
 						end
-						ptr += 1
+					end
+
+					if not sectionDone then
+						next_type = 286
 					end
 				end
 			end
-		end
-
-		if not handled then
+		else
 			next_type = ch
 		end
 	elseif ch == 96 then -- `
-		local istart = ptr
+		local sectionStart = ptr
+		local sectionDone = false
+
 		while ptr < size do
 			local c = buffer.readu8(buff, ptr)
+
 			if c == 96 then -- `
-				next_type = Types.InterpStringSimple
-				next_string = buffer.readstring(buff, istart, ptr - istart)
+				next_type = 269
+				next_string = buffer.readstring(buff, sectionStart, ptr - sectionStart)
 				ptr += 1
+				sectionDone = true
 				break
-			elseif c == 123 then -- {
-				if ptr + 1 < size and buffer.readu8(buff, ptr + 1) == 123 then
-					ptr += 2
-				else
-					next_type = Types.InterpStringBegin
-					next_string = buffer.readstring(buff, istart, ptr - istart)
-					table.insert(braceStack, BraceType.InterpolatedString)
-					ptr += 1
-					break
-				end
+			elseif c == 13 or c == 10 then -- \r / \n
+				next_type = 286
+				sectionDone = true
+				break
 			elseif c == 92 then -- \
-				ptr += 1
-				if ptr < size then
-					local ec = buffer.readu8(buff, ptr)
-					if ec == 10 then
-						cur_line += 1
-						lineOffset = ptr + 1
+				-- Allow \u{...} without treating '{' as interpolation start.
+				if ptr + 2 < size and buffer.readu8(buff, ptr + 1) == 117 and buffer.readu8(buff, ptr + 2) == 123 then
+					ptr += 3
+				else
+					ptr += 1 -- consume '\'
+					if ptr < size then
+						local esc = buffer.readu8(buff, ptr)
+
+						if esc == 13 then -- \r
+							ptr += 1
+							if ptr < size and buffer.readu8(buff, ptr) == 10 then
+								cur_line += 1
+								lineOffset = ptr + 1
+								ptr += 1
+							end
+						elseif esc == 122 then -- z
+							ptr += 1
+							while ptr < size do
+								local wc = buffer.readu8(buff, ptr)
+								if wc ~= 32 and wc ~= 9 and wc ~= 13 and wc ~= 10 and wc ~= 11 and wc ~= 12 then
+									break
+								end
+
+								if wc == 10 then
+									cur_line += 1
+									lineOffset = ptr + 1
+								elseif wc == 13 and ptr + 1 < size and buffer.readu8(buff, ptr + 1) == 10 then
+									ptr += 1
+									cur_line += 1
+									lineOffset = ptr + 1
+								end
+
+								ptr += 1
+							end
+						elseif esc == 10 then -- \n
+							cur_line += 1
+							lineOffset = ptr + 1
+							ptr += 1
+						else
+							ptr += 1
+						end
 					end
 				end
-			elseif c == 10 then
-				cur_line += 1
-				lineOffset = ptr + 1
+			elseif c == 123 then -- {
+				table.insert(braceStack, BraceType.InterpolatedString)
+
+				if ptr + 1 < size and buffer.readu8(buff, ptr + 1) == 123 then
+					next_type = 289
+					next_string = buffer.readstring(buff, sectionStart, ptr - sectionStart)
+					ptr += 2
+					sectionDone = true
+					break
+				end
+
+				next_type = 266
+				next_string = buffer.readstring(buff, sectionStart, ptr - sectionStart)
+				ptr += 1
+				sectionDone = true
+				break
+			else
+				ptr += 1
 			end
-			ptr += 1
+		end
+
+		if not sectionDone then
+			next_type = 286
 		end
 
 	elseif ch == 91 then -- [
-		local sep_start = ptr
 		local count = 0
 		while ptr < size and buffer.readu8(buff, ptr) == 61 do
 			ptr += 1; count += 1
@@ -1287,7 +1290,7 @@ local function lex(skip_comments: boolean)
 					end
 
 					if cc == count and c2 < size and buffer.readu8(buff, c2) == 93 then
-						next_type = Types.RawString
+						next_type = 278
 						next_string = buffer.readstring(buff, ls_start, ptr - ls_start)
 						ptr = c2 + 1
 						next_aux = count
@@ -1300,23 +1303,23 @@ local function lex(skip_comments: boolean)
 				end
 				ptr += 1
 			end
-			if not found then next_type = Types.BrokenString end
-		else
-			ptr = sep_start -- Backtrack
+			if not found then next_type = 286 end
+		elseif count == 0 then
 			next_type = 91 -- [
+		else
+			next_type = 286
 		end
-
 	elseif ch == 64 then -- @
 		if ptr < size and buffer.readu8(buff, ptr) == 91 then
 			ptr += 1
-			next_type = Types.AttributeOpen
+			next_type = 285
 		else
 			local name_start = ptr
 			while ptr < size do
 				local c = buffer.readu8(buff, ptr)
-				if Alpha[c] or Digits[c] or c == 95 then ptr += 1 else break end
+				if _Alpha[c] or _Digits[c] or c == 95 then ptr += 1 else break end
 			end
-			next_type = Types.Attribute
+			next_type = 284
 			next_string = buffer.readstring(buff, name_start, ptr - name_start)
 		end
 	else
@@ -1330,7 +1333,7 @@ local function lex(skip_comments: boolean)
 			elseif bit32.band(ch, 0xF8) == 0xF0 then
 				seq_len = 3; cp = bit32.band(ch, 0x07)
 			else 
-				next_type = Types.BrokenUnicode
+				next_type = 288
 				seq_len = -1 -- signal fail
 			end
 
@@ -1345,10 +1348,10 @@ local function lex(skip_comments: boolean)
 				end
 
 				if ok then
-					next_type = Types.BrokenUnicode
+					next_type = 288
 					next_codepoint = cp
 				else
-					next_type = Types.BrokenUnicode
+					next_type = 288
 				end
 			end
 		else
@@ -1364,12 +1367,11 @@ local function lex(skip_comments: boolean)
 end
 
 -- // Parser Interface
-
 local function fillNext()
 	while true do
 		lex(false) -- writes to next_*
 
-		if next_type == Types.Comment or next_type == Types.BlockComment or next_type == Types.BrokenComment then
+		if next_type == 282 or next_type == 283 or next_type == 287 then
 			if captureComments then
 				table.insert(commentLocations, {
 					type = next_type,
@@ -1380,18 +1382,30 @@ local function fillNext()
 				})
 			end
 
-			if next_type == Types.Comment and next_string and string.byte((next_string :: string), 1) == 33 then -- '!'
+			if next_type == 282 and next_string and string.byte((next_string :: string), 1) == 33 then -- '!'
+				local text = next_string :: string
+				local ending = #text
+
+				while ending > 0 do
+					local byte = string.byte(text, ending)
+					if byte and Spaces[byte] then
+						ending -= 1
+					else
+						break
+					end
+				end
+
 				table.insert(hotcomments, {
 					header = hotcommentHeader,
 					location = {
 						begin = {line = next_start_line, column = next_start_col},
 						end_ = {line = next_end_line, column = next_end_col}
 					},
-					content = next_string
+					content = string.sub(text, 2, ending)
 				} :: Syntax.HotComment)
 			end
 
-			if next_type == Types.BrokenComment then
+			if next_type == 287 then
 				return
 			end
 
@@ -1451,8 +1465,16 @@ end
 
 -- // Error reports
 
+local function positionsEqual(a: Syntax.Position, b: Syntax.Position): boolean
+	return a.line == b.line and a.column == b.column
+end
+
+local function locationsEqual(a: Syntax.Location, b: Syntax.Location): boolean
+	return positionsEqual(a.begin, b.begin) and positionsEqual(a.end_, b.end_)
+end
+
 local function report(loc: Syntax.Location, fmt: string, ...: any)
-	if #parseErrors > 0 and parseErrors[#parseErrors].location == loc then
+	if #parseErrors > 0 and locationsEqual(parseErrors[#parseErrors].location, loc) then
 		return
 	end
 
@@ -1556,7 +1578,7 @@ end
 local function expectMatchEndAndConsume(type_: number, begin_type: number, line: number, column: number): boolean
 	if token_type ~= type_ then
 
-		if suspect_type ~= Types.Eof and suspect_line > line then
+		if suspect_type ~= 0 and suspect_line > line then
 			local suggestion = string.format(
 				"; did you forget to close %s at line %d?",
 				ToString(suspect_type, token_string, token_codepoint),
@@ -1707,7 +1729,7 @@ local function parseBinding(): Syntax.Binding
 	local bindingName = nameOpt :: Syntax.Binding
 	if not bindingName then
 		bindingName = {
-			name = {value = nameError},
+			name = {value = "%error-id%"},
 			location = snapshot(),
 		} :: Syntax.Binding
 	end
@@ -1739,7 +1761,7 @@ local function parseBindingList(
 	end
 
 	while true do
-		if token_type == Types.Dot3 and allowDot3 then
+		if token_type == 262 and allowDot3 then
 			local varargLocation = snapshot()
 			nextLexeme()
 
@@ -1802,25 +1824,25 @@ end
 local function parseStat(): Syntax.AstStat
 	local type_ = token_type
 
-	if type_ == Types.ReservedIf then
+	if type_ == 300 then
 		return parseIf()
-	elseif type_ == Types.ReservedWhile then
+	elseif type_ == 311 then
 		return parseWhile()
-	elseif type_ == Types.ReservedDo then
+	elseif type_ == 293 then
 		return parseDo()
-	elseif type_ == Types.ReservedFor then
+	elseif type_ == 298 then
 		return parseFor()
-	elseif type_ == Types.ReservedRepeat then
+	elseif type_ == 306 then
 		return parseRepeat()
-	elseif type_ == Types.ReservedFunction then
+	elseif type_ == 299 then
 		return parseFunctionStat{}
-	elseif type_ == Types.ReservedLocal then
+	elseif type_ == 302 then
 		return parseLocal{}
-	elseif type_ == Types.ReservedReturn then
+	elseif type_ == 307 then
 		return parseReturn()
-	elseif type_ == Types.ReservedBreak then
+	elseif type_ == 292 then
 		return parseBreak()
-	elseif type_ == Types.Attribute or type_ == Types.AttributeOpen then
+	elseif type_ == 284 or type_ == 285 then
 		return parseAttributeStat()
 	end
 
@@ -1855,7 +1877,7 @@ local function parseStat(): Syntax.AstStat
 		return parseTypeAlias(expr.location, false, expr.location.begin)
 	end
 
-	if ident == "export" and token_type == Types.Name and token_string == "type" then
+	if ident == "export" and token_type == 281 and token_string == "type" then
 		local typeKeywordPos = {line = token_start_line, column = token_start_col}
 		nextLexeme()
 		return parseTypeAlias(expr.location, true, typeKeywordPos)
@@ -1885,7 +1907,7 @@ local function parseBlockNoScope(): Syntax.AstStatBlock
 
 	while not BlockFollow[token_type] do
 		local oldRecursion = recursionCounter
-		recursionCounter += 1
+		incrementRecursionCounter("block")
 
 		local stat = parseStat()
 
@@ -1941,7 +1963,7 @@ function parseIf(): Syntax.AstStatIf
 	local Then_end_line, Then_end_col = token_end_line, token_end_col
 
 	local thenLocation = nil
-	if expectAndConsume(Types.ReservedThen, "if statement") then
+	if expectAndConsume(308, "if statement") then
 		thenLocation = {
 			begin = {line = Then_start_line, column = Then_start_col},
 			end_ = {line = Then_end_line, column = Then_end_col}
@@ -1954,10 +1976,10 @@ function parseIf(): Syntax.AstStatIf
 	local end_ = start
 	local elseLocation = nil
 
-	if token_type == Types.ReservedElseif then
+	if token_type == 295 then
 		thenbody.hasEnd = true
 		local oldRecursionCount = recursionCounter
-		recursionCounter += 1
+		incrementRecursionCounter("elseif")
 
 		elseLocation = snapshot()
 		elsebody = parseIf()
@@ -1970,7 +1992,7 @@ function parseIf(): Syntax.AstStatIf
 		local ThenElse_start_line, ThenElse_start_col = token_start_line, token_start_col
 		local ThenElse_end_line, ThenElse_end_col = token_end_line, token_end_col
 
-		if token_type == Types.ReservedElse then
+		if token_type == 294 then
 			thenbody.hasEnd = true
 			elseLocation = snapshot()
 
@@ -1988,7 +2010,7 @@ function parseIf(): Syntax.AstStatIf
 
 		end_ = snapshot()
 
-		local hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, ThenElse_type, ThenElse_start_line, ThenElse_start_col)
+		local hasEnd = expectMatchEndAndConsume(296, ThenElse_type, ThenElse_start_line, ThenElse_start_col)
 
 		if elsebody then
 			if elsebody.kind == "StatBlock" then
@@ -2025,7 +2047,7 @@ function parseWhile(): Syntax.AstStatWhile
 	local Do_start_line, Do_start_col = token_start_line, token_start_col
 	local Do_end_line, Do_end_col = token_end_line, token_end_col
 
-	local hasDo = expectAndConsume(Types.ReservedDo, "while loop")
+	local hasDo = expectAndConsume(293, "while loop")
 
 	functionStack[#functionStack].loopDepth += 1
 
@@ -2034,7 +2056,7 @@ function parseWhile(): Syntax.AstStatWhile
 	functionStack[#functionStack].loopDepth -= 1
 
 	local end_ = snapshot()
-	local hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, Do_type, Do_start_line, Do_start_col)
+	local hasEnd = expectMatchEndAndConsume(296, Do_type, Do_start_line, Do_start_col)
 
 	body.hasEnd = hasEnd
 
@@ -2072,7 +2094,7 @@ function parseRepeat(): Syntax.AstStatRepeat
 	functionStack[#functionStack].loopDepth -= 1
 
 	local untilPosition = {line = token_start_line, column = token_start_col}
-	local hasUntil = expectMatchEndAndConsume(Types.ReservedUntil, Repeat_type, Repeat_start_line, Repeat_start_col)
+	local hasUntil = expectMatchEndAndConsume(310, Repeat_type, Repeat_start_line, Repeat_start_col)
 
 	local cond = parseExpr()
 
@@ -2112,7 +2134,7 @@ function parseDo(): Syntax.AstStatBlock
 		body.location.begin = start.begin
 
 		local endLocation = snapshot()
-		body.hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, Do_type, Do_start_line, Do_start_col)
+		body.hasEnd = expectMatchEndAndConsume(296, Do_type, Do_start_line, Do_start_col)
 
 		if body.hasEnd then
 			body.location.end_ = endLocation.end_
@@ -2134,7 +2156,7 @@ function parseDo(): Syntax.AstStatBlock
 		body.location.begin = start.begin
 
 		local endLocation = snapshot()
-		body.hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, Do_type, Do_start_line, Do_start_col)
+		body.hasEnd = expectMatchEndAndConsume(296, Do_type, Do_start_line, Do_start_col)
 
 		if body.hasEnd then
 			body.location.end_ = endLocation.end_
@@ -2229,7 +2251,7 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 		local Do_start_line, Do_start_col = token_start_line, token_start_col
 		local Do_end_line, Do_end_col = token_end_line, token_end_col
 
-		local hasDo = expectAndConsume(Types.ReservedDo, "for loop")
+		local hasDo = expectAndConsume(293, "for loop")
 
 		local localsBegin = #localStack
 		functionStack[#functionStack].loopDepth += 1
@@ -2242,7 +2264,7 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 		restoreLocals(localsBegin)
 
 		local end_ = {line = token_end_line, column = token_end_col}
-		local hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, Do_type, Do_start_line, Do_start_col)
+		local hasEnd = expectMatchEndAndConsume(296, Do_type, Do_start_line, Do_start_col)
 		body.hasEnd = hasEnd
 
 		local node = {
@@ -2283,7 +2305,7 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 		end
 
 		local inLocation = snapshot()
-		local hasIn = expectAndConsume(Types.ReservedIn, "for loop")
+		local hasIn = expectAndConsume(301, "for loop")
 
 		local values = {}
 
@@ -2295,7 +2317,7 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 		local Do_start_line, Do_start_col = token_start_line, token_start_col
 		local Do_end_line, Do_end_col = token_end_line, token_end_col
 
-		local hasDo = expectAndConsume(Types.ReservedDo, "for loop")
+		local hasDo = expectAndConsume(293, "for loop")
 
 		local localsBegin = #localStack
 		functionStack[#functionStack].loopDepth += 1
@@ -2312,7 +2334,7 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 
 		local end_ = {line = token_end_line, column = token_end_col}
 
-		local hasEnd = expectMatchEndAndConsume(Types.ReservedEnd, Do_type, Do_start_line, Do_start_col)
+		local hasEnd = expectMatchEndAndConsume(296, Do_type, Do_start_line, Do_start_col)
 		body.hasEnd = hasEnd
 
 		local node = {
@@ -2335,7 +2357,7 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 				kind = "CstStatForIn",
 				varsAnnotationColonPositions = extractAnnotationColonPositions(names),
 				varsCommaPositions = varsCommaPosition,
-				valuesCommaPositions = varsCommaPosition
+				valuesCommaPositions = valuesCommaPositions
 			}
 		end
 
@@ -2345,7 +2367,7 @@ end
 
 -- funcname ::= Name {`.' Name} [`:' Name]
 local function parseFunctionName(hasRef: {boolean}, debugnameRef: {string?}): Syntax.AstExprIndexName
-	if token_type == Types.Name then
+	if token_type == 281 then
 		debugnameRef[1] = token_string
 	end
 
@@ -2425,11 +2447,11 @@ function parseFunctionStat(attributes: Syntax.Attrs): Syntax.AstStatFunction
 	local debugnameRef = {}
 	local expr = parseFunctionName(hasRef, debugnameRef)
 
-	matchRecovery[Types.ReservedEnd] += 1
+	matchRecovery[296] += 1
 
-	local body = parseFunctionBody(hasRef[1], matchFunction, debugnameRef[1], nil, attributes)
+	local body = parseFunctionBody(hasRef[1], matchFunction, debugnameRef[1], nil, nil, attributes)
 
-	matchRecovery[Types.ReservedEnd] -= 1
+	matchRecovery[296] -= 1
 
 	local node = {
 		kind = "StatFunction",
@@ -2494,7 +2516,7 @@ end
 
 -- attribute ::= '@' NAME
 local function parseAttribute(attributes: Syntax.Attrs)
-	if token_type == Types.Attribute then
+	if token_type == 284 then
 		local loc = snapshot()
 		local name = token_string or ""
 		local type_ = validateAttribute(loc, name, attributes, {})
@@ -2502,7 +2524,7 @@ local function parseAttribute(attributes: Syntax.Attrs)
 		table.insert(attributes, {
 			kind = "Attr",
 			location = loc,
-			type = type_,
+			type = type_ or "Unknown",
 			args = {},
 			name = name
 		} :: Syntax.AstAttr)
@@ -2519,13 +2541,15 @@ local function parseAttribute(attributes: Syntax.Attrs)
 				local attrName = name.name.value
 				local args = {}
 				local argsLocation = snapshot()
+				local hasArgs = false
 
-				if token_type == Types.RawString
-					or token_type == Types.QuotedString or 
+				if token_type == 278
+					or token_type == 279 or 
 					token_type == 123 or token_type == 40 then 
 					local args_, argsLoc_ = parseCallList()
 					args = args_
 					argsLocation = argsLoc_
+					hasArgs = true
 					for _, arg in args do
 						if not ConstantLiteral[arg.kind] and not isLiteralTable(arg) then
 							report(argsLocation, "Only literals can be passed as arguments for attributes")
@@ -2533,12 +2557,19 @@ local function parseAttribute(attributes: Syntax.Attrs)
 					end
 				end
 
-				validateAttribute(nameLoc, attrName, attributes, args)
+				local type_ = validateAttribute(nameLoc, attrName, attributes, args)
+				local attrLocation = nameLoc
+				if hasArgs then
+					attrLocation = {
+						begin = nameLoc.begin,
+						end_ = argsLocation.end_
+					}
+				end
 
 				table.insert(attributes, {
 					kind = "Attr",
-					location = nameLoc,
-					type = "Unknown",
+					location = attrLocation,
+					type = type_ or "Unknown",
 					args = args,
 					name = attrName
 				} :: Syntax.AstAttr)
@@ -2550,10 +2581,20 @@ local function parseAttribute(attributes: Syntax.Attrs)
 				end
 			end
 		else
-			report({
+			local errorLocation = {
 				begin = {line = open_start_line, column = open_start_col},
 				end_ = {line = token_end_line, column = token_end_col}
-			}, "Attribute list cannot be empty")
+			}
+
+			report(errorLocation, "Attribute list cannot be empty")
+
+			table.insert(attributes, {
+				kind = "Attr",
+				location = errorLocation,
+				type = "Unknown",
+				args = {},
+				name = "%error-id%"
+			} :: Syntax.AstAttr)
 		end
 		expectMatchAndConsume(93, open_type, open_start_line, open_start_col) 
 	end
@@ -2563,8 +2604,8 @@ end
 local function parseAttributes(): Syntax.Attrs
 	local attributes = {}
 
-	while token_type == Types.Attribute
-		or token_type == Types.AttributeOpen do
+	while token_type == 284
+		or token_type == 285 do
 		parseAttribute(attributes)
 	end
 
@@ -2579,9 +2620,9 @@ function parseAttributeStat(): Syntax.AstStat
 	local attributes = parseAttributes()
 	local type_ = token_type
 
-	if type_ == Types.ReservedFunction then
+	if type_ == 299 then
 		return parseFunctionStat(attributes)
-	elseif type_ == Types.ReservedLocal then
+	elseif type_ == 302 then
 		return parseLocal(attributes)
 	end
 
@@ -2603,7 +2644,7 @@ function parseLocal(attributes: Syntax.Attrs): Syntax.AstStatLocal | Syntax.AstS
 	local localKeywordPosition = {line = token_start_line, column = token_start_col}
 	nextLexeme() -- local
 
-	if token_type == Types.ReservedFunction then
+	if token_type == 299 then
 		local matchFunction = get_lexeme()
 		nextLexeme()
 
@@ -2616,11 +2657,11 @@ function parseLocal(attributes: Syntax.Attrs): Syntax.AstStatLocal | Syntax.AstS
 
 		local name = parseName("variable name")
 
-		matchRecovery[Types.ReservedEnd] += 1
+		matchRecovery[296] += 1
 
-		local body, var = parseFunctionBody(false, matchFunction, name.name.value, name.name.value, attributes)
+		local body, var = parseFunctionBody(false, matchFunction, name.name.value, name.name.value, name.location, attributes)
 
-		matchRecovery[Types.ReservedEnd] -= 1
+		matchRecovery[296] -= 1
 
 		local node = {
 			kind = "StatLocalFunction",
@@ -2746,7 +2787,7 @@ function parseTypeAlias(
 ): Syntax.AstStatTypeAlias | Syntax.AstStatTypeFunction
 
 	-- parsing a type function
-	if token_type == Types.ReservedFunction then
+	if token_type == 299 then
 		return parseTypeFunction(start, exported, typeKeywordPosition)
 	end
 
@@ -2760,7 +2801,7 @@ function parseTypeAlias(
 	-- Use error name if the name is missing
 	if not name then
 		name = {
-			name = { value = nameError },
+			name = { value = "%error-id%" },
 			location = snapshot()
 		} :: Syntax.Binding
 	end
@@ -2832,20 +2873,20 @@ function parseTypeFunction(
 
 	if fnName == nil then
 		fnName = {
-			name = { value = nameError },
+			name = { value = "%error-id%" },
 			location = snapshot()
 		} :: Syntax.Binding
 	end
 
-	matchRecovery[Types.ReservedEnd] += 1
+	matchRecovery[296] += 1
 
 	local oldTypeFunctionDepth = typeFunctionDepth
 	typeFunctionDepth = #functionStack
 
-	local body = parseFunctionBody(false, matchFn, fnName.name.value, nil, {})
+	local body = parseFunctionBody(false, matchFn, fnName.name.value, nil, nil, {})
 
 	typeFunctionDepth = oldTypeFunctionDepth
-	matchRecovery[Types.ReservedEnd] -= 1
+	matchRecovery[296] -= 1
 
 	local hasErrors = #parseErrors > errorsAtStart
 
@@ -2874,7 +2915,7 @@ function parseTypeFunction(
 end
 
 function parseNameOpt(context: string?): Syntax.Binding?
-	if token_type ~= Types.Name then
+	if token_type ~= 281 then
 		reportNameError(context)
 		return nil
 	end
@@ -2895,7 +2936,7 @@ function parseName(context: string?): Syntax.Binding
 	end
 
 	return {
-		name = { value = nameError },
+		name = { value = "%error-id%" },
 		location = snapshot()
 	}
 end
@@ -2915,6 +2956,10 @@ function parseExprList(result: {Syntax.AstExpr}, commaPositions: {Syntax.Positio
 	table.insert(result, parseExpr())
 
 	while token_type == 44 do
+		if commaPositions then
+			table.insert(commaPositions, {line = token_start_line, column = token_start_col})
+		end
+
 		nextLexeme()
 		if token_type == 41 then
 			report(
@@ -3022,7 +3067,7 @@ function prepareFunctionArguments(start: Syntax.Location, hasself: boolean, args
 	local selfLocal = nil
 	if hasself then
 		selfLocal = pushLocal({ 
-			name = { value = nameSelf },
+			name = { value = "self" },
 			location = start,
 			annotation = nil,
 			colonPosition = nil
@@ -3040,11 +3085,11 @@ end
 local function shouldParseTypePack()
 	local t = token_type
 
-	if t == Types.Dot3 then
+	if t == 262 then
 		return true
 	end
 
-	if t == Types.Name and next_type == Types.Dot3 then
+	if t == 281 and next_type == 262 then
 		return true
 	end
 
@@ -3058,6 +3103,7 @@ function parseFunctionBody(
 	matchFunction: Syntax.Lexeme,
 	debugname: string?,
 	localName: string?,
+	localNameLocation: Syntax.Location?,
 	attributes: Syntax.Attrs
 ): (Syntax.AstExprFunction, Syntax.AstLocal?)
 
@@ -3130,7 +3176,7 @@ function parseFunctionBody(
 	end
 
 	local argLocation = nil
-	if token_type == 40 and token_type == 41 then
+	if Paren_type == 40 and token_type == 41 then
 		argLocation = {
 			begin = {line = Paren_line, column = Paren_col},
 			end_ = {line = token_end_line, column = token_end_col}
@@ -3146,9 +3192,10 @@ function parseFunctionBody(
 
 	local funLocal = nil
 	if localName then
+		local bindingLocation = localNameLocation or start
 		funLocal = pushLocal({ 
 			name = { value = localName },
-			location = start,
+			location = bindingLocation,
 			annotation = nil,
 			colonPosition = nil
 		})
@@ -3169,7 +3216,7 @@ function parseFunctionBody(
 
 	local end_ = snapshot()
 	local hasEnd = expectMatchEndAndConsume(
-		Types.ReservedEnd, 
+		296, 
 		matchFunction.type, 
 		matchFunction.location.begin.line, 
 		matchFunction.location.begin.column
@@ -3229,11 +3276,11 @@ function parseGenericTypeList(
 			local nameBinding = parseName()
 			local name = nameBinding.name.value
 
-			if token_type == Types.Dot3 or seenPack then
+			if token_type == 262 or seenPack then
 				seenPack = true
 				local ellipsisPosition = {line = token_start_line, column = token_start_col}
 
-				if token_type ~= Types.Dot3 then
+				if token_type ~= 262 then
 					report(snapshot(), "Generic types come before generic type packs")
 				else
 					nextLexeme()
@@ -3386,7 +3433,7 @@ function parseTypeList(
 			return parseTypePack()
 		end
 
-		if token_type == Types.Name and next_type == 58 then
+		if token_type == 281 and next_type == 58 then
 			-- Fill in previous argument names with empty slots
 			while #resultNames < #result do
 				table.insert(resultNames, nil)
@@ -3441,8 +3488,8 @@ end
 
 function parseOptionalReturnType(returnSpecifierPosRef: {Syntax.Position}?): Syntax.AstTypePack?
 	if token_type == 58
-		or token_type == Types.SkinnyArrow then 
-		if token_type == Types.SkinnyArrow then
+		or token_type == 263 then 
+		if token_type == 263 then
 			report(
 				snapshot(),
 				"Function return type annotations are written after ':' instead of '->'"
@@ -3506,7 +3553,7 @@ function parseReturnType(): Syntax.AstTypePack
 
 	nextLexeme()
 
-	matchRecovery[Types.SkinnyArrow] += 1
+	matchRecovery[263] += 1
 
 	local result = {}
 	local resultNames = {}
@@ -3529,9 +3576,9 @@ function parseReturnType(): Syntax.AstTypePack
 
 	expectMatchAndConsume(41, begin_type, begin_line, begin_col, true) 
 
-	matchRecovery[Types.SkinnyArrow] -= 1
+	matchRecovery[263] -= 1
 
-	if token_type ~= Types.SkinnyArrow and #resultNames == 0 then
+	if token_type ~= 263 and #resultNames == 0 then
 		-- If it turns out that it's just '(A)', it's possible that there are unions/intersections to follow, so fold over it.
 		if #result == 1 then
 			-- TODO(CLI-140667): stop parsing type suffix when varargAnnotation != nullptr - this should be a parse error
@@ -3627,11 +3674,11 @@ local function extractStringDetails()
 	local style = 0
 	local depth = 0
 
-	if token_type == Types.QuotedString then
-		style = token_aux == 1 and CstQuotes.QuotedSingle or CstQuotes.QuotedDouble
-	elseif token_type == Types.InterpStringSimple then
+	if token_type == 279 then
+		style = token_aux == 0 and CstQuotes.QuotedSingle or CstQuotes.QuotedDouble
+	elseif token_type == 269 then
 		style = CstQuotes.QuotedInterp
-	elseif token_type == Types.RawString then
+	elseif token_type == 278 then
 		style = CstQuotes.QuotedRaw 
 		depth = token_aux or 0
 	end
@@ -3704,7 +3751,7 @@ function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
 		local accessLoc = nil
 
 
-		if token_type == Types.Name and next_type ~= 58 then 
+		if token_type == 281 and next_type ~= 58 then 
 			if token_string == "read" then
 				accessLoc = snapshot()
 				access = "Read"
@@ -3721,7 +3768,7 @@ function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
 			nextLexeme()
 
 
-			if (token_type == Types.RawString or token_type == Types.QuotedString) and next_type == 93 then
+			if (token_type == 278 or token_type == 279) and next_type == 93 then
 				local style = 0 
 				local depth = 0
 				if storeCstData then
@@ -3799,12 +3846,12 @@ function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
 					end
 				end
 			end
-		elseif #props == 0 and not indexer and not (token_type == Types.Name and next_type == 58) then
+		elseif #props == 0 and not indexer and not (token_type == 281 and next_type == 58) then
 			local type_ = parseType()
 			isArray = true
 
 			local indexLocation = type_.location
-			
+
 			-- array-like table type: {T} desugars into {[number]: T}
 			if DesugaredArrayTypeReferenceIsEmpty then
 				indexLocation = {
@@ -3816,7 +3863,7 @@ function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
 			local index = {
 				kind = "TypeReference",
 				location = indexLocation,
-				name = nameNumber,
+				name = "number",
 				nameLocation = indexLocation,
 				hasParameterList = false,
 				parameters = {},
@@ -3920,7 +3967,7 @@ function parseFunctionType(
 	local paramStart = get_lexeme()
 	expectAndConsume(40, "function parameters") 
 
-	matchRecovery[Types.SkinnyArrow] += 1
+	matchRecovery[263] += 1
 
 	local params = {}
 	local names = {}
@@ -3940,14 +3987,14 @@ function parseFunctionType(
 	local closeArgsLoc = snapshot()
 	expectMatchAndConsume(41, paramStart.type, paramStart.location.begin.line, paramStart.location.begin.column, true) 
 
-	matchRecovery[Types.SkinnyArrow] -= 1
+	matchRecovery[263] -= 1
 
 	local paramTypes = params 
 	if #names > 0 then
 		forceFunctionType = true
 	end
 
-	local returnTypeIntroducer = (token_type == Types.SkinnyArrow or token_type == 58)
+	local returnTypeIntroducer = (token_type == 263 or token_type == 58)
 
 	-- ot a function at all. Just a parenthesized type. Or maybe a type pack with a single element
 	if #params == 1 and not varargAnnotation and not forceFunctionType and not returnTypeIntroducer then
@@ -4042,7 +4089,7 @@ function parseFunctionTypeTail(
 		nextLexeme()
 
 		-- Users occasionally write '()' as the 'unit' type when they actually want to use 'nil', here we'll try to give a more specific error
-	elseif token_type ~= Types.SkinnyArrow and #generics == 0 and #genericPacks == 0 and #params == 0 then
+	elseif token_type ~= 263 and #generics == 0 and #genericPacks == 0 and #params == 0 then
 		report(
 
 			{
@@ -4055,13 +4102,13 @@ function parseFunctionTypeTail(
 		return {
 			kind = "TypeReference",
 			location = begin.location,
-			name = nameNil,
+			name = "nil",
 			nameLocation = begin.location,
 			hasParameterList = false,
 			parameters = {}
 		} :: Syntax.AstTypeReference
 	else
-		expectAndConsume(Types.SkinnyArrow, "function type")
+		expectAndConsume(263, "function type")
 	end
 
 	local returnType = parseReturnType()
@@ -4161,7 +4208,7 @@ function parseTypeSuffix(type_: Syntax.AstType?, begin: Syntax.Location): Syntax
 				end
 			end
 
-		elseif t == Types.Dot3 then
+		elseif t == 262 then
 			report(snapshot(), "Unexpected '...' after type annotation")
 			nextLexeme()
 		else
@@ -4169,7 +4216,9 @@ function parseTypeSuffix(type_: Syntax.AstType?, begin: Syntax.Location): Syntax
 		end
 
 		if #parts > TypeLengthLimit + optionalCount then
-			report(parts[#parts].location, "Exceeded allowed type length; simplify your type annotation to make the code compile")
+			local msg = "Exceeded allowed type length; simplify your type annotation to make the code compile"
+			report(parts[#parts].location, "%s", msg)
+			error(msg, 0)
 		end
 	end
 
@@ -4178,7 +4227,11 @@ function parseTypeSuffix(type_: Syntax.AstType?, begin: Syntax.Location): Syntax
 	end
 
 	if isUnion and isIntersection then
-		reportTypeError({ begin = begin.begin, end_ = parts[#parts].location.end_ }, parts, "Mixing union and intersection types is not allowed; consider wrapping in parentheses.")
+		return reportTypeError(
+			{ begin = begin.begin, end_ = parts[#parts].location.end_ },
+			parts,
+			"Mixing union and intersection types is not allowed; consider wrapping in parentheses."
+		)
 	end
 
 	local loc = { begin = begin.begin, end_ = parts[#parts].location.end_ }
@@ -4254,7 +4307,7 @@ function parseSimpleType(allowPack: boolean, inDeclarationContext: boolean): (Sy
 
 	local start = snapshot()
 
-	if token_type == Types.Attribute or token_type == Types.AttributeOpen then
+	if token_type == 284 or token_type == 285 then
 		if not inDeclarationContext then
 			return reportTypeError(
 
@@ -4271,18 +4324,18 @@ function parseSimpleType(allowPack: boolean, inDeclarationContext: boolean): (Sy
 				attributes
 			), nil
 		end
-	elseif token_type == Types.ReservedNil then
+	elseif token_type == 303 then
 		nextLexeme()
 
 		return {
 			kind = "TypeReference",
 			location = start,
-			name = nameNil,
+			name = "nil",
 			nameLocation = start,
 			hasParameterList = false,
 			parameters = {}
 		} :: Syntax.AstTypeReference, nil
-	elseif token_type == Types.ReservedTrue then
+	elseif token_type == 309 then
 		nextLexeme()
 
 		return {
@@ -4290,7 +4343,7 @@ function parseSimpleType(allowPack: boolean, inDeclarationContext: boolean): (Sy
 			location = start,
 			value = true
 		} :: Syntax.AstTypeSingletonBool, nil
-	elseif token_type == Types.ReservedFalse then
+	elseif token_type == 297 then
 		nextLexeme()
 
 		return {
@@ -4298,7 +4351,7 @@ function parseSimpleType(allowPack: boolean, inDeclarationContext: boolean): (Sy
 			location = start,
 			value = false
 		} :: Syntax.AstTypeSingletonBool, nil
-	elseif token_type == Types.RawString or token_type == Types.QuotedString then
+	elseif token_type == 278 or token_type == 279 then
 		local chars = parseCharArray()
 		if chars then
 			return {
@@ -4313,7 +4366,7 @@ function parseSimpleType(allowPack: boolean, inDeclarationContext: boolean): (Sy
 				"String literal contains malformed escape sequence"
 			), nil
 		end
-	elseif token_type == Types.InterpStringBegin or token_type == Types.InterpStringSimple then
+	elseif token_type == 266 or token_type == 269 then
 		parseInterpString()
 
 		return reportTypeError(
@@ -4321,14 +4374,14 @@ function parseSimpleType(allowPack: boolean, inDeclarationContext: boolean): (Sy
 			{},
 			"Interpolated string literals cannot be used as types"
 		), nil
-	elseif token_type == Types.BrokenString then
+	elseif token_type == 286 then
 		nextLexeme()
 		return reportTypeError(
 			start,
 			{},
 			"Malformed string; did you forget to finish it?"
 		), nil
-	elseif token_type == Types.Name then
+	elseif token_type == 281 then
 		local name = parseName("type name")
 		local prefix = nil
 		local prefixLoc = nil
@@ -4340,7 +4393,7 @@ function parseSimpleType(allowPack: boolean, inDeclarationContext: boolean): (Sy
 			prefix = name.name.value
 			prefixLoc = name.location
 			name = parseIndexName("field name", name.location.end_)
-		elseif token_type == Types.Dot3 then
+		elseif token_type == 262 then
 			report(
 				snapshot(),
 				"Unexpected '...' after type name; type pack is not allowed in this context"
@@ -4414,7 +4467,7 @@ function parseSimpleType(allowPack: boolean, inDeclarationContext: boolean): (Sy
 		return parseTableType(inDeclarationContext), nil
 	elseif token_type == 40 or token_type == 60 then 
 		return parseFunctionType(allowPack, {})
-	elseif token_type == Types.ReservedFunction then
+	elseif token_type == 299 then
 		nextLexeme()
 
 		return reportTypeError(
@@ -4436,12 +4489,12 @@ end
 
 function parseVariadicArgumentTypePack(): Syntax.AstTypePackVariadic | Syntax.AstTypePackGeneric
 	-- Generic: a...
-	if token_type == Types.Name and next_type == Types.Dot3 then
+	if token_type == 281 and next_type == 262 then
 		local name = parseName("generic name")
 		local endLoc = snapshot()
 
 		-- This will not fail because of the lookahead guard.
-		expectAndConsume(Types.Dot3, "generic type pack annotation")
+		expectAndConsume(262, "generic type pack annotation")
 
 		local node = {
 			kind = "TypePackGeneric",
@@ -4473,7 +4526,7 @@ end
 
 function parseTypePack(): Syntax.AstTypePackVariadic | Syntax.AstTypePackGeneric
 	-- Variadic: ...T
-	if token_type == Types.Dot3 then
+	if token_type == 262 then
 		local start = snapshot()
 		nextLexeme()
 		local varTy = parseType(false)
@@ -4487,12 +4540,12 @@ function parseTypePack(): Syntax.AstTypePackVariadic | Syntax.AstTypePackGeneric
 		}
 
 		-- Generic: a...
-	elseif token_type == Types.Name and next_type == Types.Dot3 then
+	elseif token_type == 281 and next_type == 262 then
 		local name = parseName("generic name")
 		local endLoc = snapshot()
 
 		-- This will not fail because of the lookahead guard.
-		expectAndConsume(Types.Dot3, "generic type pack annotation")
+		expectAndConsume(262, "generic type pack annotation")
 
 		local node = {
 			kind = "TypePackGeneric",
@@ -4633,37 +4686,46 @@ local function checkBinaryConfusables(limit: number): number?
 	-- slow path: possible confusable
 	local start = curr.location
 
-	if curr.type == 38 and next_type == 38 and curr.location.end_.column == next_end_col and BinaryPriority[BinaryOp.And][1] > limit then
+	if curr.type == 38 and next_type == 38 and
+		curr.location.end_.line == next_start_line and
+		curr.location.end_.column == next_start_col and
+		BinaryPriority[BinaryOp.And][1] > limit then
 		nextLexeme()
 
 		report(
 			{
 				begin = start.begin,
-				end_ = {line = next_end_line :: number, column = next_end_col :: number}
+				end_ = {line = token_end_line, column = token_end_col}
 			},
 			"Unexpected '&&'; did you mean 'and'?"
 		)
 
 		return BinaryOp.And
-	elseif curr.type == 124 and next_type == 124 and curr.location.end_.column == next_end_col and BinaryPriority[BinaryOp.Or][1] > limit then
+	elseif curr.type == 124 and next_type == 124 and
+		curr.location.end_.line == next_start_line and
+		curr.location.end_.column == next_start_col and
+		BinaryPriority[BinaryOp.Or][1] > limit then
 		nextLexeme()
 
 		report(
 			{
 				begin = start.begin,
-				end_ = {line = next_end_line :: number, column = next_end_col :: number}
+				end_ = {line = token_end_line, column = token_end_col}
 			},
 			"Unexpected '||'; did you mean 'or'?"
 		)
 
 		return BinaryOp.Or
-	elseif curr.type == 33 and next_type == 61 and curr.location.end_.column == next_end_col and BinaryPriority[BinaryOp.CompareNe][1] > limit then
+	elseif curr.type == 33 and next_type == 61 and
+		curr.location.end_.line == next_start_line and
+		curr.location.end_.column == next_start_col and
+		BinaryPriority[BinaryOp.CompareNe][1] > limit then
 		nextLexeme()
 
 		report(
 			{
 				begin = start.begin,
-				end_ = {line = next_end_line :: number, column = next_end_col :: number}
+				end_ = {line = token_end_line, column = token_end_col}
 			},
 			"Unexpected '!='; did you mean '~='?"
 		)
@@ -4716,11 +4778,7 @@ function parseExpr(limit_val: number?): Syntax.AstExpr
 	end
 
 	-- expand while operators have priorities higher than `limit'
-	local op: number? = BinaryOpLookup[token_type]
-
-	if not op then
-		op = checkBinaryConfusables(limit)
-	end
+	local op: number? = BinaryOpLookup[token_type] or checkBinaryConfusables(limit)
 
 	-- expand while operators have priorities higher than `limit'
 	while op and BinaryPriority[op][1] > limit do
@@ -4748,10 +4806,7 @@ function parseExpr(limit_val: number?): Syntax.AstExpr
 			}
 		end
 
-		op = BinaryOpLookup[token_type] -- Fix: Lookup based on token type
-		if not op then
-			op = checkBinaryConfusables(limit)
-		end
+		op = BinaryOpLookup[token_type] or checkBinaryConfusables(limit) -- Fix: Lookup based on token type
 
 		-- note: while the parser isn't recursive here, we're generating recursive structures of unbounded depth
 		incrementRecursionCounter"expression"
@@ -4864,7 +4919,7 @@ local function parseTypeInstantiationExpr(): ({Syntax.AstTypeOrPack}, Syntax.Cst
 		commaPositions = commaPositions,
 		rightArrow1Position = rightArrow1Ref[1],
 		rightArrow2Position = rightArrow2
-	}
+	} :: Syntax.CstTypeInstantiation
 
 	return typesOrPacks, cstData
 end
@@ -4933,7 +4988,7 @@ function parsePrimaryExpr(asStatement: boolean): Syntax.AstExpr
 
 			expr = {
 				kind = "ExprIndexExpr",
-				location = {begin = start, end_ =  end_},
+				location = {begin = start, end_ = end_},
 				expr = expr,
 				index = index
 			} :: Syntax.AstExprIndexExpr
@@ -4990,8 +5045,8 @@ function parsePrimaryExpr(asStatement: boolean): Syntax.AstExpr
 			end
 			expr = parseFunctionArgs(expr, false)
 		elseif token_type == 123 or 
-			token_type == Types.RawString or 
-			token_type == Types.QuotedString then
+			token_type == 278 or 
+			token_type == 279 then
 			expr = parseFunctionArgs(expr, false)
 		elseif LuauExplicitTypeInstantiationSyntax and 
 			token_type == 60 and next_type == 60 then 
@@ -5013,7 +5068,7 @@ function parseAssertionExpr(): Syntax.AstExpr
 	local start = snapshot()
 	local expr = parseSimpleExpr()
 
-	if token_type == Types.DoubleColon then
+	if token_type == 264 then
 		local opPos = {line = token_start_line, column = token_start_col}
 		nextLexeme()
 		local annotation = parseType()
@@ -5046,10 +5101,10 @@ function parseSimpleExpr(): Syntax.AstExpr
 
 	local attributes = {}
 
-	if token_type == Types.Attribute or token_type == Types.AttributeOpen then
+	if token_type == 284 or token_type == 285 then
 		attributes = parseAttributes()
 
-		if token_type ~= Types.ReservedFunction then
+		if token_type ~= 299 then
 			return reportExprError(
 
 				start,
@@ -5060,43 +5115,43 @@ function parseSimpleExpr(): Syntax.AstExpr
 		end
 	end
 
-	if token_type == Types.ReservedNil then
+	if token_type == 303 then
 		nextLexeme()
 		return {
 			kind = "ExprConstantNil",
 			location = start
 		}
-	elseif token_type == Types.ReservedTrue then
+	elseif token_type == 309 then
 		nextLexeme()
 		return {
 			kind = "ExprConstantBool",
 			location = start,
 			value = true
 		}
-	elseif token_type == Types.ReservedFalse then
+	elseif token_type == 297 then
 		nextLexeme()
 		return {
 			kind = "ExprConstantBool",
 			location = start,
 			value = false
 		}
-	elseif token_type == Types.ReservedFunction then
+	elseif token_type == 299 then
 		local matchFunction = get_lexeme()
 		nextLexeme()
-		local node = parseFunctionBody(false, matchFunction, nil, nil, attributes)
+		local node = parseFunctionBody(false, matchFunction, nil, nil, nil, attributes)
 		return node
-	elseif token_type == Types.Number then
+	elseif token_type == 280 then
 		return parseNumber()
-	elseif token_type == Types.RawString or token_type == Types.QuotedString or token_type == Types.InterpStringSimple then
+	elseif token_type == 278 or token_type == 279 or token_type == 269 then
 		return parseString()
-	elseif token_type == Types.InterpStringBegin then
+	elseif token_type == 266 then
 		return parseInterpString()
-	elseif token_type == Types.BrokenString then
+	elseif token_type == 286 then
 		nextLexeme()
 		return reportExprError(
 			start, {}, "Malformed string; did you forget to finish it?"
 		)
-	elseif token_type == Types.BrokenInterpDoubleBrace then
+	elseif token_type == 289 then
 		nextLexeme()
 		return reportExprError(
 
@@ -5104,7 +5159,7 @@ function parseSimpleExpr(): Syntax.AstExpr
 			{},
 			"Double braces are not permitted within interpolated strings; did you mean '\\{'?"
 		)
-	elseif token_type == Types.Dot3 then
+	elseif token_type == 262 then
 		if functionStack[#functionStack].vararg then
 			nextLexeme()
 			return {
@@ -5122,7 +5177,7 @@ function parseSimpleExpr(): Syntax.AstExpr
 		end
 	elseif token_type == 123 then 
 		return parseTableConstructor()
-	elseif token_type == Types.ReservedIf then
+	elseif token_type == 300 then
 		return parseIfElseExpr()
 	else
 		return parsePrimaryExpr(false)
@@ -5201,7 +5256,7 @@ function parseFunctionArgs(func: Syntax.AstExpr, selfCall: boolean): Syntax.AstE
 		end
 
 		return result
-	elseif token_type == Types.RawString or token_type == Types.QuotedString then
+	elseif token_type == 278 or token_type == 279 then
 		local argLocation = snapshot()
 		local expr = parseString()
 
@@ -5256,8 +5311,8 @@ function parseIndexName(context: string?, prev: Syntax.Position): Syntax.Binding
 	local nameOpt = parseNameOpt(context)
 	if nameOpt then return nameOpt end
 
-	if token_type >= Types.Reserved_BEGIN
-		and token_type < Types.Reserved_END and
+	if token_type >= 291
+		and token_type < 312 and
 		prev and token_start_line == prev.line then
 
 		local result = {
@@ -5270,7 +5325,7 @@ function parseIndexName(context: string?, prev: Syntax.Position): Syntax.Binding
 	end
 
 	return {
-		name = { value = nameError },
+		name = { value = "%error-id%" },
 		location = snapshot()
 	}
 end
@@ -5373,7 +5428,7 @@ function parseTableConstructor(): Syntax.AstExprTable
 				} :: Syntax.CstExprTableItem)
 			end
 
-		elseif token_type == Types.Name and next_type == 61 then 
+		elseif token_type == 281 and next_type == 61 then 
 			local name = parseName("table field")
 
 			equalsPos = {line = token_start_line, column = token_start_col}
@@ -5424,7 +5479,7 @@ function parseTableConstructor(): Syntax.AstExprTable
 
 		if token_type == 44 or token_type == 59 then 
 			nextLexeme()
-		elseif (token_type == 91 or token_type == Types.Name) and 
+		elseif (token_type == 91 or token_type == 281) and 
 			token_start_col == lastElementIndent then
 			report(
 
@@ -5466,7 +5521,7 @@ function parseIfElseExpr(): Syntax.AstExprIfElse
 	local condition = parseExpr()
 
 	local thenPosition = {line = token_start_line, column = token_start_col}
-	local hasThen = expectAndConsume(Types.ReservedThen, "if then else expression")
+	local hasThen = expectAndConsume(308, "if then else expression")
 
 	local trueExpr = parseExpr()
 	local falseExpr = nil
@@ -5474,7 +5529,7 @@ function parseIfElseExpr(): Syntax.AstExprIfElse
 	local elsePosition = {line = token_start_line, column = token_start_col}
 	local isElseIf = false
 
-	if token_type == Types.ReservedElseif then
+	if token_type == 295 then
 		local oldRecursion = recursionCounter
 		incrementRecursionCounter"expression"
 		hasElse = true
@@ -5482,7 +5537,7 @@ function parseIfElseExpr(): Syntax.AstExprIfElse
 		recursionCounter = oldRecursion
 		isElseIf = true
 	else
-		hasElse = expectAndConsume(Types.ReservedElse, "if then else expression")
+		hasElse = expectAndConsume(294, "if then else expression")
 		falseExpr = parseExpr()
 	end
 
@@ -5543,18 +5598,18 @@ function parseInterpString(): Syntax.AstExprInterpString | Syntax.AstExprError
 		nextLexeme()
 		table.insert(strings, fixedData)
 
-		if currentLexeme.type == Types.InterpStringEnd or currentLexeme.type == Types.InterpStringSimple then
+		if currentLexeme.type == 268 or currentLexeme.type == 269 then
 			break
 		end
 
 		local errorWhileChecking = false
 		local t = token_type
 
-		if t == Types.InterpStringMid or t == Types.InterpStringEnd then
+		if t == 267 or t == 268 then
 			errorWhileChecking = true
 			nextLexeme()
 			table.insert(expressions, reportExprError(endLocation, {}, "Malformed interpolated string, expected expression inside '{}'"))
-		elseif t == Types.BrokenString then
+		elseif t == 286 then
 			errorWhileChecking = true
 			nextLexeme()
 			table.insert(expressions, reportExprError(endLocation, {}, "Malformed interpolated string; did you forget to add a '`'?"))
@@ -5566,14 +5621,14 @@ function parseInterpString(): Syntax.AstExprInterpString | Syntax.AstExprError
 
 		t = token_type 
 
-		if t == Types.InterpStringBegin or t == Types.InterpStringMid or t == Types.InterpStringEnd then
+		if t == 266 or t == 267 or t == 268 then
 
-		elseif token_type == Types.BrokenInterpDoubleBrace then
+		elseif token_type == 289 then
 			nextLexeme()
 			return reportExprError(endLocation, {}, "Double braces are not permitted within interpolated strings; did you mean '\\{'?")
-		elseif token_type == Types.BrokenString or token_type == Types.Eof then
+		elseif token_type == 286 or token_type == 0 then
 
-			if token_type == Types.BrokenString then
+			if token_type == 286 then
 				nextLexeme()
 			end
 
@@ -5632,7 +5687,7 @@ function parseCharArray(): string?
 	local t = token_type
 	local data = token_string or ""
 
-	if t == Types.QuotedString or t == Types.InterpStringSimple then
+	if t == 279 or t == 269 then
 		local ok, fixed = fixupQuotedString(data)
 		if not ok then
 			nextLexeme()
@@ -5651,15 +5706,15 @@ function parseString(): Syntax.AstExprConstantString | Syntax.AstExprError
 	local location = snapshot()
 	local quoteStyle = QuoteStyle.QuotedSimple
 
-	if token_type == Types.QuotedString then
+	if token_type == 279 then
 		if token_aux == 0 then
 			quoteStyle = QuoteStyle.QuotedSingle
 		else
 			quoteStyle = QuoteStyle.QuotedSimple
 		end
-	elseif token_type == Types.InterpStringSimple then
+	elseif token_type == 269 then
 		quoteStyle = QuoteStyle.QuotedSimple
-	elseif token_type == Types.RawString then
+	elseif token_type == 278 then
 		quoteStyle = QuoteStyle.QuotedRaw
 	end
 
@@ -5725,14 +5780,44 @@ function parseNumber(): Syntax.AstExprConstantNumber | Syntax.AstExprError
 			value = 0
 		else
 			local v = tonumber(cleanData)
-			if v == nil then
+			if v then
+				value = v
+				if significant ~= "0" then
+					local firstNibble = HexVal[string.byte(significant, 1)]
+					if firstNibble then
+						local headBits = if firstNibble >= 8 then 4 elseif firstNibble >= 4 then 3 elseif firstNibble >= 2 then 2 else 1
+						local bitLength = (#significant - 1) * 4 + headBits
+
+						if bitLength > 53 then
+							local requiredTrailingZeros = bitLength - 53
+							local trailingZeros = 0
+
+							for i = #significant, 1, -1 do
+								local nibble = HexVal[string.byte(significant, i)]
+								if nibble == nil then
+									trailingZeros = -1
+									break
+								end
+
+								if nibble == 0 then
+									trailingZeros += 4
+								else
+									trailingZeros += nibble == 0 and 32 or 31 - bit32.countlz(bit32.band(nibble, -nibble))
+									break
+								end
+							end
+
+							if trailingZeros < requiredTrailingZeros then
+								parseResult = "Imprecise"
+							end
+						end
+					else
+						parseResult = "Imprecise"
+					end
+				end
+			else
 				parseResult = "Malformed"
 				value = 0
-			else
-				value = v
-				if value >= 9007199254740992 then -- 2^53
-					parseResult = "Imprecise"
-				end
 			end
 		end
 	elseif string.find(cleanData, "^0[bB][01]+") then
@@ -5745,29 +5830,44 @@ function parseNumber(): Syntax.AstExprConstantNumber | Syntax.AstExprError
 			value = 0
 		else
 			local v = tonumber(content, 2)
-			value = v or 0
+			if v then
+				value = v
+				local bitLength = #significant
 
-			if value == nil then
+				if bitLength > 53 then
+					local requiredTrailingZeros = bitLength - 53
+					local precise = true
+
+					for i = bitLength, bitLength - requiredTrailingZeros + 1, -1 do
+						if string.byte(significant, i) ~= 48 then -- '0'
+							precise = false
+							break
+						end
+					end
+
+					if not precise then
+						parseResult = "Imprecise"
+					end
+				end
+			else
 				parseResult = "Malformed"
 				value = 0
-			elseif value >= 9007199254740992 then
-				parseResult = "Imprecise"
 			end
 		end
 	else
-		local v_val = tonumber(cleanData)
-		value = v_val or 0
+		local v = tonumber(cleanData)
+		value = v or 0
 
-		if v_val == nil then
-			parseResult = "Malformed"
-			value = 0
-		else
+		if v then
 			if value >= 9007199254740992 and string.find(cleanData, "^%d+$") then
 				local repr = string.format("%.0f", value)
 				if repr ~= cleanData then
 					parseResult = "Imprecise"
 				end
 			end
+		else
+			parseResult = "Malformed"
+			value = 0
 		end
 	end
 
@@ -5791,20 +5891,27 @@ function parseNumber(): Syntax.AstExprConstantNumber | Syntax.AstExprError
 	return node :: Syntax.AstExprConstantNumber
 end
 
-local function parse(source: string, options: Syntax.Options)
-	captureComments = options.captureComments
-	storeCstData = options.storeCstData
+local function initializeParseState(sourceText: string, parseOptions: Syntax.Options)
+	options = parseOptions
+	captureComments = parseOptions.captureComments == true
+	storeCstData = parseOptions.storeCstData == true
 
-	buff = buffer.fromstring(source)
-	size = #source
+	buff_data = buffer.fromstring(sourceText)
+	size = #sourceText
 
 	offset = 0
-	line = 0
-	lineOffset = 0
+
+	if parseOptions.parseFragment and parseOptions.parseFragment.resumePosition then
+		line = parseOptions.parseFragment.resumePosition.line
+		lineOffset = 0 - parseOptions.parseFragment.resumePosition.column
+	else
+		line = 0
+		lineOffset = 0
+	end
 
 	braceStack = {}
 
-	token_type = Types.Eof
+	token_type = 0
 
 	token_start_line = 0
 	token_start_col = 0
@@ -5817,7 +5924,7 @@ local function parse(source: string, options: Syntax.Options)
 	prev_end_col = 0
 
 	token_string = nil
-	token_aux = nil 
+	token_aux = nil
 	token_codepoint = nil
 
 	recursionCounter = 0
@@ -5829,47 +5936,102 @@ local function parse(source: string, options: Syntax.Options)
 
 	hotcommentHeader = true
 
-	suspect_type = Types.Eof
-
+	suspect_type = 0
 	suspect_line = 0
 
-	matchRecovery = table.create(Types.Reserved_END, 0)
-	matchRecovery[Types.Eof] = 1
+	matchRecovery = table.create(312, 0)
+	matchRecovery[0] = 1
 
 	functionStack = {
 		{vararg = true, loopDepth = 0}
 	}
 
-	localStack = {}
-	localMap = {}
+	if parseOptions.parseFragment then
+		localStack = table.clone(parseOptions.parseFragment.localStack)
+		localMap = table.clone(parseOptions.parseFragment.localMap)
+	else
+		localStack = {}
+		localMap = {}
+	end
 
 	fillNext()
 	nextLexeme()
 	hotcommentHeader = false
+end
+
+local function parseChunk(sourceText: string, parseOptions: Syntax.Options): Syntax.AstStatBlock
+	initializeParseState(sourceText, parseOptions)
 
 	local localsBegin = #localStack
 	local result = parseBlockNoScope()
 	restoreLocals(localsBegin)
 
-	if token_type ~= Types.Eof then
-		expectAndConsumeFail(Types.Eof)
+	if token_type ~= 0 then
+		expectAndConsumeFail(0)
 	end
 
 	return result
 end
 
+local function runParse(
+	sourceText: string,
+	parseOptions: Syntax.Options,
+	parser: () -> Syntax.AstNode
+): Syntax.AstNode?
+	initializeParseState(sourceText, parseOptions)
+
+	local node = parser()
+
+	-- EOF is checked by advancing lexer once from current.
+	-- next_* mirrors that advanced lexeme.
+	if next_type ~= 0 then
+		report({
+			begin = {line = next_start_line, column = next_start_col},
+			end_ = {line = next_end_line, column = next_end_col},
+		}, "Expected end of file")
+		node = nil
+	end
+
+	return node
+end
+
+local function toResult(success: boolean, root: Syntax.AstNode?): (boolean, Syntax.Result)
+	return success and #parseErrors == 0, {
+		root = if success then root else nil,
+		commentLocations = commentLocations,
+		hotcomments = hotcomments,
+		cstNodeMap = cstNodes,
+		errors = parseErrors,
+	}
+end
+
 return {
 	parse = function(source: string, options: Syntax.Options?): (boolean, Syntax.Result)
-		local success, root = pcall(parse, source, options or {} :: Syntax.Options)
+		local parseOptions = options or {} :: Syntax.Options
+		local success, root = pcall(parseChunk, source, parseOptions)
+		local parsedRoot = if success then root :: Syntax.AstNode else nil
 
-		return success and #parseErrors == 0, {
-			root = root,
+		return toResult(success, parsedRoot)
+	end,
 
-			commentLocations = commentLocations,
-			hotcomments = hotcomments,
-			cstNodeMap = cstNodes,
-			errors = parseErrors,
-		}
+	parseExpr = function(source: string, options: Syntax.Options?): (boolean, Syntax.Result)
+		local parseOptions = options or {} :: Syntax.Options
+		local success, root = pcall(runParse, source, parseOptions, function()
+			return parseExpr()
+		end)
+		local parsedRoot = if success then root :: Syntax.AstNode? else nil
+
+		return toResult(success, parsedRoot)
+	end,
+
+	parseType = function(source: string, options: Syntax.Options?): (boolean, Syntax.Result)
+		local parseOptions = options or {} :: Syntax.Options
+		local success, root = pcall(runParse, source, parseOptions, function()
+			return parseType()
+		end)
+		local parsedRoot = if success then root :: Syntax.AstNode? else nil
+
+		return toResult(success, parsedRoot)
 	end,
 
 	BraceType = BraceType,
