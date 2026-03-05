@@ -7,8 +7,8 @@
     </summary>
   </ul>
 </div>
-	
-![Ver](https://img.shields.io/badge/version-v0.708-blue) ![License](https://img.shields.io/github/license/vantoanvh/LuauParser) [![Docs](https://img.shields.io/badge/documentation-online-red?logo=github)](https://vantoanvh.github.io/LuauParser) [![Release](https://img.shields.io/badge/release-latest-darkblue?logo=lua&logoColor=white)](https://github.com/vantoanvh/LuauParser/releases/latest)
+
+![Ver](https://img.shields.io/badge/version-v0.708-blue) [![License](https://img.shields.io/badge/license-MIT-97ca00)](https://github.com/vantoanvh/LuauParser/blob/main/LICENSE) [![Docs](https://img.shields.io/badge/documentation-online-red?logo=github)](https://vantoanvh.github.io/LuauParser) [![Release](https://img.shields.io/badge/release-latest-darkblue?logo=lua&logoColor=white)](https://github.com/vantoanvh/LuauParser/releases/latest)
 
 A modern, fully featured **[Lua*u*](https://luau.org/)** parser written entirely in Luau<br>
 Fully type-checked with the New Type Solver and optimized for high performance.
