@@ -640,7 +640,6 @@ local recursionCounter = 0
 local commentLocations: {Syntax.Comment} = {}
 local hotcomments = {} :: {Syntax.HotComment}
 local parseErrors: {Syntax.ParseError} = {}
-local cstNodes: {[Syntax.AstNode]: Syntax.CstNode} = {}
 
 -- // All unlocalized Parser functions
 local parseIf
@@ -2109,7 +2108,7 @@ function parseRepeat(): Syntax.AstStatRepeat
 	} :: Syntax.AstStatRepeat
 
 	if storeCstData then
-		cstNodes[node] = {
+		node.cstNode = {
 			kind = "CstStatRepeat",
 			untilPosition = untilPosition
 		}
@@ -2143,7 +2142,7 @@ function parseDo(): Syntax.AstStatBlock
 		if storeCstData then
 			assert(statsStart)
 
-			cstNodes[body] = {
+			body.cstNode = {
 				kind = "CstStatDo",
 				statsStart = statsStart.begin,
 				endPosition = endLocation.begin,
@@ -2163,7 +2162,7 @@ function parseDo(): Syntax.AstStatBlock
 		end
 
 		if storeCstData then
-			cstNodes[body] = {
+			body.cstNode = {
 				kind = "CstStatDo_DEPRECATED",
 				endPosition = endLocation.begin,
 			} :: Syntax.CstStatDo_DEPRECATED
@@ -2283,7 +2282,7 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 		} :: Syntax.AstStatFor
 
 		if storeCstData then
-			cstNodes[node] = {
+			node.cstNode = {
 				kind = "CstStatFor",
 				annotationColonPosition = varname.colonPosition,
 				equalsPosition = equalsPosition,
@@ -2353,7 +2352,7 @@ function parseFor(): Syntax.AstStatFor | Syntax.AstStatForIn
 		} :: Syntax.AstStatForIn
 
 		if storeCstData then
-			cstNodes[node] = {
+			node.cstNode = {
 				kind = "CstStatForIn",
 				varsAnnotationColonPositions = extractAnnotationColonPositions(names),
 				varsCommaPositions = varsCommaPosition,
@@ -2464,7 +2463,7 @@ function parseFunctionStat(attributes: Syntax.Attrs): Syntax.AstStatFunction
 	} :: Syntax.AstStatFunction
 
 	if storeCstData then
-		cstNodes[node] = {
+		node.cstNode = {
 			kind = "CstStatFunction",
 			functionKeywordPosition = matchFunction.location.begin
 		}
@@ -2671,7 +2670,7 @@ function parseLocal(attributes: Syntax.Attrs): Syntax.AstStatLocal | Syntax.AstS
 		} :: Syntax.AstStatLocalFunction
 
 		if storeCstData then
-			cstNodes[node] = {
+			node.cstNode = {
 				kind = "CstStatLocalFunction",
 				localKeywordPosition = localKeywordPosition,
 				functionKeywordPosition = functionKeywordPosition
@@ -2731,7 +2730,7 @@ function parseLocal(attributes: Syntax.Attrs): Syntax.AstStatLocal | Syntax.AstS
 		} :: Syntax.AstStatLocal
 
 		if storeCstData then
-			cstNodes[node] = {
+			node.cstNode = {
 				kind = "CstStatLocal",
 				varsAnnotationColonPositions = extractAnnotationColonPositions(names),
 				varsCommaPositions = varsCommaPositions,
@@ -2770,7 +2769,7 @@ function parseReturn(): Syntax.AstStatReturn
 	} :: Syntax.AstStatReturn
 
 	if storeCstData then
-		cstNodes[node] = {
+		node.cstNode = {
 			kind = "CstStatReturn",
 			commaPositions = commaPositions
 		}
@@ -2840,7 +2839,7 @@ function parseTypeAlias(
 	} :: Syntax.AstStatTypeAlias
 
 	if storeCstData then
-		cstNodes[node] = {
+		node.cstNode = {
 			kind = "CstStatTypeAlias",
 			typeKeywordPosition = typeKeywordPosition,
 			genericsOpenPosition = genericsOpenPos[1],
@@ -2904,7 +2903,7 @@ function parseTypeFunction(
 	} :: Syntax.AstStatTypeFunction
 
 	if storeCstData then
-		cstNodes[node] = {
+		node.cstNode = {
 			kind = "CstStatTypeFunction",
 			typeKeywordPosition = typeKeywordPosition,
 			functionKeywordPosition = matchFn.location.begin
@@ -3017,7 +3016,7 @@ function parseAssignment(initial: Syntax.AstExpr): Syntax.AstStatAssign
 	} :: Syntax.AstStatAssign
 
 	if storeCstData then
-		cstNodes[node] = {
+		node.cstNode = {
 			kind = "CstStatAssign",
 			varsCommaPositions = varsCommaPositions,
 			equalsPosition = equalsPosition,
@@ -3054,7 +3053,7 @@ function parseCompoundAssignment(initial: Syntax.AstExpr, op: number): Syntax.As
 	} :: Syntax.AstStatCompoundAssign
 
 	if storeCstData then
-		cstNodes[node] = {
+		node.cstNode = {
 			kind = "CstStatCompoundAssign",
 			opPosition = opPosition
 		}
@@ -3124,7 +3123,7 @@ function parseFunctionBody(
 			argsCommaPositions = {},
 			varargAnnotationColonPosition = {line = 0, column = 0},
 			returnSpecifierPosition = {line = 0, column = 0}
-		}
+		} :: Syntax.CstExprFunction
 	end
 
 	local openGenPosRef = cstNode and {cstNode.openGenericsPosition} or nil
@@ -3243,7 +3242,7 @@ function parseFunctionBody(
 
 	if storeCstData and cstNode then
 		cstNode.argsAnnotationColonPositions = extractAnnotationColonPositions(args)
-		cstNodes[node] = cstNode
+		node.cstNode = cstNode
 	end
 
 	return node, funLocal
@@ -3310,7 +3309,7 @@ function parseGenericTypeList(
 					} :: Syntax.AstGenericTypePack
 
 					if storeCstData then
-						cstNodes[node] = {
+						node.cstNode = {
 							kind = "CstGenericTypePack",
 							ellipsisPosition = ellipsisPosition,
 							defaultEqualsPosition = equalsPosition
@@ -3331,7 +3330,7 @@ function parseGenericTypeList(
 					} :: Syntax.AstGenericTypePack
 
 					if storeCstData then
-						cstNodes[node] = {
+						node.cstNode = {
 							kind = "CstGenericTypePack",
 							ellipsisPosition = ellipsisPosition,
 							defaultEqualsPosition = nil
@@ -3356,7 +3355,7 @@ function parseGenericTypeList(
 					} :: Syntax.AstGenericType
 
 					if storeCstData then
-						cstNodes[node] = {
+						node.cstNode = {
 							kind = "CstGenericType",
 							defaultEqualsPosition = equalsPosition
 						} :: Syntax.CstGenericType
@@ -3373,7 +3372,7 @@ function parseGenericTypeList(
 					} :: Syntax.AstGenericType
 
 					if storeCstData then
-						cstNodes[node] = {
+						node.cstNode = {
 							kind = "CstGenericType",
 							defaultEqualsPosition = nil
 						} :: Syntax.CstGenericType
@@ -3423,9 +3422,9 @@ end
 -- TypeList ::= Type [`,' TypeList] | ...Type
 function parseTypeList(
 	result: {Syntax.AstType},
-	resultNames: {Syntax.AstArgumentName?},
+	resultNames: {Syntax.AstArgumentName | boolean},
 	commaPositions: {Syntax.Position}?,
-	nameColonPositions: {Syntax.Position?}?
+	nameColonPositions: {Syntax.Position | boolean}?
 ): Syntax.AstTypePack?
 
 	while true do
@@ -3436,9 +3435,9 @@ function parseTypeList(
 		if token_type == 281 and next_type == 58 then
 			-- Fill in previous argument names with empty slots
 			while #resultNames < #result do
-				table.insert(resultNames, nil)
+				table.insert(resultNames, false)
 				if nameColonPositions then
-					table.insert(nameColonPositions, nil)
+					table.insert(nameColonPositions, false)
 				end
 			end
 
@@ -3457,9 +3456,9 @@ function parseTypeList(
 			expectAndConsume(58)
 		elseif #resultNames > 0 then
 			-- If we have a type with named arguments, provide elements for all types
-			table.insert(resultNames, nil)
+			table.insert(resultNames, false)
 			if nameColonPositions then
-				table.insert(nameColonPositions, nil)
+				table.insert(nameColonPositions, false)
 			end
 		end
 
@@ -3543,7 +3542,7 @@ function parseReturnType(): Syntax.AstTypePack
 			} :: Syntax.AstTypePackExplicit
 
 			if storeCstData then
-				cstNodes[node] = {
+				node.cstNode = {
 					kind = "CstTypePackExplicit"
 				}
 			end
@@ -3607,7 +3606,7 @@ function parseReturnType(): Syntax.AstTypePack
 			} :: Syntax.AstTypePackExplicit
 
 			if storeCstData then
-				cstNodes[node] = {
+				node.cstNode = {
 					kind = "CstTypePackExplicit"
 				}
 			end
@@ -3625,7 +3624,7 @@ function parseReturnType(): Syntax.AstTypePack
 		} :: Syntax.AstTypePackExplicit
 
 		if storeCstData then
-			cstNodes[node] = {
+			node.cstNode = {
 				kind = "CstTypePackExplicit",
 				openParenthesesPosition = begin.location.begin,
 				closeParenthesesPosition = closeParenPos,
@@ -3639,7 +3638,7 @@ function parseReturnType(): Syntax.AstTypePack
 	local tail = parseFunctionTypeTail(begin, {}, {}, {}, result, resultNames, varargAnnotation)
 
 	if storeCstData and tail.kind == "TypeFunction" then
-		cstNodes[tail] = {
+		tail.cstNode = {
 			kind = "CstTypeFunction",
 			openGenericsPosition = {line = 0, column = 0},
 			genericsCommaPositions = {},
@@ -3662,7 +3661,7 @@ function parseReturnType(): Syntax.AstTypePack
 	} :: Syntax.AstTypePackExplicit
 
 	if storeCstData then
-		cstNodes[node] = {
+		node.cstNode = {
 			kind = "CstTypePackExplicit"
 		}
 	end
@@ -3926,7 +3925,7 @@ function parseTableType(inDeclarationContext: boolean): Syntax.AstTypeTable
 	} :: Syntax.AstTypeTable
 
 	if storeCstData then
-		cstNodes[node] = {
+		node.cstNode = {
 			kind = "CstTypeTable",
 			items = cstItems,
 			isArray = isArray
@@ -4006,7 +4005,7 @@ function parseFunctionType(
 			} :: Syntax.AstTypePackExplicit
 
 			if storeCstData then
-				cstNodes[node] = {
+				node.cstNode = {
 					kind = "CstTypePackExplicit",
 					openParenthesesPosition = paramStart.location.begin,
 					closeParenthesesPosition = closeArgsLoc.begin,
@@ -4036,7 +4035,7 @@ function parseFunctionType(
 		} :: Syntax.AstTypePackExplicit
 
 		if storeCstData then
-			cstNodes[node] = {
+			node.cstNode = {
 				kind = "CstTypePackExplicit",
 				openParenthesesPosition = paramStart.location.begin,
 				closeParenthesesPosition = closeArgsLoc.begin,
@@ -4051,7 +4050,7 @@ function parseFunctionType(
 	local node = parseFunctionTypeTail(begin, attributes, generics, genericPacks, paramTypes, names, varargAnnotation)
 
 	if storeCstData and node.kind == "TypeFunction" then
-		cstNodes[node] = {
+		node.cstNode = {
 			kind = "CstTypeFunction",
 			openGenericsPosition = openGenPos[1],
 			genericsCommaPositions = genCommaPos,
@@ -4073,7 +4072,7 @@ function parseFunctionTypeTail(
 	generics: {Syntax.AstGenericType},
 	genericPacks: {Syntax.AstGenericTypePack},
 	params: {Syntax.AstType},
-	paramNames: {Syntax.AstArgumentName?},
+	paramNames: {Syntax.AstArgumentName | boolean},
 	varargAnnotation: Syntax.AstTypePack?
 ): Syntax.AstType
 
@@ -4239,7 +4238,7 @@ function parseTypeSuffix(type_: Syntax.AstType?, begin: Syntax.Location): Syntax
 	if isUnion then
 		local node = { kind = "TypeUnion", location = loc, types = parts } :: Syntax.AstTypeUnion
 		if storeCstData then
-			cstNodes[node] = {
+			node.cstNode = {
 				kind = "CstTypeUnion",
 				leadingPosition = leadingPosition,
 				separatorPositions = separatorPositions
@@ -4251,7 +4250,7 @@ function parseTypeSuffix(type_: Syntax.AstType?, begin: Syntax.Location): Syntax
 	if isIntersection then
 		local node = { kind = "TypeIntersection", location = loc, types = parts } :: Syntax.AstTypeIntersection
 		if storeCstData then
-			cstNodes[node] = {
+			node.cstNode = {
 				kind = "CstTypeIntersection",
 				leadingPosition = leadingPosition,
 				separatorPositions = separatorPositions
@@ -4417,7 +4416,7 @@ function parseSimpleType(allowPack: boolean, inDeclarationContext: boolean): (Sy
 			} :: Syntax.AstTypeTypeof
 
 			if storeCstData then
-				cstNodes[node] = {
+				node.cstNode = {
 					kind = "CstTypeTypeof",
 					openPosition = typeofBegin.location.begin,
 					closePosition = endLoc.begin
@@ -4453,7 +4452,7 @@ function parseSimpleType(allowPack: boolean, inDeclarationContext: boolean): (Sy
 		} :: Syntax.AstTypeReference
 
 		if storeCstData then
-			cstNodes[node] = {
+			node.cstNode = {
 				kind = "CstTypeReference",
 				prefixPointPosition = prefixPointPos,
 				openParametersPosition = openPosRef and openPosRef[1] or nil,
@@ -4506,7 +4505,7 @@ function parseVariadicArgumentTypePack(): Syntax.AstTypePackVariadic | Syntax.As
 		} :: Syntax.AstTypePackGeneric
 
 		if storeCstData then
-			cstNodes[node] = {
+			node.cstNode = {
 				kind = "CstTypePackGeneric",
 				ellipsisPosition = endLoc.begin
 			}
@@ -4557,7 +4556,7 @@ function parseTypePack(): Syntax.AstTypePackVariadic | Syntax.AstTypePackGeneric
 		}
 
 		if storeCstData then
-			cstNodes[node] = {
+			node.cstNode = {
 				kind = "CstTypePackGeneric",
 				ellipsisPosition = endLoc.begin
 			}
@@ -4768,7 +4767,7 @@ function parseExpr(limit_val: number?): Syntax.AstExpr
 		} :: Syntax.AstExprUnary
 
 		if storeCstData then
-			cstNodes[expr] = {
+			expr.cstNode = {
 				kind = "CstExprOp",
 				opPosition = opPosition
 			}
@@ -4800,7 +4799,7 @@ function parseExpr(limit_val: number?): Syntax.AstExpr
 		} :: Syntax.AstExprBinary
 
 		if storeCstData then
-			cstNodes[expr] = {
+			expr.cstNode = {
 				kind = "CstExprOp",
 				opPosition = opPosition
 			}
@@ -4936,7 +4935,7 @@ local function parseExplicitTypeInstantiationExpr(start: Syntax.Position, basedO
 	} :: Syntax.AstExprInstantiate
 
 	if storeCstData then
-		cstNodes[expr] = {
+		expr.cstNode = {
 			kind = "CstExprExplicitTypeInstantiation",
 			instantiation = cstInstantiation
 		}
@@ -4994,7 +4993,7 @@ function parsePrimaryExpr(asStatement: boolean): Syntax.AstExpr
 			} :: Syntax.AstExprIndexExpr
 
 			if storeCstData then
-				cstNodes[expr] = {
+				expr.cstNode = {
 					kind = "CstExprIndexExpr",
 					openBracketPosition = openBracket,
 					closeBracketPosition = closeBracket
@@ -5031,8 +5030,8 @@ function parsePrimaryExpr(asStatement: boolean): Syntax.AstExpr
 					callExpr.typeArguments = typeArgs
 				end
 
-				if storeCstData and cstInstantiation and cstNodes[callExpr] then
-					(cstNodes[callExpr] :: Syntax.CstExprCall).explicitTypes = cstInstantiation
+				if storeCstData and cstInstantiation and (callExpr :: Syntax.AstExprCall).cstNode then
+					(callExpr.cstNode :: Syntax.CstExprCall).explicitTypes = cstInstantiation
 				end
 			else
 				expr = parseFunctionArgs(func, true)
@@ -5083,7 +5082,7 @@ function parseAssertionExpr(): Syntax.AstExpr
 		} :: Syntax.AstExprTypeAssertion
 
 		if storeCstData then
-			cstNodes[node] = {
+			node.cstNode = {
 				kind = "CstExprTypeAssertion",
 				opPosition = opPos
 			}
@@ -5095,7 +5094,7 @@ function parseAssertionExpr(): Syntax.AstExpr
 	end
 end
 
--- simpleexp -> NUMBER | STRING | NIL | true | false | ... | constructor | [attributes] FUNCTION body | primaryexp
+-- simpleexp -> NUMBER | STRING | NIL | true | boolean | ... | constructor | [attributes] FUNCTION body | primaryexp
 function parseSimpleExpr(): Syntax.AstExpr
 	local start = snapshot()
 
@@ -5216,7 +5215,7 @@ function parseFunctionArgs(func: Syntax.AstExpr, selfCall: boolean): Syntax.AstE
 		} :: Syntax.AstExprCall
 
 		if storeCstData then
-			cstNodes[result] = {
+			result.cstNode = {
 				kind = "CstExprCall",
 				openParens = {line=paren_line, column=paren_col},
 				closeParens = closeParen,
@@ -5248,7 +5247,7 @@ function parseFunctionArgs(func: Syntax.AstExpr, selfCall: boolean): Syntax.AstE
 		} :: Syntax.AstExprCall
 
 		if storeCstData then
-			cstNodes[result] = {
+			result.cstNode = {
 				kind = "CstExprCall",
 				commaPositions = {},
 				explicitTypes = nil
@@ -5274,7 +5273,7 @@ function parseFunctionArgs(func: Syntax.AstExpr, selfCall: boolean): Syntax.AstE
 		} :: Syntax.AstExprCall
 
 		if storeCstData then
-			cstNodes[result] = {
+			result.cstNode = {
 				kind = "CstExprCall",
 				commaPositions = {},
 				explicitTypes = nil
@@ -5503,7 +5502,7 @@ function parseTableConstructor(): Syntax.AstExprTable
 	} :: Syntax.AstExprTable
 
 	if storeCstData then
-		cstNodes[node] = {
+		node.cstNode = {
 			kind = "CstExprTable",
 			items = cstItems
 		} :: Syntax.CstExprTable
@@ -5552,7 +5551,7 @@ function parseIfElseExpr(): Syntax.AstExprIfElse
 	} :: Syntax.AstExprIfElse
 
 	if storeCstData then
-		cstNodes[node] = {
+		node.cstNode = {
 			kind = "CstExprIfElse",
 			thenPosition = thenPosition,
 			elsePosition = elsePosition,
@@ -5646,7 +5645,7 @@ function parseInterpString(): Syntax.AstExprInterpString | Syntax.AstExprError
 			} :: Syntax.AstExprInterpString
 
 			if storeCstData then
-				cstNodes[node] = { kind = "CstExprInterpString", sourceStrings = sourceStrings, stringPositions = stringPositions }
+				node.cstNode = { kind = "CstExprInterpString", sourceStrings = sourceStrings, stringPositions = stringPositions }
 			end
 
 			local stack = braceStack
@@ -5677,7 +5676,7 @@ function parseInterpString(): Syntax.AstExprInterpString | Syntax.AstExprError
 	} :: Syntax.AstExprInterpString
 
 	if storeCstData then
-		cstNodes[node] = { kind = "CstExprInterpString", sourceStrings = sourceStrings, stringPositions = stringPositions }
+		node.cstNode = { kind = "CstExprInterpString", sourceStrings = sourceStrings, stringPositions = stringPositions }
 	end
 
 	return node :: Syntax.AstExprInterpString
@@ -5740,7 +5739,7 @@ function parseString(): Syntax.AstExprConstantString | Syntax.AstExprError
 		} :: Syntax.AstExprConstantString
 
 		if storeCstData then
-			cstNodes[node] = { 
+			node.cstNode = { 
 				kind = "CstExprConstantString", 
 				sourceString = originalString, 
 				quoteStyle = fullStyle, 
@@ -5885,7 +5884,7 @@ function parseNumber(): Syntax.AstExprConstantNumber | Syntax.AstExprError
 	} :: Syntax.AstExprConstantNumber
 
 	if storeCstData then
-		cstNodes[node] = { kind = "CstExprConstantNumber", value = sourceData }
+		node.cstNode = { kind = "CstExprConstantNumber", value = sourceData }
 	end
 
 	return node :: Syntax.AstExprConstantNumber
@@ -5932,7 +5931,6 @@ local function initializeParseState(sourceText: string, parseOptions: Syntax.Opt
 	commentLocations = {}
 	hotcomments = {}
 	parseErrors = {}
-	cstNodes = {}
 
 	hotcommentHeader = true
 
@@ -6000,7 +5998,6 @@ local function toResult(success: boolean, root: Syntax.AstNode?): (boolean, Synt
 		root = if success then root else nil,
 		commentLocations = commentLocations,
 		hotcomments = hotcomments,
-		cstNodeMap = cstNodes,
 		errors = parseErrors,
 	}
 end
