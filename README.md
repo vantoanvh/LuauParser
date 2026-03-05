@@ -27,11 +27,9 @@ It provides detailed syntax through both **AST** and **CST**, making it well sui
 
 ## Performance
 
-> After `0.710` updates, I do alot of optimization changes, and able to make this ( storeCstData = false ) **FASTER** than **[luaup](https://github.com/jackdotink/luaup)** itself.
+> After `0.710` updates, I do alot of optimization changes, and able to make this **FASTER** than **[luaup](https://github.com/jackdotink/luaup)** itself.
 
-Why this thing so **fast** because it’s built as a *simple singleton-style procedural system* that just resets its internal variables and runs. This avoids the overhead that comes with more complex designs.
-
-It also uses an inlined lexer, heavy token inlining, *table-less* position & location tracking, buffer-based byte reading, and several other low-level optimizations.
+This parser is fast because it uses a simple singleton-style procedural design. It just resets its internal variables and runs, avoiding the overhead of more complex architectures.
 
 ## Code Examples
 ```luau
