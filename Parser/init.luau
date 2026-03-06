@@ -125,14 +125,14 @@ local BinaryPriority = {
 }
 
 local CompoundLookup = {
-	[274] = BinaryOp.FloorDiv,
-	[277] = BinaryOp.Concat,
-	[275] = BinaryOp.Mod,
-	[276] = BinaryOp.Pow,
-	[270] = BinaryOp.Add,
-	[271] = BinaryOp.Sub,
-	[272] = BinaryOp.Mul,
-	[273] = BinaryOp.Div,
+	[274] = BinaryOp.FloorDiv, -- Types.FloorDivAssign
+	[277] = BinaryOp.Concat, -- Types.ConcatAssign
+	[275] = BinaryOp.Mod, -- Types.ModAssign
+	[276] = BinaryOp.Pow, -- Types.PowAssign
+	[270] = BinaryOp.Add, -- Types.AddAssign
+	[271] = BinaryOp.Sub, -- Types.SubAssign
+	[272] = BinaryOp.Mul, -- Types.MulAssign
+	[273] = BinaryOp.Div, -- Types.DivAssign
 }
 
 local BinaryOpLookup = {
@@ -141,38 +141,38 @@ local BinaryOpLookup = {
 	[42] = BinaryOp.Mul,
 	[47] = BinaryOp.Div,
 
-	[265] = BinaryOp.FloorDiv,
+	[265] = BinaryOp.FloorDiv, -- Types.FloorDiv
 
 	[37] = BinaryOp.Mod,
 	[94] = BinaryOp.Pow,
 
-	[261] = BinaryOp.Concat,
-	[260] = BinaryOp.CompareNe,
-	[257] = BinaryOp.CompareEq,
+	[261] = BinaryOp.Concat, -- Types.Dot2
+	[260] = BinaryOp.CompareNe, -- Types.NotEqual
+	[257] = BinaryOp.CompareEq, -- Types.Equal
 
 	[60] = BinaryOp.CompareLt,
 
-	[258] = BinaryOp.CompareLe,
+	[258] = BinaryOp.CompareLe, -- Types.LessEqual
 
 	[62] = BinaryOp.CompareGt,
 
-	[259] = BinaryOp.CompareGe,
-	[291] = BinaryOp.And,
-	[305] = BinaryOp.Or,
+	[259] = BinaryOp.CompareGe, -- Types.GreaterEqual
+	[291] = BinaryOp.And, -- Types.ReservedAnd
+	[305] = BinaryOp.Or, -- Types.ReservedOr
 }
 
 local UnaryOpLookup = {
-	[304] = UnaryOp.Not,
+	[304] = UnaryOp.Not, -- Types.ReservedNot
 	[45] = UnaryOp.Minus,
 	[35] = UnaryOp.Len,
 }
 
 local BlockFollow = {
-	[295] = true,
-	[310] = true,
-	[294] = true,
-	[296] = true,
-	[0] = true,
+	[295] = true, -- Types.ReservedElseif
+	[310] = true, -- Types.ReservedUntil
+	[294] = true, -- Types.ReservedElse
+	[296] = true, -- Types.ReservedEnd
+	[0] = true, -- Types.Eof
 }
 
 local ConstantLiteral = {
@@ -614,7 +614,7 @@ local braceStack: {number} = {}
 
 -- // Current Token State
 
-local token_type = 0
+local token_type = 0 -- Types.Eof
 
 -- Locations
 local token_start_line = 0
@@ -697,7 +697,7 @@ local parseNumber
 
 -- // Suspect State
 
-local next_type = 0
+local next_type = 0 -- Types.Eof
 local next_start_line = 0
 local next_end_line = 0
 
@@ -708,12 +708,12 @@ local next_codepoint: number? = nil
 local next_string: string? = nil
 local next_aux: number? = nil
 
-local suspect_type = 0
+local suspect_type = 0 -- Types.Eof sentinel
 
 local suspect_line = 0
 
 local matchRecovery = table.create(312, 0)
-matchRecovery[0] = 1
+matchRecovery[0] = 1 -- Types.Eof
 
 -- // Stacks
 
@@ -725,6 +725,40 @@ local localStack : {Syntax.AstLocal?} = {}
 local localMap : {[string]: Syntax.AstLocal?} = {}
 
 -- // Lexer // --
+
+-- Shared numeric literal scanner used by both `123` and `.123` lexer paths.
+local function scanNumberTail(ptr: number, buff: any): number
+	while ptr < size do
+		local ch = buffer.readu8(buff, ptr)
+
+		if Digits[ch] or ch == 46 or ch == 95 then
+			ptr += 1
+		elseif ch == 101 or ch == 69 then -- e / E
+			ptr += 1
+
+			if ptr < size then
+				local exp_ch = buffer.readu8(buff, ptr)
+				if exp_ch == 43 or exp_ch == 45 then -- + / -
+					ptr += 1
+				end
+			end
+		else
+			break
+		end
+	end
+
+	while ptr < size do
+		local ch = buffer.readu8(buff, ptr)
+
+		if Alpha[ch] or Digits[ch] or ch == 95 then
+			ptr += 1
+		else
+			break
+		end
+	end
+
+	return ptr
+end
 
 local function lex(skip_comments: boolean)
 	local ptr = offset
@@ -738,7 +772,7 @@ local function lex(skip_comments: boolean)
 			offset = ptr
 			line = cur_line
 
-			next_type = 0
+			next_type = 0 -- Types.Eof
 			next_end_line = cur_line
 			next_end_col = ptr - lineOffset
 
@@ -797,31 +831,12 @@ local function lex(skip_comments: boolean)
 
 		local text = buffer.readstring(buff, start_ptr, ptr - start_ptr)
 
-		next_type = _Keywords[text] or 281
+		next_type = _Keywords[text] or 281 -- Types.Name fallback when `text` is not a keyword
 		next_string = text
 		-- Numbers (0-9)
 	elseif _Digits[ch] then
-		while ptr < size do
-			local c = buffer.readu8(buff, ptr)
-			if _Digits[c] or c == 46 or c == 95 then
-				ptr += 1
-			elseif c == 101 or c == 69 then -- e / E
-				ptr += 1
-				if ptr < size then
-					local nc = buffer.readu8(buff, ptr)
-					if nc == 43 or nc == 45 then ptr += 1 end -- + / -
-				end
-			else
-				break
-			end
-		end
-
-		while ptr < size do
-			local c = buffer.readu8(buff, ptr)
-			if _Alpha[c] or _Digits[c] or c == 95 then ptr += 1 else break end
-		end
-
-		next_type = 280
+		ptr = scanNumberTail(ptr, buff)
+		next_type = 280 -- Types.Number
 		next_string = buffer.readstring(buff, start_ptr, ptr - start_ptr)
 
 		-- Strings (" or ')
@@ -865,18 +880,18 @@ local function lex(skip_comments: boolean)
 					end
 				end
 			elseif c == 10 or c == 13 then -- \n / \r
-				next_type = 286
+				next_type = 286 -- Types.BrokenString
 				break
 			end
 			ptr += 1
 		end
 
-		if next_type == 286 then
+		if next_type == 286 then -- Types.BrokenString
 			-- handled
 		elseif ptr >= size then
-			next_type = 286
+			next_type = 286 -- Types.BrokenString
 		else
-			next_type = 279
+			next_type = 279 -- Types.QuotedString
 			next_string = buffer.readstring(buff, content_start, ptr - content_start)
 			next_aux = if delim == 39 then 0 else 1
 			ptr += 1 -- consume closing delim
@@ -886,9 +901,11 @@ local function lex(skip_comments: boolean)
 	elseif ch == 45 then -- '-'
 		local next_ch = if ptr < size then buffer.readu8(buff, ptr) else 0
 		if next_ch == 62 then -- ->
-			ptr += 1; next_type = 263
+			ptr += 1
+			next_type = 263 -- Types.SkinnyArrow
 		elseif next_ch == 61 then -- -=
-			ptr += 1; next_type = 271
+			ptr += 1
+			next_type = 271 -- Types.SubAssign
 		elseif next_ch == 45 then -- -- Comment
 			ptr += 1
 			local comment_start = ptr
@@ -930,9 +947,9 @@ local function lex(skip_comments: boolean)
 					end
 
 					if not found_end then
-						next_type = 287
+						next_type = 287 -- Types.BrokenComment
 					else
-						next_type = 283
+						next_type = 283 -- Types.BlockComment
 					end
 				else
 					-- Not a block comment
@@ -947,7 +964,7 @@ local function lex(skip_comments: boolean)
 					if c == 10 or c == 13 then break end -- \n or \r
 					ptr += 1
 				end
-				next_type = 282
+				next_type = 282 -- Types.Comment
 			end
 
 			if not skip_comments then
@@ -958,42 +975,25 @@ local function lex(skip_comments: boolean)
 		end
 
 	elseif ch == 46 then -- '.'
-		local c = if ptr < size then buffer.readu8(buff, ptr) else 0
-		if c == 46 then -- =.
+		local next_ch = if ptr < size then buffer.readu8(buff, ptr) else 0
+		if next_ch == 46 then -- ..
 			ptr += 1
-			local c2 = if ptr < size then buffer.readu8(buff, ptr) else 0
-			if c2 == 46 then -- =.
-				ptr += 1; next_type = 262
-			elseif c2 == 61 then -- =
-				ptr += 1; next_type = 277
+			local third_ch = if ptr < size then buffer.readu8(buff, ptr) else 0
+			if third_ch == 46 then -- ...
+				ptr += 1
+				next_type = 262 -- Types.Dot3
+			elseif third_ch == 61 then -- ..=
+				ptr += 1
+				next_type = 277 -- Types.ConcatAssign
 			else
-				next_type = 261
+				next_type = 261 -- Types.Dot2
 			end
 		else
-			if _Digits[c] then
+			if _Digits[next_ch] then
 				ptr -= 1 -- Backtrack
 				local n_start = ptr
-				while ptr < size do
-					local nc = buffer.readu8(buff, ptr)
-					if _Digits[nc] or nc == 46 or nc == 95 then ptr += 1
-					elseif nc == 101 or nc == 69 then
-						ptr += 1
-						if ptr < size then
-							local ec = buffer.readu8(buff, ptr)
-							if ec == 43 or ec == 45 then ptr += 1 end
-						end
-					else break end
-				end
-
-				while ptr < size do
-					local tc = buffer.readu8(buff, ptr)
-					if _Alpha[tc] or _Digits[tc] or tc == 95 then
-						ptr += 1
-					else
-						break
-					end
-				end
-				next_type = 280
+				ptr = scanNumberTail(ptr, buff)
+				next_type = 280 -- Types.Number
 				next_string = buffer.readstring(buff, n_start, ptr - n_start)
 			else
 				next_type = 46 -- '.'
@@ -1002,71 +1002,72 @@ local function lex(skip_comments: boolean)
 
 	elseif ch == 61 then -- '='
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then
-			ptr += 1; next_type = 257
+			ptr += 1
+			next_type = 257 -- Types.Equal
 		else
 			next_type = 61
 		end
 	elseif ch == 60 then -- '<'
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then
 			ptr += 1
-			next_type = 258
+			next_type = 258 -- Types.LessEqual
 		else
 			next_type = 60
 		end
 	elseif ch == 62 then -- '>'
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then
 			ptr += 1
-			next_type = 259
+			next_type = 259 -- Types.GreaterEqual
 		else
 			next_type = 62
 		end
 	elseif ch == 126 then -- '~'
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then
 			ptr += 1
-			next_type = 260
+			next_type = 260 -- Types.NotEqual
 		else
 			next_type = 126
 		end
 	elseif ch == 43 then -- '+'
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then
 			ptr += 1
-			next_type = 270
+			next_type = 270 -- Types.AddAssign
 		else
 			next_type = 43
 		end
 	elseif ch == 42 then -- '*'
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then
 			ptr += 1
-			next_type = 272
+			next_type = 272 -- Types.MulAssign
 		else
 			next_type = 42
 		end
 	elseif ch == 37 then -- '%'
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then
 			ptr += 1
-			next_type = 275
+			next_type = 275 -- Types.ModAssign
 		else
 			next_type = 37
 		end
 	elseif ch == 94 then -- '^'
 		if ptr < size and buffer.readu8(buff, ptr) == 61 then
 			ptr += 1
-			next_type = 276
+			next_type = 276 -- Types.PowAssign
 		else
 			next_type = 94
 		end
 	elseif ch == 47 then -- '/'
-		local c = if ptr < size then buffer.readu8(buff, ptr) else 0
-		if c == 61 then
+		local next_ch = if ptr < size then buffer.readu8(buff, ptr) else 0
+		if next_ch == 61 then
 			ptr += 1
-			next_type = 273
-		elseif c == 47 then
+			next_type = 273 -- Types.DivAssign
+		elseif next_ch == 47 then
 			ptr += 1
 			if ptr < size and buffer.readu8(buff, ptr) == 61 then
 				ptr += 1
-				next_type = 274
+				next_type = 274 -- Types.FloorDivAssign
 			else
-				next_type = 265
+				next_type = 265 -- Types.FloorDiv
 			end
 		else
 			next_type = 47
@@ -1074,7 +1075,7 @@ local function lex(skip_comments: boolean)
 	elseif ch == 58 then -- ':'
 		if ptr < size and buffer.readu8(buff, ptr) == 58 then
 			ptr += 1
-			next_type = 264
+			next_type = 264 -- Types.DoubleColon
 		else
 			next_type = 58
 		end
@@ -1099,13 +1100,13 @@ local function lex(skip_comments: boolean)
 						local c = buffer.readu8(buff, ptr)
 
 						if c == 96 then -- `
-							next_type = 268
+							next_type = 268 -- Types.InterpStringEnd
 							next_string = buffer.readstring(buff, sectionStart, ptr - sectionStart)
 							ptr += 1
 							sectionDone = true
 							break
 						elseif c == 13 or c == 10 then -- \r / \n
-							next_type = 286
+							next_type = 286 -- Types.BrokenString
 							sectionDone = true
 							break
 						elseif c == 92 then -- \
@@ -1157,14 +1158,14 @@ local function lex(skip_comments: boolean)
 							table.insert(braceStack, BraceType.InterpolatedString)
 
 							if ptr + 1 < size and buffer.readu8(buff, ptr + 1) == 123 then
-								next_type = 289
+								next_type = 289 -- Types.BrokenInterpDoubleBrace
 								next_string = buffer.readstring(buff, sectionStart, ptr - sectionStart)
 								ptr += 2
 								sectionDone = true
 								break
 							end
 
-							next_type = 267
+							next_type = 267 -- Types.InterpStringMid
 							next_string = buffer.readstring(buff, sectionStart, ptr - sectionStart)
 							ptr += 1
 							sectionDone = true
@@ -1175,7 +1176,7 @@ local function lex(skip_comments: boolean)
 					end
 
 					if not sectionDone then
-						next_type = 286
+						next_type = 286 -- Types.BrokenString
 					end
 				end
 			end
@@ -1190,13 +1191,13 @@ local function lex(skip_comments: boolean)
 			local c = buffer.readu8(buff, ptr)
 
 			if c == 96 then -- `
-				next_type = 269
+				next_type = 269 -- Types.InterpStringSimple
 				next_string = buffer.readstring(buff, sectionStart, ptr - sectionStart)
 				ptr += 1
 				sectionDone = true
 				break
 			elseif c == 13 or c == 10 then -- \r / \n
-				next_type = 286
+				next_type = 286 -- Types.BrokenString
 				sectionDone = true
 				break
 			elseif c == 92 then -- \
@@ -1247,14 +1248,14 @@ local function lex(skip_comments: boolean)
 				table.insert(braceStack, BraceType.InterpolatedString)
 
 				if ptr + 1 < size and buffer.readu8(buff, ptr + 1) == 123 then
-					next_type = 289
+					next_type = 289 -- Types.BrokenInterpDoubleBrace
 					next_string = buffer.readstring(buff, sectionStart, ptr - sectionStart)
 					ptr += 2
 					sectionDone = true
 					break
 				end
 
-				next_type = 266
+				next_type = 266 -- Types.InterpStringBegin
 				next_string = buffer.readstring(buff, sectionStart, ptr - sectionStart)
 				ptr += 1
 				sectionDone = true
@@ -1265,7 +1266,7 @@ local function lex(skip_comments: boolean)
 		end
 
 		if not sectionDone then
-			next_type = 286
+			next_type = 286 -- Types.BrokenString
 		end
 
 	elseif ch == 91 then -- [
@@ -1289,7 +1290,7 @@ local function lex(skip_comments: boolean)
 					end
 
 					if cc == count and c2 < size and buffer.readu8(buff, c2) == 93 then
-						next_type = 278
+						next_type = 278 -- Types.RawString
 						next_string = buffer.readstring(buff, ls_start, ptr - ls_start)
 						ptr = c2 + 1
 						next_aux = count
@@ -1302,23 +1303,25 @@ local function lex(skip_comments: boolean)
 				end
 				ptr += 1
 			end
-			if not found then next_type = 286 end
+			if not found then
+				next_type = 286 -- Types.BrokenString
+			end
 		elseif count == 0 then
 			next_type = 91 -- [
 		else
-			next_type = 286
+			next_type = 286 -- Types.BrokenString
 		end
 	elseif ch == 64 then -- @
 		if ptr < size and buffer.readu8(buff, ptr) == 91 then
 			ptr += 1
-			next_type = 285
+			next_type = 285 -- Types.AttributeOpen
 		else
 			local name_start = ptr
 			while ptr < size do
 				local c = buffer.readu8(buff, ptr)
 				if _Alpha[c] or _Digits[c] or c == 95 then ptr += 1 else break end
 			end
-			next_type = 284
+			next_type = 284 -- Types.Attribute
 			next_string = buffer.readstring(buff, name_start, ptr - name_start)
 		end
 	else
@@ -1332,7 +1335,7 @@ local function lex(skip_comments: boolean)
 			elseif bit32.band(ch, 0xF8) == 0xF0 then
 				seq_len = 3; cp = bit32.band(ch, 0x07)
 			else 
-				next_type = 288
+				next_type = 288 -- Types.BrokenUnicode
 				seq_len = -1 -- signal fail
 			end
 
@@ -1347,10 +1350,10 @@ local function lex(skip_comments: boolean)
 				end
 
 				if ok then
-					next_type = 288
+					next_type = 288 -- Types.BrokenUnicode
 					next_codepoint = cp
 				else
-					next_type = 288
+					next_type = 288 -- Types.BrokenUnicode
 				end
 			end
 		else
@@ -1370,7 +1373,7 @@ local function fillNext()
 	while true do
 		lex(false) -- writes to next_*
 
-		if next_type == 282 or next_type == 283 or next_type == 287 then
+		if next_type == 282 or next_type == 283 or next_type == 287 then -- Types.Comment / Types.BlockComment / Types.BrokenComment
 			if captureComments then
 				table.insert(commentLocations, {
 					type = next_type,
@@ -1381,7 +1384,7 @@ local function fillNext()
 				})
 			end
 
-			if next_type == 282 and next_string and string.byte((next_string :: string), 1) == 33 then -- '!'
+			if next_type == 282 and next_string and string.byte((next_string :: string), 1) == 33 then -- Types.Comment and '!'
 				local text = next_string :: string
 				local ending = #text
 
@@ -1404,7 +1407,7 @@ local function fillNext()
 				} :: Syntax.HotComment)
 			end
 
-			if next_type == 287 then
+			if next_type == 287 then -- Types.BrokenComment
 				return
 			end
 
@@ -5971,64 +5974,18 @@ local function parseChunk(sourceText: string, parseOptions: Syntax.Options): Syn
 	return result
 end
 
-local function runParse(
-	sourceText: string,
-	parseOptions: Syntax.Options,
-	parser: () -> Syntax.AstNode
-): Syntax.AstNode?
-	initializeParseState(sourceText, parseOptions)
-
-	local node = parser()
-
-	-- EOF is checked by advancing lexer once from current.
-	-- next_* mirrors that advanced lexeme.
-	if next_type ~= 0 then
-		report({
-			begin = {line = next_start_line, column = next_start_col},
-			end_ = {line = next_end_line, column = next_end_col},
-		}, "Expected end of file")
-		node = nil
-	end
-
-	return node
-end
-
-local function toResult(success: boolean, root: Syntax.AstNode?): (boolean, Syntax.Result)
-	return success and #parseErrors == 0, {
-		root = if success then root else nil,
-		commentLocations = commentLocations,
-		hotcomments = hotcomments,
-		errors = parseErrors,
-	}
-end
-
 return {
 	parse = function(source: string, options: Syntax.Options?): (boolean, Syntax.Result)
 		local parseOptions = options or {} :: Syntax.Options
-		local success, root = pcall(parseChunk, source, parseOptions)
-		local parsedRoot = if success then root :: Syntax.AstNode else nil
+		local success, result = pcall(parseChunk, source, parseOptions)
+		local root = if success then result else nil
 
-		return toResult(success, parsedRoot)
-	end,
-
-	parseExpr = function(source: string, options: Syntax.Options?): (boolean, Syntax.Result)
-		local parseOptions = options or {} :: Syntax.Options
-		local success, root = pcall(runParse, source, parseOptions, function()
-			return parseExpr()
-		end)
-		local parsedRoot = if success then root :: Syntax.AstNode? else nil
-
-		return toResult(success, parsedRoot)
-	end,
-
-	parseType = function(source: string, options: Syntax.Options?): (boolean, Syntax.Result)
-		local parseOptions = options or {} :: Syntax.Options
-		local success, root = pcall(runParse, source, parseOptions, function()
-			return parseType()
-		end)
-		local parsedRoot = if success then root :: Syntax.AstNode? else nil
-
-		return toResult(success, parsedRoot)
+		return success and #parseErrors == 0, {
+			root = if success then root else nil,
+			commentLocations = commentLocations,
+			hotcomments = hotcomments,
+			errors = parseErrors,
+		}
 	end,
 
 	BraceType = BraceType,
