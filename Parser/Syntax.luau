@@ -891,7 +891,7 @@ export type FunctionState = {
 }
 
 export type Result = {
-	root: AstNode?,
+	root: AstStatBlock?,
 	commentLocations: { Comment },
 	hotcomments: { HotComment },
 	errors: { ParseError },
