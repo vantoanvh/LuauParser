@@ -6,7 +6,6 @@
 
 local LuauExplicitTypeInstantiationSyntax = false
 local DesugaredArrayTypeReferenceIsEmpty = false
-local LuauCstStatDoWithStatsStart = true
 
 local TypeLengthLimit = 1000
 local RecursionLimit = 1000
@@ -2129,50 +2128,29 @@ function parseDo(): Syntax.AstStatBlock
 
 	nextLexeme() -- do
 
-	if LuauCstStatDoWithStatsStart then
-		local statsStart = if storeCstData then snapshot() else nil
+	local statsStart = if storeCstData then snapshot() else nil
 
-		local body = parseBlock()
-		body.location.begin = start.begin
+	local body = parseBlock()
+	body.location.begin = start.begin
 
-		local endLocation = snapshot()
-		body.hasEnd = expectMatchEndAndConsume(296, Do_type, Do_start_line, Do_start_col)
+	local endLocation = snapshot()
+	body.hasEnd = expectMatchEndAndConsume(296, Do_type, Do_start_line, Do_start_col)
 
-		if body.hasEnd then
-			body.location.end_ = endLocation.end_
-		end
-
-		if storeCstData then
-			assert(statsStart)
-
-			body.cstNode = {
-				kind = "CstStatDo",
-				statsStart = statsStart.begin,
-				endPosition = endLocation.begin,
-			} :: Syntax.CstStatDo
-		end
-
-		return body
-	else
-		local body = parseBlock()
-		body.location.begin = start.begin
-
-		local endLocation = snapshot()
-		body.hasEnd = expectMatchEndAndConsume(296, Do_type, Do_start_line, Do_start_col)
-
-		if body.hasEnd then
-			body.location.end_ = endLocation.end_
-		end
-
-		if storeCstData then
-			body.cstNode = {
-				kind = "CstStatDo_DEPRECATED",
-				endPosition = endLocation.begin,
-			} :: Syntax.CstStatDo_DEPRECATED
-		end
-
-		return body
+	if body.hasEnd then
+		body.location.end_ = endLocation.end_
 	end
+
+	if storeCstData then
+		assert(statsStart)
+
+		body.cstNode = {
+			kind = "CstStatDo",
+			statsStart = statsStart.begin,
+			endPosition = endLocation.begin,
+		} :: Syntax.CstStatDo
+	end
+
+	return body
 end
 
 -- break
