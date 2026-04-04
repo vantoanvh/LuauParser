@@ -8,7 +8,7 @@
   </ul>
 </div>
 
-![Ver](https://img.shields.io/badge/version-v0.710-blue?style=plastic)
+![Ver](https://img.shields.io/badge/version-v0.715-blue?style=plastic)
 [![License](https://img.shields.io/badge/license-MIT-97ca00?style=plastic)](https://github.com/vantoanvh/LuauParser/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/documentation-online-red?style=plastic&logo=github)](https://vantoanvh.github.io/LuauParser)
 [![Release](https://img.shields.io/badge/release-latest-darkblue?style=plastic&logo=luau&logoColor=white)](https://github.com/vantoanvh/LuauParser/releases/latest)
@@ -33,7 +33,7 @@ This parser is fast because it uses a simple singleton-style procedural design. 
 ```luau
 local Parser = require(path.to.LuauParser)
 
-local success, result = Parser.parse('local foo: (string, ...number) -> (...any)')
+local success, result = Parser.parse('const foo: (string, ...number) -> (...any) = 123i')
 
 if success then
 	print(result.root) -- do anything you want
