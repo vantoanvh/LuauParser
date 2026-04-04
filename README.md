@@ -12,6 +12,7 @@
 [![License](https://img.shields.io/badge/license-MIT-97ca00?style=plastic)](https://github.com/vantoanvh/LuauParser/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/documentation-online-red?style=plastic&logo=github)](https://vantoanvh.github.io/LuauParser)
 [![Release](https://img.shields.io/badge/release-latest-darkblue?style=plastic&logo=luau&logoColor=white)](https://github.com/vantoanvh/LuauParser/releases/latest)
+[![Release](https://img.shields.io/badge/devforum-resource-blue?style=plastic&logo=lua&logoColor=white)](https://devforum.roblox.com/t/luauparser-full-v0710/4482837)
 
 A modern, fully featured **[Lua*u*](https://luau.org/)** parser written entirely in Luau<br>
 Fully strict-typing with the New Type Solver and optimized for high performance.
