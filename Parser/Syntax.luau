@@ -19,6 +19,7 @@ export type AstExpr = AstExprGroup
 | AstExprConstantNil
 | AstExprConstantBool
 | AstExprConstantNumber
+| AstExprConstantInteger
 | AstExprConstantString
 | AstExprLocal
 | AstExprGlobal
@@ -91,6 +92,7 @@ export type AstLocal = {
 	functionDepth: number,
 	loopDepth: number,
 	annotation: AstType?,
+	isConst: boolean?,
 }
 
 export type AstAttr = {
@@ -139,7 +141,16 @@ export type AstExprConstantNumber = {
 	kind: "ExprConstantNumber",
 	location: Location,
 	value: number,
-	parseResult: "Ok" | "Imprecise" | "HexOverflow" | "BinOverflow" | "Malformed",
+	parseResult: "Ok" | "Imprecise" | "HexOverflow" | "BinOverflow" | "IntOverflow" | "Malformed",
+}
+
+export type AstExprConstantInteger = {
+	cstNode: CstExprConstantInteger?,
+	kind: "ExprConstantInteger",
+	location: Location,
+	low: number,
+	high: number,
+	parseResult: "Ok" | "Imprecise" | "HexOverflow" | "BinOverflow" | "IntOverflow" | "Malformed",
 }
 
 export type AstExprConstantString = {
@@ -591,6 +602,7 @@ export type Binding = {
 	location: Location,
 	annotation: AstType?,
 	colonPosition: Position?,
+	isConst: boolean?,
 }
 
 export type BindingList = { Binding }
@@ -598,6 +610,11 @@ export type Attrs = { AstAttr }
 
 export type CstExprConstantNumber = {
 	kind: "CstExprConstantNumber",
+	value: string?,
+}
+
+export type CstExprConstantInteger = {
+	kind: "CstExprConstantInteger",
 	value: string?,
 }
 
