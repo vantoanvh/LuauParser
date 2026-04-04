@@ -1,7 +1,7 @@
 --!optimize 2
 --!strict
 
-local Confusables = {
+return {
 	[34] = '"',
 	[48] = "O",
 	[49] = "l",
@@ -1789,5 +1789,3 @@ local Confusables = {
 	[128875] = "MB",
 	[128876] = "VB"
 }
-
-return Confusables
