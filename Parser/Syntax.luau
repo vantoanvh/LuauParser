@@ -54,6 +54,10 @@ export type AstStat = AstStatBlock
 | AstStatLocalFunction
 | AstStatTypeAlias
 | AstStatTypeFunction
+| AstStatDeclareGlobal
+| AstStatDeclareFunction
+| AstStatDeclareExternType
+| AstStatClass
 | AstStatError
 
 export type AstTypePack = AstTypePackExplicit | AstTypePackVariadic | AstTypePackGeneric
@@ -80,6 +84,8 @@ export type AstTypeOrPack = {
 	typePack: AstTypePack?,
 }
 
+export type AstTableAccess = "Read" | "Write" | "ReadWrite"
+
 export type AstArgumentName = {
 	name: string,
 	location: Location,
@@ -93,9 +99,11 @@ export type AstLocal = {
 	loopDepth: number,
 	annotation: AstType?,
 	isConst: boolean?,
+	isExported: boolean?,
 }
 
 export type AstAttr = {
+	cstNode: CstAttr | CstParametrizedAttr?,
 	kind: "Attr",
 	location: Location,
 	type: string?,
@@ -120,6 +128,7 @@ export type AstGenericTypePack = {
 }
 
 export type AstExprGroup = {
+	cstNode: CstExprGroup?,
 	kind: "ExprGroup",
 	location: Location,
 	expr: AstExpr,
@@ -300,7 +309,7 @@ export type AstExprError = {
 }
 
 export type AstStatBlock = {
-	cstNode: CstStatDo | CstStatDo_DEPRECATED | nil,
+	cstNode: CstStatDo?,
 	kind: "StatBlock",
 	location: Location,
 	body: { AstStat },
@@ -372,6 +381,9 @@ export type AstStatLocal = {
 	vars: { AstLocal },
 	values: { AstExpr },
 	equalsSignLocation: Location?,
+	isConst: boolean?,
+	isExported: boolean?,
+	keywordLocation: Location?,
 	hasSemicolon: boolean?,
 }
 
@@ -437,6 +449,8 @@ export type AstStatLocalFunction = {
 	location: Location,
 	name: AstLocal?,
 	func: AstExprFunction,
+	isConst: boolean?,
+	constKeywordBegin: Position?,
 	hasSemicolon: boolean?,
 }
 
@@ -465,12 +479,37 @@ export type AstStatTypeFunction = {
 	hasSemicolon: boolean?,
 }
 
+export type AstStatDeclareGlobal = {
+	kind: "StatDeclareGlobal",
+	location: Location,
+	name: string,
+	nameLocation: Location,
+	type: AstType,
+	hasSemicolon: boolean?,
+}
+
+export type AstStatDeclareFunction = {
+	kind: "StatDeclareFunction",
+	location: Location,
+	attributes: { AstAttr },
+	name: string,
+	nameLocation: Location,
+	generics: { AstGenericType },
+	genericPacks: { AstGenericTypePack },
+	params: AstTypeList,
+	paramNames: { AstArgumentName },
+	vararg: boolean,
+	varargLocation: Location?,
+	retTypes: AstTypePack,
+	hasSemicolon: boolean?,
+}
+
 export type AstTableProp = {
 	kind: "TableProp",
 	name: AstName,
 	location: Location,
 	type: AstType,
-	access: string,
+	access: AstTableAccess,
 	accessLocation: Location?,
 }
 
@@ -479,8 +518,57 @@ export type AstTableIndexer = {
 	indexType: AstType,
 	resultType: AstType,
 	location: Location,
-	access: string,
+	access: AstTableAccess,
 	accessLocation: Location?,
+}
+
+export type AstDeclaredExternTypeProperty = {
+	kind: "DeclaredExternTypeProperty",
+	name: AstName,
+	nameLocation: Location,
+	type: AstType,
+	isMethod: boolean,
+	location: Location,
+	access: AstTableAccess,
+}
+
+export type AstClassProperty = {
+	kind: "ClassProperty",
+	qualifierLocation: Location,
+	name: AstName,
+	nameLocation: Location,
+	typeColonLocation: Location?,
+	type: AstType?,
+}
+
+export type AstClassMethod = {
+	kind: "ClassMethod",
+	qualifierLocation: Location?,
+	keywordLocation: Location,
+	functionName: AstName,
+	nameLocation: Location,
+	func: AstExprFunction,
+}
+
+export type AstClassMember = AstClassProperty | AstClassMethod
+
+export type AstStatClass = {
+	kind: "StatClass",
+	location: Location,
+	name: AstLocal,
+	members: { AstClassMember },
+	exported: boolean,
+	hasSemicolon: boolean?,
+}
+
+export type AstStatDeclareExternType = {
+	kind: "StatDeclareExternType",
+	location: Location,
+	name: string,
+	superName: string?,
+	props: { AstDeclaredExternTypeProperty },
+	indexer: AstTableIndexer?,
+	hasSemicolon: boolean?,
 }
 
 export type AstStatError = {
@@ -552,12 +640,14 @@ export type AstTypeSingletonBool = {
 }
 
 export type AstTypeSingletonString = {
+	cstNode: CstTypeSingletonString?,
 	kind: "TypeSingletonString",
 	location: Location,
 	value: string,
 }
 
 export type AstTypeGroup = {
+	cstNode: CstTypeGroup?,
 	kind: "TypeGroup",
 	location: Location,
 	type: AstType,
@@ -608,6 +698,30 @@ export type Binding = {
 export type BindingList = { Binding }
 export type Attrs = { AstAttr }
 
+export type CstAttr = {
+	kind: "CstAttr",
+	hasAt: boolean,
+}
+
+export type CstParametrizedAttr = {
+	kind: "CstParametrizedAttr",
+	openParenPosition: Position,
+	closeParenPosition: Position,
+	argsCommaPositions: { Position },
+}
+
+export type CstAttrList = {
+	kind: "CstAttrList",
+	atBracketPosition: Position,
+	closeBracketPosition: Position,
+	commaPositions: { Position },
+}
+
+export type CstExprGroup = {
+	kind: "CstExprGroup",
+	closePosition: Position,
+}
+
 export type CstExprConstantNumber = {
 	kind: "CstExprConstantNumber",
 	value: string?,
@@ -650,6 +764,7 @@ export type CstExprIndexExpr = {
 
 export type CstExprFunction = {
 	kind: "CstExprFunction",
+	attrLists: { CstAttrList },
 	functionKeywordPosition: Position,
 	openGenericsPosition: Position,
 	genericsCommaPositions: { Position },
@@ -708,11 +823,6 @@ export type CstStatDo = {
 	endPosition: Position,
 }
 
-export type CstStatDo_DEPRECATED = {
-	kind: "CstStatDo_DEPRECATED",
-	endPosition: Position,
-}
-
 export type CstStatRepeat = {
 	kind: "CstStatRepeat",
 	untilPosition: Position,
@@ -759,11 +869,13 @@ export type CstStatCompoundAssign = {
 
 export type CstStatFunction = {
 	kind: "CstStatFunction",
+	attrLists: { CstAttrList },
 	functionKeywordPosition: Position,
 }
 
 export type CstStatLocalFunction = {
 	kind: "CstStatLocalFunction",
+	attrLists: { CstAttrList },
 	localKeywordPosition: Position,
 	functionKeywordPosition: Position,
 }
@@ -849,6 +961,18 @@ export type CstTypeIntersection = {
 	separatorPositions: { Position },
 }
 
+export type CstTypeSingletonString = {
+	kind: "CstTypeSingletonString",
+	sourceString: string?,
+	quoteStyle: number,
+	blockDepth: number,
+}
+
+export type CstTypeGroup = {
+	kind: "CstTypeGroup",
+	closePosition: Position,
+}
+
 export type CstTypePackExplicit = {
 	kind: "CstTypePackExplicit",
 	openParenthesesPosition: Position?,
@@ -878,6 +1002,7 @@ export type ParseError = {
 export type Options = {
 	allowDeclarationSyntax: boolean?,
 	captureComments: boolean?,
+	noErrorLimit: boolean?,
 	parseFragment: {
 		localMap: { [string]: AstLocal? },
 		localStack: { AstLocal? },
@@ -909,6 +1034,7 @@ export type FunctionState = {
 
 export type Result = {
 	root: AstStatBlock?,
+	lines: number,
 	commentLocations: { Comment },
 	hotcomments: { HotComment },
 	errors: { ParseError },
