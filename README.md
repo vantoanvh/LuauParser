@@ -1,4 +1,9 @@
-<img align="right" width="220" height="220" alt="LuauParser" src="https://github.com/user-attachments/assets/69223bf1-05a5-4825-baa6-c9603cb768bf" />
+<img
+  align="right"
+  width="220"
+  alt="LuauParser"
+  src="https://github.com/user-attachments/assets/69223bf1-05a5-4825-baa6-c9603cb768bf"
+/>
 
 <div id="toc">
   <ul style="list-style: none">
@@ -8,7 +13,7 @@
   </ul>
 </div>
 
-![Ver](https://img.shields.io/badge/version-v0.715-blue?style=plastic)
+![Ver](https://img.shields.io/badge/version-v0.728-blue?style=plastic)
 [![License](https://img.shields.io/badge/license-MIT-97ca00?style=plastic)](https://github.com/vantoanvh/LuauParser/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/documentation-online-red?style=plastic&logo=github)](https://vantoanvh.github.io/LuauParser)
 [![Release](https://img.shields.io/badge/release-latest-darkblue?style=plastic&logo=luau&logoColor=white)](https://github.com/vantoanvh/LuauParser/releases/latest)
@@ -25,6 +30,8 @@ A complete port of **[Parser.cpp](https://github.com/luau-lang/luau/blob/master/
 
 This Lua*u* parser is primarily intended for plugin development and for building Lua*u* compilers or tooling.<br>
 It provides detailed syntax through both **AST** and **CST**, making it well suited for advanced language tooling such as *linters, formatters, highlighter, refactoring tools,* or even a full *luau compiler/transpiler.*
+
+You can also change the FFlags in the the LuauParser code, like the new `classes` feature in luau.
 
 ## Performance
 
