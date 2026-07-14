@@ -1,32 +1,32 @@
 window.DOCS_DATA = {
   "title": "LuauParser Source Reference",
-  "generatedFrom": "`gh-pages/docs-data.js`, rewritten from `src/Syntax.luau` with enum facts from `src/init.luau`.",
+  "generatedFrom": "`gh-pages/docs-data.js`, rewritten from `Parser/Syntax.luau` with enum facts from `Parser/init.luau`.",
   "coverage": [
-    "Every exported type from `src/Syntax.luau`.",
+    "Every exported type from `Parser/Syntax.luau`.",
     "Descriptions rewritten from the actual stored fields instead of README-era prose.",
     "Short source-oriented examples for each exported record or union.",
     "Field-level notes derived from the typed shape and parser enums."
   ],
   "summary": {
-    "total": 117,
+    "total": 133,
     "views": {
       "overview": {
-        "count": 117
+        "count": 133
       },
       "core": {
-        "count": 12,
+        "count": 13,
         "unions": 0,
-        "entries": 12
+        "entries": 13
       },
       "ast": {
-        "count": 68,
-        "unions": 5,
-        "entries": 63
+        "count": 77,
+        "unions": 6,
+        "entries": 71
       },
       "cst": {
-        "count": 37,
+        "count": 43,
         "unions": 0,
-        "entries": 37
+        "entries": 43
       }
     }
   },
@@ -53,12 +53,12 @@ window.DOCS_DATA = {
           [
             "line",
             "number",
-            "1-based line component of this position record."
+            "0-based line component of this position record."
           ],
           [
             "column",
             "number",
-            "1-based column component of this position record."
+            "0-based column component of this position record."
           ]
         ]
       }
@@ -158,6 +158,10 @@ window.DOCS_DATA = {
           [
             "[AstExprConstantNumber](#astexprconstantnumber)",
             "Numeric literal expression with parsed value and lexer status."
+          ],
+          [
+            "[AstExprConstantInteger](#astexprconstantinteger)",
+            "Integer literal expression with parsed 64-bit word values and lexer status."
           ],
           [
             "[AstExprConstantString](#astexprconstantstring)",
@@ -314,6 +318,22 @@ window.DOCS_DATA = {
           [
             "[AstStatTypeFunction](#aststattypefunction)",
             "Type function declaration statement."
+          ],
+          [
+            "[AstStatDeclareGlobal](#aststatdeclareglobal)",
+            "Declaration statement for a global value type."
+          ],
+          [
+            "[AstStatDeclareFunction](#aststatdeclarefunction)",
+            "Declaration statement for a typed global function signature."
+          ],
+          [
+            "[AstStatDeclareExternType](#aststatdeclareexterntype)",
+            "Declaration statement for an extern type."
+          ],
+          [
+            "[AstStatClass](#aststatclass)",
+            "Class declaration statement behind the user-defined class rollout flag."
           ],
           [
             "[AstStatError](#aststaterror)",
@@ -574,6 +594,16 @@ window.DOCS_DATA = {
             "annotation",
             "[AstType](#asttype)?",
             "Optional type annotation attached to this local binding."
+          ],
+          [
+            "isConst",
+            "boolean?",
+            "Whether this local binding was introduced by `const` syntax."
+          ],
+          [
+            "isExported",
+            "boolean?",
+            "Whether this local binding was introduced by exported value syntax."
           ]
         ]
       }
@@ -880,6 +910,60 @@ window.DOCS_DATA = {
             "parseResult",
             "\"Ok\" | \"Imprecise\" | \"HexOverflow\" | \"BinOverflow\" | \"Malformed\"",
             "Numeric parse status preserved by this numeric literal expression."
+          ]
+        ]
+      }
+    },
+    {
+      "name": "AstExprConstantInteger",
+      "anchor": "astexprconstantinteger",
+      "group": "Expressions",
+      "category": "ast",
+      "badges": [
+        "AST"
+      ],
+      "tags": [
+        "Expression"
+      ],
+      "description": "Integer literal expression with parsed 64-bit word values and lexer status.",
+      "example": "local value = 123i\nlocal nextValue = 456i",
+      "table": {
+        "type": "fields",
+        "headers": [
+          "Field",
+          "Value",
+          "Description"
+        ],
+        "rows": [
+          [
+            "cstNode",
+            "[CstExprConstantInteger](#cstexprconstantinteger)?",
+            "Attached CstExprConstantInteger payload for this integer expression when storeCstData is enabled."
+          ],
+          [
+            "kind",
+            "\"ExprConstantInteger\"",
+            "Tag string used for this integer literal expression."
+          ],
+          [
+            "location",
+            "[Location](#location)",
+            "Source span covering this integer literal expression."
+          ],
+          [
+            "low",
+            "number",
+            "Low 32 bits of the parsed integer literal."
+          ],
+          [
+            "high",
+            "number",
+            "High 32 bits of the parsed integer literal."
+          ],
+          [
+            "parseResult",
+            "\"Ok\" | \"Imprecise\" | \"HexOverflow\" | \"BinOverflow\" | \"IntOverflow\" | \"Malformed\"",
+            "Numeric parse status preserved by this integer literal expression."
           ]
         ]
       }
@@ -1790,7 +1874,7 @@ window.DOCS_DATA = {
         "rows": [
           [
             "cstNode",
-            "[CstStatDo](#cststatdo) | [CstStatDo_DEPRECATED](#cststatdo_deprecated) | nil",
+            "[CstStatDo](#cststatdo)?",
             "Attached CstStatDo payload for this block statement when storeCstData is enabled."
           ],
           [
@@ -2226,6 +2310,21 @@ window.DOCS_DATA = {
             "Source span covering the `=` token of this local statement."
           ],
           [
+            "isConst",
+            "boolean?",
+            "Whether this local declaration uses `const` semantics."
+          ],
+          [
+            "isExported",
+            "boolean?",
+            "Whether this local declaration was exported."
+          ],
+          [
+            "keywordLocation",
+            "[Location](#location)?",
+            "Source span covering the declaration keyword that introduced this local statement."
+          ],
+          [
             "hasSemicolon",
             "boolean?",
             "Whether this local statement ended with a trailing semicolon in source."
@@ -2605,6 +2704,16 @@ window.DOCS_DATA = {
             "Function literal assigned by this local function declaration."
           ],
           [
+            "isConst",
+            "boolean?",
+            "Whether this local function declaration uses const-style binding semantics."
+          ],
+          [
+            "constKeywordBegin",
+            "[Position](#position)?",
+            "Source position of the `const` keyword when this local function came from const syntax."
+          ],
+          [
             "hasSemicolon",
             "boolean?",
             "Whether this local function declaration ended with a trailing semicolon in source."
@@ -2756,6 +2865,41 @@ window.DOCS_DATA = {
       }
     },
     {
+      "name": "AstTableAccess",
+      "anchor": "asttableaccess",
+      "group": "Core",
+      "category": "core",
+      "badges": [
+        "CORE"
+      ],
+      "tags": [
+        "Type"
+      ],
+      "description": "Access modifier string used by table properties and table indexers.",
+      "example": "local access: AstTableAccess = \"ReadWrite\"\nlocal readOnly: AstTableAccess = \"Read\"",
+      "table": {
+        "type": "members",
+        "headers": [
+          "Member",
+          "Description"
+        ],
+        "rows": [
+          [
+            "\"Read\"",
+            "Read-only table access."
+          ],
+          [
+            "\"Write\"",
+            "Write-only table access."
+          ],
+          [
+            "\"ReadWrite\"",
+            "Readable and writable table access."
+          ]
+        ]
+      }
+    },
+    {
       "name": "AstTableProp",
       "anchor": "asttableprop",
       "group": "Core",
@@ -2855,6 +2999,465 @@ window.DOCS_DATA = {
             "accessLocation",
             "[Location](#location)?",
             "Source span covering the access modifier of this table-type indexer."
+          ]
+        ]
+      }
+    },
+    {
+      "name": "AstDeclaredExternTypeProperty",
+      "anchor": "astdeclaredexterntypeproperty",
+      "group": "Declarations",
+      "category": "ast",
+      "badges": [
+        "AST"
+      ],
+      "tags": [
+        "Declaration"
+      ],
+      "description": "Property or method entry stored inside a declared extern type.",
+      "example": "declare extern type HttpService\n    request: (string) -> string\n    function getAsync(self, url: string): string\nend",
+      "table": {
+        "type": "fields",
+        "headers": [
+          "Field",
+          "Value",
+          "Description"
+        ],
+        "rows": [
+          [
+            "kind",
+            "\"DeclaredExternTypeProperty\"",
+            "Tag string used for this extern type property."
+          ],
+          [
+            "name",
+            "[AstName](#astname)",
+            "Structured property or method name."
+          ],
+          [
+            "nameLocation",
+            "[Location](#location)",
+            "Source span covering the property or method name."
+          ],
+          [
+            "type",
+            "[AstType](#asttype)",
+            "Declared type stored for this extern property or method."
+          ],
+          [
+            "isMethod",
+            "boolean",
+            "Whether this extern member came from `function` method syntax."
+          ],
+          [
+            "location",
+            "[Location](#location)",
+            "Source span covering this extern member."
+          ],
+          [
+            "access",
+            "[AstTableAccess](#asttableaccess)",
+            "Access modifier stored for this extern member."
+          ]
+        ]
+      }
+    },
+    {
+      "name": "AstClassProperty",
+      "anchor": "astclassproperty",
+      "group": "Classes",
+      "category": "ast",
+      "badges": [
+        "AST"
+      ],
+      "tags": [
+        "Class"
+      ],
+      "description": "Property member stored inside a class declaration.",
+      "example": "class User\n    public name: string\n    public score: number\nend",
+      "table": {
+        "type": "fields",
+        "headers": [
+          "Field",
+          "Value",
+          "Description"
+        ],
+        "rows": [
+          [
+            "kind",
+            "\"ClassProperty\"",
+            "Tag string used for this class property."
+          ],
+          [
+            "qualifierLocation",
+            "[Location](#location)",
+            "Source span covering the class property qualifier."
+          ],
+          [
+            "name",
+            "[AstName](#astname)",
+            "Structured class property name."
+          ],
+          [
+            "nameLocation",
+            "[Location](#location)",
+            "Source span covering the class property name."
+          ],
+          [
+            "typeColonLocation",
+            "[Location](#location)?",
+            "Source span covering the property type colon when present."
+          ],
+          [
+            "type",
+            "[AstType](#asttype)?",
+            "Optional declared type for this class property."
+          ]
+        ]
+      }
+    },
+    {
+      "name": "AstClassMethod",
+      "anchor": "astclassmethod",
+      "group": "Classes",
+      "category": "ast",
+      "badges": [
+        "AST"
+      ],
+      "tags": [
+        "Class"
+      ],
+      "description": "Method member stored inside a class declaration.",
+      "example": "class User\n    public name: string\n\n    function getName(self)\n        return self.name\n    end\nend",
+      "table": {
+        "type": "fields",
+        "headers": [
+          "Field",
+          "Value",
+          "Description"
+        ],
+        "rows": [
+          [
+            "kind",
+            "\"ClassMethod\"",
+            "Tag string used for this class method."
+          ],
+          [
+            "qualifierLocation",
+            "[Location](#location)?",
+            "Source span covering the optional class method qualifier."
+          ],
+          [
+            "keywordLocation",
+            "[Location](#location)",
+            "Source span covering the `function` keyword."
+          ],
+          [
+            "functionName",
+            "[AstName](#astname)",
+            "Structured class method name."
+          ],
+          [
+            "nameLocation",
+            "[Location](#location)",
+            "Source span covering the class method name."
+          ],
+          [
+            "func",
+            "[AstExprFunction](#astexprfunction)",
+            "Function body stored for this class method."
+          ]
+        ]
+      }
+    },
+    {
+      "name": "AstClassMember",
+      "anchor": "astclassmember",
+      "group": "Unions",
+      "category": "ast",
+      "badges": [
+        "AST"
+      ],
+      "tags": [
+        "Class",
+        "Union"
+      ],
+      "description": "Union of class member records stored by `AstStatClass.members`.",
+      "example": "class User\n    public name: string\n\n    function getName(self)\n        return self.name\n    end\nend",
+      "table": {
+        "type": "members",
+        "headers": [
+          "Member",
+          "Description"
+        ],
+        "rows": [
+          [
+            "[AstClassProperty](#astclassproperty)",
+            "Property member inside a class declaration."
+          ],
+          [
+            "[AstClassMethod](#astclassmethod)",
+            "Method member inside a class declaration."
+          ]
+        ]
+      }
+    },
+    {
+      "name": "AstStatDeclareGlobal",
+      "anchor": "aststatdeclareglobal",
+      "group": "Declarations",
+      "category": "ast",
+      "badges": [
+        "AST"
+      ],
+      "tags": [
+        "Statement",
+        "Declaration"
+      ],
+      "description": "Declaration statement for a global value type.",
+      "example": "declare UserId: number\ndeclare CurrentUser: { name: string, id: UserId }",
+      "table": {
+        "type": "fields",
+        "headers": [
+          "Field",
+          "Value",
+          "Description"
+        ],
+        "rows": [
+          [
+            "kind",
+            "\"StatDeclareGlobal\"",
+            "Tag string used for this global declaration statement."
+          ],
+          [
+            "location",
+            "[Location](#location)",
+            "Source span covering this global declaration."
+          ],
+          [
+            "name",
+            "string",
+            "Declared global name."
+          ],
+          [
+            "nameLocation",
+            "[Location](#location)",
+            "Source span covering the declared global name."
+          ],
+          [
+            "type",
+            "[AstType](#asttype)",
+            "Declared type for this global."
+          ],
+          [
+            "hasSemicolon",
+            "boolean?",
+            "Whether this declaration ended with a trailing semicolon in source."
+          ]
+        ]
+      }
+    },
+    {
+      "name": "AstStatDeclareFunction",
+      "anchor": "aststatdeclarefunction",
+      "group": "Declarations",
+      "category": "ast",
+      "badges": [
+        "AST"
+      ],
+      "tags": [
+        "Statement",
+        "Declaration"
+      ],
+      "description": "Declaration statement for a typed global function signature.",
+      "example": "declare function buildName(first: string, last: string): string\ndeclare function findUser(id: number): { name: string }?",
+      "table": {
+        "type": "fields",
+        "headers": [
+          "Field",
+          "Value",
+          "Description"
+        ],
+        "rows": [
+          [
+            "kind",
+            "\"StatDeclareFunction\"",
+            "Tag string used for this function declaration statement."
+          ],
+          [
+            "location",
+            "[Location](#location)",
+            "Source span covering this function declaration."
+          ],
+          [
+            "attributes",
+            "{ [AstAttr](#astattr) }",
+            "Attributes attached to this declared function."
+          ],
+          [
+            "name",
+            "string",
+            "Declared function name."
+          ],
+          [
+            "nameLocation",
+            "[Location](#location)",
+            "Source span covering the declared function name."
+          ],
+          [
+            "generics",
+            "{ [AstGenericType](#astgenerictype) }",
+            "Generic type parameters declared by this function signature."
+          ],
+          [
+            "genericPacks",
+            "{ [AstGenericTypePack](#astgenerictypepack) }",
+            "Generic type-pack parameters declared by this function signature."
+          ],
+          [
+            "params",
+            "[AstTypeList](#asttypelist)",
+            "Parameter type list for this declared function."
+          ],
+          [
+            "paramNames",
+            "{ [AstArgumentName](#astargumentname) }",
+            "Parameter names captured for this declared function."
+          ],
+          [
+            "vararg",
+            "boolean",
+            "Whether this declared function accepts `...`."
+          ],
+          [
+            "varargLocation",
+            "[Location](#location)?",
+            "Source span covering the vararg token when present."
+          ],
+          [
+            "retTypes",
+            "[AstTypePack](#asttypepack)",
+            "Return type pack for this declared function."
+          ],
+          [
+            "hasSemicolon",
+            "boolean?",
+            "Whether this declaration ended with a trailing semicolon in source."
+          ]
+        ]
+      }
+    },
+    {
+      "name": "AstStatClass",
+      "anchor": "aststatclass",
+      "group": "Classes",
+      "category": "ast",
+      "badges": [
+        "AST"
+      ],
+      "tags": [
+        "Statement",
+        "Class"
+      ],
+      "description": "Class declaration statement behind the user-defined class rollout flag.",
+      "example": "class User\n    public name: string\n    public score: number\n\n    function getName(self)\n        return self.name\n    end\nend",
+      "table": {
+        "type": "fields",
+        "headers": [
+          "Field",
+          "Value",
+          "Description"
+        ],
+        "rows": [
+          [
+            "kind",
+            "\"StatClass\"",
+            "Tag string used for this class declaration statement."
+          ],
+          [
+            "location",
+            "[Location](#location)",
+            "Source span covering this class declaration."
+          ],
+          [
+            "name",
+            "[AstLocal](#astlocal)",
+            "Local binding created for the class name."
+          ],
+          [
+            "members",
+            "{ [AstClassMember](#astclassmember) }",
+            "Class members stored in source order."
+          ],
+          [
+            "exported",
+            "boolean",
+            "Whether this class declaration was exported."
+          ],
+          [
+            "hasSemicolon",
+            "boolean?",
+            "Whether this class declaration ended with a trailing semicolon in source."
+          ]
+        ]
+      }
+    },
+    {
+      "name": "AstStatDeclareExternType",
+      "anchor": "aststatdeclareexterntype",
+      "group": "Declarations",
+      "category": "ast",
+      "badges": [
+        "AST"
+      ],
+      "tags": [
+        "Statement",
+        "Declaration"
+      ],
+      "description": "Declaration statement for an extern type.",
+      "example": "declare extern type HttpService\n    request: (string) -> string\n    function getAsync(self, url: string): string\nend",
+      "table": {
+        "type": "fields",
+        "headers": [
+          "Field",
+          "Value",
+          "Description"
+        ],
+        "rows": [
+          [
+            "kind",
+            "\"StatDeclareExternType\"",
+            "Tag string used for this extern type declaration statement."
+          ],
+          [
+            "location",
+            "[Location](#location)",
+            "Source span covering this extern type declaration."
+          ],
+          [
+            "name",
+            "string",
+            "Declared extern type name."
+          ],
+          [
+            "superName",
+            "string?",
+            "Optional extern supertype name."
+          ],
+          [
+            "props",
+            "{ [AstDeclaredExternTypeProperty](#astdeclaredexterntypeproperty) }",
+            "Extern properties and methods stored in source order."
+          ],
+          [
+            "indexer",
+            "[AstTableIndexer](#asttableindexer)?",
+            "Optional indexer declared by this extern type."
+          ],
+          [
+            "hasSemicolon",
+            "boolean?",
+            "Whether this declaration ended with a trailing semicolon in source."
           ]
         ]
       }
@@ -3657,6 +4260,157 @@ window.DOCS_DATA = {
       }
     },
     {
+      "name": "CstAttr",
+      "anchor": "cstattr",
+      "group": "CST Attributes",
+      "category": "cst",
+      "badges": [
+        "CST"
+      ],
+      "tags": [
+        "Attribute"
+      ],
+      "description": "CST payload for a bare attribute.",
+      "example": "@native\nlocal function run() end",
+      "table": {
+        "type": "fields",
+        "headers": [
+          "Field",
+          "Value",
+          "Description"
+        ],
+        "rows": [
+          [
+            "kind",
+            "\"CstAttr\"",
+            "Tag string used for this attribute CST payload."
+          ],
+          [
+            "hasAt",
+            "boolean",
+            "Whether the attribute payload includes its own `@` token."
+          ]
+        ]
+      }
+    },
+    {
+      "name": "CstParametrizedAttr",
+      "anchor": "cstparametrizedattr",
+      "group": "CST Attributes",
+      "category": "cst",
+      "badges": [
+        "CST"
+      ],
+      "tags": [
+        "Attribute"
+      ],
+      "description": "CST payload for an attribute with an argument list.",
+      "example": "@deprecated({ message = \"Use nextValue\" })\nlocal function oldValue() end",
+      "table": {
+        "type": "fields",
+        "headers": [
+          "Field",
+          "Value",
+          "Description"
+        ],
+        "rows": [
+          [
+            "kind",
+            "\"CstParametrizedAttr\"",
+            "Tag string used for this parametrized attribute CST payload."
+          ],
+          [
+            "openParenPosition",
+            "[Position](#position)",
+            "Source position of the opening parenthesis."
+          ],
+          [
+            "closeParenPosition",
+            "[Position](#position)",
+            "Source position of the closing parenthesis."
+          ],
+          [
+            "argsCommaPositions",
+            "{ [Position](#position) }",
+            "Comma positions inside the attribute argument list."
+          ]
+        ]
+      }
+    },
+    {
+      "name": "CstAttrList",
+      "anchor": "cstattrlist",
+      "group": "CST Attributes",
+      "category": "cst",
+      "badges": [
+        "CST"
+      ],
+      "tags": [
+        "Attribute"
+      ],
+      "description": "CST payload for an attribute list opened by `@[`.",
+      "example": "@[native, checked]\nlocal function run() end",
+      "table": {
+        "type": "fields",
+        "headers": [
+          "Field",
+          "Value",
+          "Description"
+        ],
+        "rows": [
+          [
+            "atBracketPosition",
+            "[Position](#position)",
+            "Source position of the `@[` opener."
+          ],
+          [
+            "closeBracketPosition",
+            "[Position](#position)",
+            "Source position of the closing bracket."
+          ],
+          [
+            "commaPositions",
+            "{ [Position](#position) }",
+            "Comma positions inside the attribute list."
+          ]
+        ]
+      }
+    },
+    {
+      "name": "CstExprGroup",
+      "anchor": "cstexprgroup",
+      "group": "CST Expressions",
+      "category": "cst",
+      "badges": [
+        "CST"
+      ],
+      "tags": [
+        "Expression"
+      ],
+      "description": "CST payload for a grouped expression.",
+      "example": "local value = (left + right)",
+      "table": {
+        "type": "fields",
+        "headers": [
+          "Field",
+          "Value",
+          "Description"
+        ],
+        "rows": [
+          [
+            "kind",
+            "\"CstExprGroup\"",
+            "Tag string used for this grouped expression CST payload."
+          ],
+          [
+            "closePosition",
+            "[Position](#position)",
+            "Source position of the closing parenthesis."
+          ]
+        ]
+      }
+    },
+    {
       "name": "CstExprConstantNumber",
       "anchor": "cstexprconstantnumber",
       "group": "CST Expressions",
@@ -3686,6 +4440,40 @@ window.DOCS_DATA = {
             "value",
             "string?",
             "Original numeric token text preserved by this CST payload."
+          ]
+        ]
+      }
+    },
+    {
+      "name": "CstExprConstantInteger",
+      "anchor": "cstexprconstantinteger",
+      "group": "CST Expressions",
+      "category": "cst",
+      "badges": [
+        "CST"
+      ],
+      "tags": [
+        "Expression"
+      ],
+      "description": "CST payload for an integer literal expression.",
+      "example": "local value = 123i\nlocal nextValue = 456i",
+      "table": {
+        "type": "fields",
+        "headers": [
+          "Field",
+          "Value",
+          "Description"
+        ],
+        "rows": [
+          [
+            "kind",
+            "\"CstExprConstantInteger\"",
+            "Tag string used for this integer literal CST payload."
+          ],
+          [
+            "value",
+            "string?",
+            "Original integer token text preserved by this CST payload."
           ]
         ]
       }
@@ -4253,40 +5041,6 @@ window.DOCS_DATA = {
             "endPosition",
             "[Position](#position)",
             "Source position recorded for end on this do statement CST payload."
-          ]
-        ]
-      }
-    },
-    {
-      "name": "CstStatDo_DEPRECATED",
-      "anchor": "cststatdo_deprecated",
-      "group": "CST Statements",
-      "category": "cst",
-      "badges": [
-        "CST"
-      ],
-      "tags": [
-        "Statement"
-      ],
-      "description": "Older CST layout kept for `StatBlock` compatibility.",
-      "example": "do\n    local first = 1\n    local second = first + 1\nend",
-      "table": {
-        "type": "fields",
-        "headers": [
-          "Field",
-          "Value",
-          "Description"
-        ],
-        "rows": [
-          [
-            "kind",
-            "\"CstStatDo_DEPRECATED\"",
-            "Tag string used for this do_deprecated statement CST payload."
-          ],
-          [
-            "endPosition",
-            "[Position](#position)",
-            "Source position recorded for end on this do_deprecated statement CST payload."
           ]
         ]
       }
@@ -5152,6 +5906,84 @@ window.DOCS_DATA = {
       }
     },
     {
+      "name": "CstTypeSingletonString",
+      "anchor": "csttypesingletonstring",
+      "group": "CST Types",
+      "category": "cst",
+      "badges": [
+        "CST"
+      ],
+      "tags": [
+        "Type"
+      ],
+      "description": "CST payload for a string singleton type.",
+      "example": "type Mode = \"auto\"\ntype State = 'idle'",
+      "table": {
+        "type": "fields",
+        "headers": [
+          "Field",
+          "Value",
+          "Description"
+        ],
+        "rows": [
+          [
+            "kind",
+            "\"CstTypeSingletonString\"",
+            "Tag string used for this singleton string type CST payload."
+          ],
+          [
+            "sourceString",
+            "string?",
+            "Raw source string stored by this singleton string type."
+          ],
+          [
+            "quoteStyle",
+            "number",
+            "Quote-style enum value preserved by this singleton string type."
+          ],
+          [
+            "blockDepth",
+            "number",
+            "Raw-string block depth preserved by this singleton string type."
+          ]
+        ]
+      }
+    },
+    {
+      "name": "CstTypeGroup",
+      "anchor": "csttypegroup",
+      "group": "CST Types",
+      "category": "cst",
+      "badges": [
+        "CST"
+      ],
+      "tags": [
+        "Type"
+      ],
+      "description": "CST payload for a grouped type.",
+      "example": "type Value = (string | number)",
+      "table": {
+        "type": "fields",
+        "headers": [
+          "Field",
+          "Value",
+          "Description"
+        ],
+        "rows": [
+          [
+            "kind",
+            "\"CstTypeGroup\"",
+            "Tag string used for this grouped type CST payload."
+          ],
+          [
+            "closePosition",
+            "[Position](#position)",
+            "Source position of the closing parenthesis."
+          ]
+        ]
+      }
+    },
+    {
       "name": "CstTypePackExplicit",
       "anchor": "csttypepackexplicit",
       "group": "CST Types",
@@ -5331,7 +6163,7 @@ window.DOCS_DATA = {
         "API"
       ],
       "description": "Options accepted by `Parser.parse` in the current implementation.",
-      "example": "local ok, result = Parser.parse(source, {\n    storeCstData = true,\n    captureComments = true,\n})",
+      "example": "local ok, result = Parser.parse(source, {\n    storeCstData = true,\n    captureComments = true,\n    noErrorLimit = true,\n})",
       "table": {
         "type": "fields",
         "headers": [
@@ -5349,6 +6181,11 @@ window.DOCS_DATA = {
             "captureComments",
             "boolean?",
             "Optional flag that tells this parser options record to keep comment locations."
+          ],
+          [
+            "noErrorLimit",
+            "boolean?",
+            "Optional flag that allows this parser options record to collect beyond the normal parse-error cap."
           ],
           [
             "parseFragment",
@@ -5512,7 +6349,7 @@ window.DOCS_DATA = {
         "API"
       ],
       "description": "Return payload from `Parser.parse`, including the root block, comments, and errors.",
-      "example": "local ok, result = Parser.parse(\"local first = 1\\nlocal second = first + 2\")\nprint(ok, result.root, #result.errors)",
+      "example": "local ok, result = Parser.parse(\"local first = 1\\nlocal second = first + 2\")\nprint(ok, result.root, result.lines, #result.errors)",
       "table": {
         "type": "fields",
         "headers": [
@@ -5525,6 +6362,11 @@ window.DOCS_DATA = {
             "root",
             "[AstStatBlock](#aststatblock)?",
             "Top-level block stored by this parse result record when parsing succeeds."
+          ],
+          [
+            "lines",
+            "number",
+            "Parsed line count reported by this parse result record."
           ],
           [
             "commentLocations",

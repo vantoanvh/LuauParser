@@ -364,10 +364,13 @@
 		const homeExample = [
 			"local Parser = require(path.to.LuauParser)",
 			"",
-			"local success, result = Parser.parse('local foo: (string, ...number) -> (...any)')",
+			"local success, result = Parser.parse('local foo: number = 123', {",
+			"\tstoreCstData = true,",
+			"})",
 			"",
 			"if success then",
-			"\tprint(result.root) -- do anything you want",
+			"\tprint(result.root)",
+			"\tprint(result.lines)",
 			"else",
 			"\twarn(result.errors)",
 			"end",
@@ -381,7 +384,7 @@
 						<h1>${escapeHtml(state.data.title)}</h1>
 						<p class="home-lead">
 							A modern, fully featured <a href="https://luau.org/" target="_blank" rel="noreferrer noopener">Luau</a> parser written entirely in Luau.<br>
-							Fully strict-typing with the New Type Solver and optimized for high performance.
+							Written in strict Luau and intended for projects using the New Type Solver.
 						</p>
 						<div class="home-action-grid">
 							<button type="button" class="home-action" data-view="ast">
@@ -408,28 +411,28 @@
 
 				<section class="home-section">
 					<h2>Introduction</h2>
-					<p class="home-note">Only compatibles with <strong>New Type Solver</strong>.</p>
+					<p class="home-note">Designed for <strong>New Type Solver</strong> projects.</p>
 					<p>
 						A complete port of <a href="https://github.com/luau-lang/luau/blob/master/Ast/src/Parser.cpp" target="_blank" rel="noreferrer noopener">Parser.cpp</a>
 						providing both <em>AST</em> <strong>(Abstract Syntax Tree)</strong> and <em>CST</em> <strong>(Concrete Syntax Tree)</strong>.<br>
-						<strong>To stay true to the original implementation</strong>, the CST does not include low-level trivia such as whitespace.
+						To stay close to the original implementation, the CST does not include low-level trivia such as whitespace.
 					</p>
 					<p>
 						This Luau parser is primarily intended for plugin development and for building Luau compilers or tooling.<br>
 						It provides detailed syntax through both <strong>AST</strong> and <strong>CST</strong>, making it well suited for advanced language tooling such as
-						<em>linters, formatters, highlighter, refactoring tools,</em> or even a full <em>luau compiler/transpiler</em>.
+						<em>linters, formatters, highlighters, refactoring tools,</em> or full <em>Luau compilers and transpilers</em>.
+					</p>
+					<p>
+						Parser rollout flags are kept near the top of <code>Parser/init.luau</code>. You can change them when you need this port to mirror a specific Luau rollout,
+						including gated syntax such as user-defined classes.
 					</p>
 				</section>
 
 				<section class="home-section">
-					<h2>Performance</h2>
-					<p class="home-note">
-						After <code>0.710</code> updates, I do alot of optimization changes, and able to make this <strong>FASTER</strong> than
-						<a href="https://github.com/jackdotink/luaup" target="_blank" rel="noreferrer noopener">luaup</a> itself.
-					</p>
+					<h2>Implementation Notes</h2>
 					<p>
-						This parser is fast because it uses a simple singleton-style procedural design. It just resets its internal variables and runs,
-						avoiding the overhead of more complex architectures.
+						The parser follows the upstream procedural parser shape and resets its internal state for each parse call. CST data is attached directly to supported AST nodes
+						when <code>storeCstData = true</code>, instead of exposing a separate CST map.
 					</p>
 				</section>
 
@@ -448,7 +451,7 @@
 			<div class="hero-block guide-hero">
 				<div class="hero-kicker">Getting Started</div>
 				<h1>Public API & Usage</h1>
-				<p>The main entry point is <code>Parser.parse(source, options?)</code>. This page documents the current exported surface from <code>src/init.luau</code> and the typed shapes from <code>src/Syntax.luau</code>.</p>
+				<p>The main entry point is <code>Parser.parse(source, options?)</code>. This page documents the current exported surface from <code>Parser/init.luau</code> and the typed shapes from <code>Parser/Syntax.luau</code>.</p>
 			</div>
 		`;
 	}
@@ -463,14 +466,16 @@
 		const apiExample = [
 			"local Parser = require(path.to.LuauParser)",
 			"",
-			"local success, result = Parser.parse(\"local foo: (string, ...number) -> (...any)\", {",
+			"local success, result = Parser.parse(\"local foo: number = 123\", {",
 			"\tstoreCstData = true,",
 			"\tcaptureComments = true,",
 			"})",
 			"",
 			"if success then",
 			"\tprint(result.root)",
-			"\tprint((result.root :: any).cstNode)",
+			"\tprint(result.lines)",
+			"\tlocal firstStat = result.root and result.root.body[1]",
+			"\tprint(firstStat and (firstStat :: any).cstNode)",
 			"else",
 			"\twarn(result.errors)",
 			"end",
@@ -478,8 +483,9 @@
 
 		const optionsBlock = [
 			"type Options = {",
-			"\tallowDeclarationSyntax: boolean?, -- typed, but currently unused in init.luau",
+			"\tallowDeclarationSyntax: boolean?,",
 			"\tcaptureComments: boolean?,",
+			"\tnoErrorLimit: boolean?,",
 			"\tparseFragment: {",
 			"\t\tlocalMap: { [string]: AstLocal? },",
 			"\t\tlocalStack: { AstLocal? },",
@@ -492,6 +498,7 @@
 		const resultBlock = [
 			"type Result = {",
 			"\troot: AstStatBlock?,",
+			"\tlines: number,",
 			"\tcommentLocations: { Comment },",
 			"\thotcomments: { HotComment },",
 			"\terrors: { ParseError },",
@@ -566,19 +573,19 @@
 
 				<section class="guide-section" id="options">
 					<h2>Options</h2>
-					<p>The current options type comes from <code>src/Syntax.luau</code>. The two commonly used toggles are <code>captureComments</code> and <code>storeCstData</code>. <code>parseFragment</code> is for resumed parsing, and <code>allowDeclarationSyntax</code> is still typed but is currently not consumed in <code>src/init.luau</code>.</p>
+					<p>The current options type comes from <code>Parser/Syntax.luau</code>. The two commonly used toggles are <code>captureComments</code> and <code>storeCstData</code>. <code>parseFragment</code> is for resumed parsing, and <code>noErrorLimit</code> lets the parser collect beyond the normal error cap.</p>
 					${renderExample(optionsBlock)}
 				</section>
 
 				<section class="guide-section" id="result">
 					<h2>Result</h2>
-					<p><code>result.root</code> is an <code>AstStatBlock?</code>, not a flat <code>{AstNode}</code> list. Comments and hotcomments are returned separately, and all parse errors are collected in <code>result.errors</code>.</p>
+					<p><code>result.root</code> is an <code>AstStatBlock?</code>, not a flat <code>{AstNode}</code> list. <code>result.lines</code> reports the parsed line count. Comments, hotcomments, and parse errors are returned separately.</p>
 					${renderExample(resultBlock)}
 				</section>
 
 				<section class="guide-section" id="enums">
 					<h2>Enums</h2>
-					<p>The parser currently exports <code>QuoteStyle</code>, <code>BraceType</code>, <code>UnaryOp</code>, <code>BinaryOp</code>, and <code>CstQuotes</code> directly from <code>src/init.luau</code>. The code block below now documents each enum member inline.</p>
+					<p>The parser currently exports <code>QuoteStyle</code>, <code>BraceType</code>, <code>UnaryOp</code>, <code>BinaryOp</code>, and <code>CstQuotes</code> directly from <code>Parser/init.luau</code>. The code block below documents each enum member inline.</p>
 					${renderExample(enumsBlock)}
 				</section>
 
